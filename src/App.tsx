@@ -14,7 +14,22 @@ import { GenericPageView } from './components/views/GenericPageView';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<NavPage>('sporpuan-degerlendirmeler');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => !prev);
@@ -64,7 +79,7 @@ export default function App() {
           />
 
           {/* Body Content */}
-          <main className="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto">
+          <main className="flex-1 p-3.5 sm:p-4 lg:p-6 max-w-7xl w-full mx-auto">
             {renderActiveView()}
           </main>
         </div>

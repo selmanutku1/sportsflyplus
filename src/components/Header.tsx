@@ -84,14 +84,14 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Top-left brand logo displayed when sidebar is closed or on mobile */}
           <div className={`items-center gap-2 pr-2 border-r border-slate-200/80 ${isSidebarOpen ? 'flex lg:hidden' : 'flex'}`}>
-            <SportsFlyLogo className="w-7 h-7" />
+            <SportsFlyLogo className="w-7 h-7 shrink-0" />
             <span className="font-bold text-slate-800 text-base tracking-tight hidden sm:inline">
               SportsFly
             </span>
           </div>
 
           {/* Breadcrumb matching the screenshots */}
-          <nav className="flex items-center text-xs sm:text-sm font-medium">
+          <nav className="hidden sm:flex items-center text-xs sm:text-sm font-medium">
             <span className="text-blue-600 hover:underline cursor-pointer">
               {rootCrumb}
             </span>
@@ -104,6 +104,9 @@ export const Header: React.FC<HeaderProps> = ({
               </React.Fragment>
             ))}
           </nav>
+          <span className="sm:hidden text-xs font-bold text-slate-800 truncate max-w-[130px]">
+            {childCrumbs[childCrumbs.length - 1] || rootCrumb}
+          </span>
         </div>
 
         {/* Right Side: Notifications & Profile Pill */}
@@ -127,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Notifications Dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 mt-2 w-72 sm:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-slate-200 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="flex items-center justify-between px-4 pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-slate-800 text-sm">Bildirimler</span>
@@ -162,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </div>
                   <div className="p-3 hover:bg-slate-50 transition-colors flex items-start gap-3">
-                    <div className="w-2 h-2 mt-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shrink-0" />
                     <div>
                       <p className="text-xs font-medium text-slate-800">
                         Yeni destek talebi: Salon aktivasyon sorunu
@@ -183,23 +186,23 @@ export const Header: React.FC<HeaderProps> = ({
                 setShowProfileMenu(!showProfileMenu);
                 setShowNotifications(false);
               }}
-              className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full border border-slate-200/80 transition-all text-left"
+              className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full border border-slate-200/80 transition-all text-left"
             >
               {/* Colorful icon badge matching the screenshot */}
-              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 via-sky-400 to-rose-400 flex items-center justify-center p-0.5 shadow-2xs">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 via-sky-400 to-rose-400 flex items-center justify-center p-0.5 shadow-2xs shrink-0">
                 <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
                   <Sparkles className="w-3 h-3 text-blue-600" />
                 </div>
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-slate-700">
+              <span className="text-xs sm:text-sm font-semibold text-slate-700 hidden md:inline">
                 SportsFly Manager
               </span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 hidden sm:inline" />
             </button>
 
             {/* Profile Menu Dropdown */}
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 mt-2 w-60 sm:w-64 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="px-4 py-2.5 border-b border-slate-100">
                   <p className="text-xs text-slate-500 font-medium">Giriş Yapılan Hesap</p>
                   <p className="text-sm font-bold text-slate-800 truncate">SportsFly Manager</p>

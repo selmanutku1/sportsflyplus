@@ -19,6 +19,7 @@ import {
   Star,
   ShieldCheck,
   TrendingUp,
+  X,
 } from 'lucide-react';
 import { NavPage } from '../types';
 import { SportsFlyLogo } from './SportsFlyLogo';
@@ -78,13 +79,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         {/* Brand Logo matching the screenshots */}
-        <div className="h-16 flex items-center px-5 border-b border-slate-100 gap-3">
-          <SportsFlyLogo className="w-9 h-9" />
-          <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight text-slate-800">
-              SportsFly
-            </span>
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <SportsFlyLogo className="w-9 h-9" />
+            <div className="flex flex-col">
+              <span className="text-xl font-bold tracking-tight text-slate-800">
+                SportsFly
+              </span>
+            </div>
           </div>
+          {/* Mobile Close Button */}
+          <button
+            id="sidebar-close-mobile-btn"
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 lg:hidden transition-colors"
+            aria-label="Menüyü Kapat"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Manager selector badge item matching the screenshot */}
@@ -287,12 +299,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* SPORPUAN ANA KATEGORİSİ */}
           <div className="pt-3">
-            <div className="px-3 py-1 mb-1 text-[11px] font-extrabold uppercase tracking-wider text-amber-700 bg-amber-50/80 rounded-md flex items-center justify-between border border-amber-200/50">
+            <div className="px-3 py-1 mb-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-700 bg-slate-100/90 rounded-md flex items-center justify-between border border-slate-200/80">
               <span className="flex items-center gap-1.5">
-                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
                 Sporpuan
               </span>
-              <span className="text-[10px] font-bold text-amber-600 px-1.5 py-0.2 bg-white rounded-sm border border-amber-300">
+              <span className="text-[10px] font-bold text-slate-600 px-1.5 py-0.5 bg-white rounded-sm border border-slate-200 shadow-2xs">
                 sporpuan.com
               </span>
             </div>
@@ -303,12 +315,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => setIsReputationOpen(!isReputationOpen)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all ${
                   isSporpuanChildActive
-                    ? 'text-amber-900 bg-amber-100/60 font-semibold'
+                    ? 'text-blue-900 bg-blue-50/90 font-semibold'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                  <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>İtibar Yönetimi</span>
                 </div>
                 {isReputationOpen ? (
@@ -320,13 +332,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Alt sayfalar: Değerlendirmeler, Doğrulamalar, Raporlar */}
               {isReputationOpen && (
-                <div className="ml-5 mt-1 pl-3 border-l-2 border-amber-300/80 space-y-1">
+                <div className="ml-5 mt-1 pl-3 border-l-2 border-slate-200 space-y-1">
                   <button
                     onClick={() => handleNavClick('sporpuan-degerlendirmeler')}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                       currentPage === 'sporpuan-degerlendirmeler'
-                        ? 'bg-amber-500 text-white font-semibold shadow-xs'
-                        : 'text-slate-600 hover:bg-amber-50 hover:text-amber-900'
+                        ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -336,8 +348,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                         currentPage === 'sporpuan-degerlendirmeler'
-                          ? 'bg-amber-600 text-white'
-                          : 'bg-amber-100 text-amber-800'
+                          ? 'bg-blue-700 text-white'
+                          : 'bg-slate-100 text-slate-700'
                       }`}
                     >
                       5
@@ -348,8 +360,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleNavClick('sporpuan-dogrulamalar')}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                       currentPage === 'sporpuan-dogrulamalar'
-                        ? 'bg-amber-500 text-white font-semibold shadow-xs'
-                        : 'text-slate-600 hover:bg-amber-50 hover:text-amber-900'
+                        ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -359,7 +371,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                         currentPage === 'sporpuan-dogrulamalar'
-                          ? 'bg-amber-600 text-white'
+                          ? 'bg-blue-700 text-white'
                           : 'bg-blue-100 text-blue-800'
                       }`}
                     >
@@ -371,8 +383,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleNavClick('sporpuan-raporlar')}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                       currentPage === 'sporpuan-raporlar'
-                        ? 'bg-amber-500 text-white font-semibold shadow-xs'
-                        : 'text-slate-600 hover:bg-amber-50 hover:text-amber-900'
+                        ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <TrendingUp className="w-3.5 h-3.5" />

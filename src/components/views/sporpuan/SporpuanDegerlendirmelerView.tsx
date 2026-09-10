@@ -302,42 +302,45 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
       )}
 
       {/* Sporpuan Hero Brand Banner */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-6 text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-xs flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 rounded-2xl p-4 sm:p-6 text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 relative overflow-hidden">
+        {/* Subtle decorative glow */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+
+        <div className="space-y-2 relative z-10">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-300 font-bold text-[11px] uppercase tracking-wider border border-amber-400/25 flex items-center gap-1.5 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               Sporpuan İtibar Portalı
             </span>
-            <span className="text-xs text-amber-100 font-medium">
+            <span className="text-xs text-slate-400 font-medium">
               sporpuan.com Entegrasyonu
             </span>
           </div>
-          <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
             Değerlendirmeler &amp; Sporcu Deneyimleri
           </h1>
-          <p className="text-xs text-amber-100 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
             Sporsepeti ve SportsFly altyapısındaki spor okulları, kulüpler ve tesisler için gerçek sporcu check-in doğrulamalı şeffaf yorum ve puanlama sistemi.
           </p>
         </div>
 
         {/* Quick Stats on Banner */}
-        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/20 shrink-0">
+        <div className="w-full sm:w-auto flex items-center justify-around sm:justify-start gap-4 bg-slate-800/80 backdrop-blur-md px-4 sm:px-5 py-3 rounded-xl border border-slate-700/70 shrink-0 relative z-10">
           <div className="text-center px-2">
-            <div className="text-3xl font-black text-white flex items-center justify-center gap-1">
+            <div className="text-2xl sm:text-3xl font-black text-white flex items-center justify-center gap-1">
               {totalScore}
-              <Star className="w-5 h-5 fill-amber-300 text-amber-300" />
+              <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
             </div>
-            <p className="text-[11px] text-amber-100 font-medium mt-0.5">
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
               Genel Sporpuan
             </p>
           </div>
-          <div className="w-px h-10 bg-white/20" />
+          <div className="w-px h-10 bg-slate-700" />
           <div className="text-center px-2">
-            <div className="text-2xl font-black text-white">
+            <div className="text-xl sm:text-2xl font-black text-white">
               {reviews.length}
             </div>
-            <p className="text-[11px] text-amber-100 font-medium mt-0.5">
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
               Toplam Yorum
             </p>
           </div>
@@ -345,13 +348,13 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
       </div>
 
       {/* Control Bar: Filters & Actions */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowNewReviewModal(true)}
-              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
+              className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
               Yeni Değerlendirme
@@ -359,35 +362,35 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
 
             <button
               onClick={() => setShowInviteModal(true)}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
+              className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
             >
               <Send className="w-4 h-4" />
-              Sporcuya Değerlendirme Daveti Gönder
+              <span className="hidden xs:inline">Sporcuya</span> Davet Gönder
             </button>
 
             <a
               href="https://www.sporpuan.com"
               target="_blank"
               rel="noreferrer"
-              className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-3 py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
-              sporpuan.com&apos;da Gör
+              sporpuan.com
             </a>
           </div>
 
           {/* Export */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={handleExportCSV}
-              className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+              className="flex-1 sm:flex-none justify-center px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-colors"
             >
               <FileSpreadsheet className="w-4 h-4" />
               Excel / CSV
             </button>
             <button
               onClick={() => window.print()}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+              className="flex-1 sm:flex-none justify-center px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-colors"
             >
               <FileText className="w-4 h-4" />
               PDF Rapor
@@ -396,7 +399,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
         </div>
 
         {/* Filter bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -404,7 +407,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
               placeholder="Yorumlarda, sporcuda veya tesiste ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 font-medium"
+              className="w-full pl-9 pr-3 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
             />
           </div>
 
@@ -413,7 +416,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
             <select
               value={selectedFacility}
               onChange={(e) => setSelectedFacility(e.target.value)}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500/30"
+              className="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             >
               <option value="Tümü">Tüm Tesisler &amp; Şubeler</option>
               <option value="Saraçgym">Saraçgym Nilüfer</option>
@@ -427,7 +430,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500/30"
+              className="w-full px-3 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             >
               <option value="Tümü">Tüm Durumlar</option>
               <option value="Yayında">Yayında (Onaylı)</option>
@@ -453,22 +456,22 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
             return (
               <div
                 key={review.id}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4 hover:border-amber-300 transition-colors"
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-6 space-y-4 hover:border-slate-300 transition-colors"
               >
                 {/* Header: Author + Verified badge + Facility + Status */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
                       {review.authorName.charAt(0)}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-base">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm sm:text-base">
                           {review.authorName}
                         </span>
                         {review.isVerifiedUser && (
                           <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/70"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/70 shrink-0"
                             title="Sporpuan Check-in ve Üyelik Doğrulamalı Gerçek Sporcu"
                           >
                             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
@@ -485,14 +488,14 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t border-slate-50 sm:border-t-0">
                     {/* Stars */}
-                    <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/60">
+                    <div className="flex items-center gap-1 bg-amber-50/80 px-2.5 py-1 rounded-xl border border-amber-200/50">
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((s) => (
                           <Star
                             key={s}
-                            className={`w-4 h-4 ${
+                            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
                               s <= Math.round(review.rating)
                                 ? 'fill-amber-400 text-amber-400'
                                 : 'text-slate-200'
@@ -515,27 +518,27 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
                 </div>
 
                 {/* Criteria breakdown pills (Sporpuan Metric Criteria) */}
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 font-medium">
-                    Temizlik &amp; Hijyen:{' '}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 font-medium flex items-center justify-between sm:justify-start gap-1">
+                    <span>Temizlik:</span>
                     <strong className="text-slate-900">
                       {review.criteria.hygiene.toFixed(1)}/5
                     </strong>
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 font-medium">
-                    Ekipman Kalitesi:{' '}
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 font-medium flex items-center justify-between sm:justify-start gap-1">
+                    <span>Ekipman:</span>
                     <strong className="text-slate-900">
                       {review.criteria.equipment.toFixed(1)}/5
                     </strong>
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 font-medium">
-                    Eğitmen İlgisi:{' '}
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 font-medium flex items-center justify-between sm:justify-start gap-1">
+                    <span>Eğitmen:</span>
                     <strong className="text-slate-900">
                       {review.criteria.trainer.toFixed(1)}/5
                     </strong>
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 font-medium">
-                    Fiyat/Performans:{' '}
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 font-medium flex items-center justify-between sm:justify-start gap-1">
+                    <span>Fiyat/Perf:</span>
                     <strong className="text-slate-900">
                       {review.criteria.priceValue.toFixed(1)}/5
                     </strong>
@@ -547,14 +550,14 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
                   <h4 className="font-bold text-slate-900 text-sm">
                     {review.title}
                   </h4>
-                  <p className="text-slate-700 text-sm leading-relaxed">
+                  <p className="text-slate-700 text-xs sm:text-sm leading-relaxed">
                     {review.comment}
                   </p>
                 </div>
 
                 {/* Existing Reply if any */}
                 {review.reply && (
-                  <div className="ml-4 pl-4 border-l-2 border-blue-500 bg-blue-50/40 p-3 rounded-r-xl space-y-1 text-xs">
+                  <div className="ml-2 sm:ml-4 pl-3 sm:pl-4 border-l-2 border-blue-500 bg-blue-50/40 p-3 rounded-r-xl space-y-1 text-xs">
                     <div className="flex items-center justify-between font-bold text-blue-900">
                       <span className="flex items-center gap-1.5">
                         <Building className="w-3.5 h-3.5 text-blue-600" />
@@ -571,13 +574,13 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
                 )}
 
                 {/* Footer Action Buttons */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <ThumbsUp className="w-3.5 h-3.5 text-slate-400" />
                     <span>{review.helpfulCount} sporcu faydalı buldu</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {/* Reply button */}
                     <button
                       onClick={() => setReplyingReview(review)}
@@ -873,7 +876,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-xs"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors"
                 >
                   Kaydet &amp; Yayınla
                 </button>

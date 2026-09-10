@@ -2,5 +2,7 @@
   "name": "SportsFly Yönetim Paneli",
   "description": "Sporsepeti ve SportsFly sporcu, eğitmen, paket ve kullanıcı yönetim paneli.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
