@@ -3,7 +3,6 @@ import {
   FileText,
   Package,
   UserX,
-  ClipboardCheck,
   Award,
   Activity,
   Plus,
@@ -53,7 +52,7 @@ export const GenericPageView: React.FC<GenericPageViewProps> = ({ page }) => {
       case 'tanimsiz-kullanicilar':
         return {
           title: 'Tanımsız Kullanıcılar',
-          subtitle: 'Herhangi bir spor kulübüne veya işletmeye henüz atanmamış kullanıcılar',
+          subtitle: 'Herhangi bir spor kulübüne henüz atanmamış kullanıcılar',
           icon: UserX,
           btnText: 'Toplu Atama Yap',
           items: [
@@ -64,26 +63,14 @@ export const GenericPageView: React.FC<GenericPageViewProps> = ({ page }) => {
         };
       case 'kullanici-sozlesmeleri':
         return {
-          title: 'Kullanıcı Sözleşmeleri',
-          subtitle: 'Sporcu, eğitmen ve işletmeler için yasal KVKK ve üyelik sözleşmeleri',
+          title: 'Kulüp Sözleşmeleri',
+          subtitle: 'Spor kulüpleri, spor okulları ve yöneticiler için kurumsal sözleşmeler',
           icon: FileText,
-          btnText: 'Yeni Sözleşme Sürümü Yükle',
+          btnText: 'Yeni Kulüp Sözleşmesi Ekle',
           items: [
             { id: '1', name: 'KVKK Açık Rıza Metni v2.4', slug: 'Tüm Kullanıcılar', status: 'Zorunlu', date: '01.01.2024' },
             { id: '2', name: 'Sporcu Üyelik Sözleşmesi v1.9', slug: 'Sporcular', status: 'Zorunlu', date: '15.02.2024' },
             { id: '3', name: 'Eğitmen Hizmet Sözleşmesi v3.0', slug: 'Eğitmenler', status: 'Zorunlu', date: '01.06.2024' },
-          ],
-        };
-      case 'aktivite-onaylari':
-        return {
-          title: 'Aktivite Onayları',
-          subtitle: 'İşletmeler tarafından planlanan ve onay bekleyen spor etkinlikleri',
-          icon: ClipboardCheck,
-          btnText: 'Tümünü Onayla',
-          items: [
-            { id: '1', name: 'Sabah Yoga Seansı - Saraçgym', slug: '12 Katılımcı', status: 'Onay Bekliyor', date: '12.09.2024 09:00' },
-            { id: '2', name: 'İleri Seviye Yüzme Antrenmanı', slug: '8 Katılımcı', status: 'Onay Bekliyor', date: '13.09.2024 16:30' },
-            { id: '3', name: 'Genç Futbol Ligi Hazırlık Maçı', slug: '22 Katılımcı', status: 'Onaylandı', date: '14.09.2024 18:00' },
           ],
         };
       case 'brans-yonetimi':
@@ -104,7 +91,7 @@ export const GenericPageView: React.FC<GenericPageViewProps> = ({ page }) => {
       case 'aktivite-yonetimi':
         return {
           title: 'Aktivite Yönetimi',
-          subtitle: 'İşletmelerin haftalık ders programları, salon rezervasyonları ve seanslar',
+          subtitle: 'Kulüplerin haftalık ders programları, salon rezervasyonları ve seanslar',
           icon: Activity,
           btnText: 'Yeni Aktivite Planla',
           items: [

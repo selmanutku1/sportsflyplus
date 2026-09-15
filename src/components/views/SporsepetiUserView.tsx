@@ -162,8 +162,76 @@ export const SporsepetiUserView: React.FC = () => {
           </div>
         </div>
 
+        {/* Mobile Cards for Users (<640px) */}
+        <div className="block sm:hidden space-y-3 pt-4">
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((user) => {
+              const isTcVisible = visibleTcMap[user.id];
+              const isCopied = copiedTcId === user.id;
+
+              return (
+                <div
+                  key={user.id}
+                  className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-3 shadow-2xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm leading-tight">
+                        {user.name}
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">{user.email}</p>
+                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">{user.createdAt}</p>
+                    </div>
+
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
+                      {user.city || 'Belirtilmedi'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Telefon:</span>
+                      <a href={`tel:${user.phone}`} className="font-medium text-slate-800 hover:text-blue-600">
+                        {user.phone}
+                      </a>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">TC Kimlik:</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-mono text-slate-800 font-semibold">
+                          {isTcVisible ? user.tcKimlik : '*******'}
+                        </span>
+                        <button
+                          onClick={() => toggleTcVisibility(user.id)}
+                          className="p-0.5 text-slate-400 hover:text-blue-600"
+                          title={isTcVisible ? 'Gizle' : 'Göster'}
+                        >
+                          {isTcVisible ? <EyeOff className="w-3.5 h-3.5 text-blue-600" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                        {isTcVisible && (
+                          <button
+                            onClick={() => copyToClipboard(user.tcKimlik, user.id)}
+                            className="p-0.5 text-slate-400 hover:text-blue-600"
+                            title="Kopyala"
+                          >
+                            {isCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-10 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 p-4">
+              <p className="text-sm font-semibold text-slate-600">Arama kriterlerinize uygun kullanıcı bulunamadı.</p>
+            </div>
+          )}
+        </div>
+
         {/* Table Content matching Screenshot 6 */}
-        <div className="overflow-x-auto pt-4">
+        <div className="hidden sm:block overflow-x-auto pt-4">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-bold text-slate-700">

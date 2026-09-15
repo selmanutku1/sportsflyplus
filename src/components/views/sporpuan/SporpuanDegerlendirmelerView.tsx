@@ -191,7 +191,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
               ...r,
               reply: {
                 text: replyText,
-                author: 'İşletme Yetkilisi (SportsFly Manager)',
+                author: 'Kulüp Yetkilisi (SportsFly Manager)',
                 date: 'Bugün',
               },
             }
@@ -587,7 +587,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
                       className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
-                      {review.reply ? 'Cevabı Düzenle' : 'İşletme Olarak Yanıtla'}
+                      {review.reply ? 'Cevabı Düzenle' : 'Kulüp Olarak Yanıtla'}
                     </button>
 
                     {/* Approve button if pending */}
@@ -652,7 +652,7 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
             <form onSubmit={handleSendReply} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Resmi İşletme Yanıtınız *
+                  Resmi Kulüp Yanıtınız *
                 </label>
                 <textarea
                   required

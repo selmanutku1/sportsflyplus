@@ -190,7 +190,7 @@ export const SporpuanRaporlarView: React.FC = () => {
         {/* Metric 4: Cevaplama Oranı */}
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-2">
-            <span>İşletme Yanıt Oranı</span>
+            <span>Kulüp Yanıt Oranı</span>
             <span className="text-emerald-600 font-bold text-xs">Ort. 2.4 saat</span>
           </div>
           <div className="flex items-baseline gap-2">

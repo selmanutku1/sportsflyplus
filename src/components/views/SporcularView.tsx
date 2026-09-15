@@ -121,7 +121,7 @@ export const SporcularView: React.FC = () => {
   const handleExportExcel = () => {
     triggerToast('Sporcu listesi Excel olarak dışa aktarılıyor...');
     setTimeout(() => {
-      const headers = ['Sporcu Adı', 'E-posta', 'Sporcu Kodu', 'Kayıt Tarihi', 'İşletme', 'Aktif'];
+      const headers = ['Sporcu Adı', 'E-posta', 'Sporcu Kodu', 'Kayıt Tarihi', 'Kulüp', 'Aktif'];
       const rows = sporcular.map((s) => [
         s.name,
         s.email,
@@ -271,15 +271,110 @@ export const SporcularView: React.FC = () => {
           </div>
         </div>
 
+        {/* Mobile Cards for Athletes (<640px) */}
+        <div className="block sm:hidden space-y-3 pt-4">
+          {filteredSporcular.length > 0 ? (
+            filteredSporcular.map((sporcu) => {
+              const isChecked = selectedId === sporcu.id;
+
+              return (
+                <div
+                  key={sporcu.id}
+                  onClick={() => setSelectedId(sporcu.id)}
+                  className={`p-3.5 rounded-xl border transition-all space-y-3 cursor-pointer ${
+                    isChecked
+                      ? 'border-blue-500 bg-blue-50/40 shadow-xs ring-1 ring-blue-500/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      {/* Radio / Checkbox */}
+                      <div className="pt-1 shrink-0">
+                        <input
+                          type="radio"
+                          name="selectedSporcuMobile"
+                          checked={isChecked}
+                          onChange={() => setSelectedId(sporcu.id)}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center text-white shrink-0 shadow-2xs">
+                        <svg className="w-6 h-6 text-slate-100" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                        </svg>
+                      </div>
+
+                      {/* Name & Code */}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">
+                          {sporcu.name}
+                        </h4>
+                        <p className="text-xs text-slate-500 truncate">{sporcu.email}</p>
+                        <p className="text-[11px] font-mono text-slate-600 font-semibold mt-0.5">
+                          {sporcu.code}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Active toggle */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleActive(sporcu.id, e);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0 ${
+                        sporcu.isActive
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200'
+                      }`}
+                      title={sporcu.isActive ? 'Aktif (Pasife al)' : 'Pasif (Aktif et)'}
+                    >
+                      <Check className={`w-3.5 h-3.5 stroke-[2.5] ${sporcu.isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+                      <span>{sporcu.isActive ? 'Aktif' : 'Pasif'}</span>
+                    </button>
+                  </div>
+
+                  {/* Club & Date & Edit Action */}
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                    <div className="text-slate-600 min-w-0 pr-2">
+                      <span className="text-slate-400 block text-[10px]">Kulüp / Tarih:</span>
+                      <p className="font-semibold text-slate-800 truncate">{sporcu.facility}</p>
+                      <p className="text-[11px] text-slate-400">{sporcu.date}</p>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingSporcu(sporcu);
+                      }}
+                      className="px-3 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Düzenle</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-10 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 p-4">
+              <p className="text-sm font-semibold text-slate-600">Arama kriterine uygun sporcu bulunamadı.</p>
+            </div>
+          )}
+        </div>
+
         {/* Table matching Screenshot 8 */}
-        <div className="overflow-x-auto pt-4">
+        <div className="hidden sm:block overflow-x-auto pt-4">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-bold text-slate-700">
                 <th className="pb-3 px-3 w-10"></th>
                 <th className="pb-3 px-3">Sporcu</th>
                 <th className="pb-3 px-3">Tarih</th>
-                <th className="pb-3 px-3">İşletme/Bireysel Adı</th>
+                <th className="pb-3 px-3">Kulüp/Bireysel Adı</th>
                 <th className="pb-3 px-3 text-center">Aktif</th>
                 <th className="pb-3 px-3 text-right">İşlem</th>
               </tr>
@@ -441,7 +536,7 @@ export const SporcularView: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  İşletme / Bireysel Adı
+                  Kulüp / Bireysel Adı
                 </label>
                 <select
                   value={formFacility}
@@ -523,7 +618,7 @@ export const SporcularView: React.FC = () => {
                 <span className="font-semibold text-slate-800 block mb-1">
                   Örnek Şablon Sütunları:
                 </span>
-                Ad Soyad, E-posta, Telefon, İşletme Adı, Lisans/Sporcu Kodu
+                Ad Soyad, E-posta, Telefon, Kulüp Adı, Lisans/Sporcu Kodu
               </div>
             </div>
           </div>
@@ -775,7 +870,7 @@ export const SporcularView: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  İşletme / Bireysel Adı
+                  Kulüp / Bireysel Adı
                 </label>
                 <input
                   type="text"

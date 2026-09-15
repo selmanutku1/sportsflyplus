@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Menu,
   Bell,
@@ -9,59 +9,134 @@ import {
   CheckCircle,
   ExternalLink,
   Sparkles,
+  Settings,
+  Lock,
+  Sliders,
 } from 'lucide-react';
 import { NavPage } from '../types';
-import { SportsFlyLogo } from './SportsFlyLogo';
+import {
+  UserProfileData,
+  getStoredUserProfile,
+} from '../data/userProfile';
+import { ProfileSettingsModal } from './modals/ProfileSettingsModal';
 
 interface HeaderProps {
   currentPage: NavPage;
   onToggleSidebar: () => void;
   isSidebarOpen: boolean;
+  onNavigate?: (page: NavPage) => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentPage,
   onToggleSidebar,
   isSidebarOpen,
+  onNavigate,
+  onLogout,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3);
 
+  // Profile modal state
+  const [userProfile, setUserProfile] = useState<UserProfileData>(() => getStoredUserProfile());
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileModalTab, setProfileModalTab] = useState<'genel' | 'guvenlik' | 'bildirimler' | 'tercihler'>('genel');
+  const [logoutNotification, setLogoutNotification] = useState<string | null>(null);
+
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Sync profile when updated
+  useEffect(() => {
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail) {
+        setUserProfile(e.detail);
+      }
+    };
+    window.addEventListener('sportsfly_profile_updated', handleProfileUpdate);
+    return () => window.removeEventListener('sportsfly_profile_updated', handleProfileUpdate);
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const openProfileTab = (tab: 'genel' | 'guvenlik' | 'bildirimler' | 'tercihler') => {
+    setProfileModalTab(tab);
+    setIsProfileModalOpen(true);
+    setShowProfileMenu(false);
+  };
+
+  const handleLogout = () => {
+    setShowProfileMenu(false);
+    setLogoutNotification('Güvenli Çıkış Yapıldı. Giriş ekranına yönlendiriliyorsunuz...');
+    setTimeout(() => {
+      setLogoutNotification(null);
+      if (onLogout) {
+        onLogout();
+      }
+    }, 600);
+  };
+
   const getBreadcrumb = (page: NavPage) => {
     switch (page) {
       case 'anasayfa':
-        return 'Sporsepeti > Anasayfa';
+        return 'SportsFly > Anasayfa';
       case 'sporsepeti-user':
-        return 'Sporsepeti > Sporsepeti Kullanıcılar';
+        return 'SportsFly > Kullanıcılar';
       case 'yetkilendirmeler':
-        return 'Sporsepeti > Kullanıcılar';
+        return 'SportsFly > Yetkilendirmeler';
       case 'sporcular':
-        return 'Sporsepeti > Sporcular';
+        return 'SportsFly > Sporcular';
       case 'egitmenler':
-        return 'Sporsepeti > Eğitmenler';
+        return 'SportsFly > Eğitmenler';
+      case 'gruplar':
+        return 'SportsFly > Gruplar';
+      case 'antrenman-takvimi':
+        return 'SportsFly > Antrenman Takvimi';
+      case 'on-muhasebe':
+        return 'SportsFly > Ön Muhasebe';
+      case 'gelir-gider-kategori':
+        return 'SportsFly > Ön Muhasebe > Gelir/Gider Kategori Yönetimi';
+      case 'gelir-gider-yonetimi':
+        return 'SportsFly > Ön Muhasebe > Gelir/Gider Yönetimi';
+      case 'odeme-plani-kontrol':
+        return 'SportsFly > Ön Muhasebe > Ödeme Planı Kontrol';
+      case 'odeme-plani':
+        return 'SportsFly > Ön Muhasebe > Ödeme Planı';
+      case 'yoneticiler':
+        return 'SportsFly > Kulüpler > Yöneticiler';
       case 'sayfa-yonetimi':
-        return 'Sporsepeti > Sayfa Yönetimi';
+        return 'SportsFly > Sayfa Yönetimi';
       case 'paket-yonetimi':
-        return 'Sporsepeti > Paket Yönetimi';
+      case 'paketler':
+        return 'SportsFly > Paketler';
       case 'tanimsiz-kullanicilar':
-        return 'Sporsepeti > Tanımsız Kullanıcılar';
+        return 'SportsFly > Tanımsız Kullanıcılar';
       case 'kullanici-sozlesmeleri':
-        return 'Sporsepeti > Kullanıcı Sözleşmeleri';
-      case 'aktivite-onaylari':
-        return 'Sporsepeti > Aktivite Onayları';
+        return 'SportsFly > Kulüp Sözleşmeleri';
+      case 'on-kayit':
+        return 'SportsFly > Ön Kayıt';
       case 'brans-yonetimi':
-        return 'Sporsepeti > İşletmeler > Branş Yönetimi';
+        return 'SportsFly > Kulüpler > Branş Yönetimi';
       case 'aktivite-yonetimi':
-        return 'Sporsepeti > İşletmeler > Aktivite Yönetimi';
+        return 'SportsFly > Kulüpler > Aktivite Yönetimi';
       case 'sporpuan-degerlendirmeler':
-        return 'Sporpuan > İtibar Yönetimi > Değerlendirmeler';
+        return 'SportsFly > İtibar Yönetimi > Değerlendirmeler';
       case 'sporpuan-dogrulamalar':
-        return 'Sporpuan > İtibar Yönetimi > Doğrulamalar';
+        return 'SportsFly > İtibar Yönetimi > Doğrulamalar';
       case 'sporpuan-raporlar':
-        return 'Sporpuan > İtibar Yönetimi > Raporlar';
+        return 'SportsFly > İtibar Yönetimi > Raporlar';
       default:
-        return 'Sporsepeti > Anasayfa';
+        return 'SportsFly > Anasayfa';
     }
   };
 
@@ -71,46 +146,61 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-white border-b border-slate-200/90 sticky top-0 z-30 shadow-xs">
       <div className="flex items-center justify-between px-4 lg:px-6 h-16">
-        {/* Left Side: Toggle, Brand Mark on collapsed/mobile, and Breadcrumbs */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* Left Side: Single Icon (Menu Toggle) & Breadcrumbs (SportsFly > Sayfa) */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+          {/* Tek İkon: Sidebar Menü Açma/Kapatma Butonu */}
           <button
             id="header-sidebar-toggle-btn"
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500/30"
+            className="w-10 h-10 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center shrink-0 border border-slate-200/60"
             title="Menüyü Daralt/Genişlet"
+            aria-label="Menüyü Aç/Kapat"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Top-left brand logo displayed when sidebar is closed or on mobile */}
-          <div className={`items-center gap-2 pr-2 border-r border-slate-200/80 ${isSidebarOpen ? 'flex lg:hidden' : 'flex'}`}>
-            <SportsFlyLogo className="w-7 h-7 shrink-0" />
-            <span className="font-bold text-slate-800 text-base tracking-tight hidden sm:inline">
-              SportsFly
-            </span>
-          </div>
-
-          {/* Breadcrumb matching the screenshots */}
-          <nav className="hidden sm:flex items-center text-xs sm:text-sm font-medium">
-            <span className="text-blue-600 hover:underline cursor-pointer">
+          {/* Breadcrumb: SportsFly > Anasayfa */}
+          <nav className="hidden sm:flex items-center text-xs sm:text-sm font-medium truncate select-none">
+            <span
+              onClick={() => onNavigate?.('anasayfa')}
+              className="text-blue-600 hover:underline cursor-pointer shrink-0 font-semibold"
+              title="Anasayfaya Git"
+            >
               {rootCrumb}
             </span>
             {childCrumbs.map((crumb, idx) => (
               <React.Fragment key={idx}>
-                <span className="mx-1.5 text-slate-400">&gt;</span>
-                <span className={idx === childCrumbs.length - 1 ? 'text-slate-700 font-semibold' : 'text-slate-500'}>
+                <span className="mx-1.5 text-slate-400 shrink-0">&gt;</span>
+                <span
+                  className={`truncate ${
+                    idx === childCrumbs.length - 1
+                      ? 'text-slate-800 font-semibold'
+                      : 'text-slate-500'
+                  }`}
+                >
                   {crumb}
                 </span>
               </React.Fragment>
             ))}
           </nav>
-          <span className="sm:hidden text-xs font-bold text-slate-800 truncate max-w-[130px]">
-            {childCrumbs[childCrumbs.length - 1] || rootCrumb}
-          </span>
+
+          {/* Mobile breadcrumb: SportsFly > Sayfa */}
+          <div className="sm:hidden flex items-center gap-1.5 min-w-0 select-none">
+            <span
+              onClick={() => onNavigate?.('anasayfa')}
+              className="text-blue-600 text-xs font-bold shrink-0 cursor-pointer"
+            >
+              {rootCrumb}
+            </span>
+            <span className="text-slate-400 text-xs font-semibold shrink-0">&gt;</span>
+            <span className="text-xs font-bold text-slate-800 truncate max-w-[170px]">
+              {childCrumbs[childCrumbs.length - 1] || 'Anasayfa'}
+            </span>
+          </div>
         </div>
 
         {/* Right Side: Notifications & Profile Pill */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Notifications */}
           <div className="relative">
             <button
@@ -119,12 +209,12 @@ export const Header: React.FC<HeaderProps> = ({
                 setShowNotifications(!showNotifications);
                 setShowProfileMenu(false);
               }}
-              className="relative p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              className="relative w-10 h-10 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center justify-center"
               aria-label="Bildirimler"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-blue-600 rounded-full ring-2 ring-white"></span>
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-600 rounded-full ring-2 ring-white"></span>
               )}
             </button>
 
@@ -179,62 +269,147 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Profile Badge matching "SportsFly Manager" in the screenshots */}
-          <div className="relative">
+          <div className="relative" ref={profileMenuRef}>
             <button
               id="header-user-profile-badge"
               onClick={() => {
                 setShowProfileMenu(!showProfileMenu);
                 setShowNotifications(false);
               }}
-              className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full border border-slate-200/80 transition-all text-left"
+              className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full border border-slate-200/80 transition-all text-left cursor-pointer"
+              title="Profil Menüsü"
             >
-              {/* Colorful icon badge matching the screenshot */}
-              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 via-sky-400 to-rose-400 flex items-center justify-center p-0.5 shadow-2xs shrink-0">
-                <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                  <Sparkles className="w-3 h-3 text-blue-600" />
-                </div>
+              {/* Profile Avatar / Badge */}
+              <div className={`w-7 h-7 rounded-full bg-gradient-to-tr ${userProfile.avatarColor} text-white flex items-center justify-center p-0.5 shadow-2xs shrink-0 overflow-hidden font-bold text-xs`}>
+                {userProfile.avatarUrl ? (
+                  <img src={userProfile.avatarUrl} alt={userProfile.name} className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  <span>
+                    {userProfile.name
+                      .split(' ')
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2) || 'SU'}
+                  </span>
+                )}
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-slate-700 hidden md:inline">
-                SportsFly Manager
-              </span>
+              <div className="hidden md:flex flex-col">
+                <span className="text-xs font-bold text-slate-800 leading-tight">
+                  {userProfile.name}
+                </span>
+                <span className="text-[10px] text-slate-500 leading-none">
+                  {userProfile.role}
+                </span>
+              </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-500 hidden sm:inline" />
             </button>
 
             {/* Profile Menu Dropdown */}
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-60 sm:w-64 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-2.5 border-b border-slate-100">
-                  <p className="text-xs text-slate-500 font-medium">Giriş Yapılan Hesap</p>
-                  <p className="text-sm font-bold text-slate-800 truncate">SportsFly Manager</p>
-                  <p className="text-xs text-slate-500 truncate">selmanutkumarmara@gmail.com</p>
+              <div className="absolute right-0 mt-2 w-64 sm:w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70 rounded-t-2xl">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+                      Yönetici Hesabı
+                    </p>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-extrabold">
+                      {userProfile.role}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 truncate mt-1">{userProfile.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{userProfile.email}</p>
+                  <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>İletişim: <strong className="text-slate-800">{userProfile.phone}</strong></span>
+                  </div>
                 </div>
 
-                <div className="py-1">
-                  <button className="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                    <User className="w-4 h-4 text-slate-400" />
-                    Profil Ayarları
+                <div className="py-1.5 px-1 space-y-0.5">
+                  <button
+                    id="btn-open-profile-settings"
+                    onClick={() => openProfileTab('genel')}
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50/70 rounded-xl flex items-center justify-between transition-colors cursor-pointer group"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <User className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+                      <span className="font-semibold">Profil Ayarları</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-blue-600">Düzenle &gt;</span>
                   </button>
-                  <button className="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-slate-400" />
-                    Yetkilendirme Durumu (Süper Admin)
+
+                  <button
+                    id="btn-open-security-settings"
+                    onClick={() => openProfileTab('guvenlik')}
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50/70 rounded-xl flex items-center justify-between transition-colors cursor-pointer group"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Lock className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+                      <span>Şifre &amp; Güvenlik (2FA)</span>
+                    </span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                   </button>
+
+                  <button
+                    id="btn-open-notification-settings"
+                    onClick={() => openProfileTab('bildirimler')}
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50/70 rounded-xl flex items-center justify-between transition-colors cursor-pointer group"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Bell className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+                      <span>Bildirim Tercihleri</span>
+                    </span>
+                    <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md font-mono">
+                      SMS/E-posta
+                    </span>
+                  </button>
+
+                  <button
+                    id="btn-open-system-preferences"
+                    onClick={() => openProfileTab('tercihler')}
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50/70 rounded-xl flex items-center justify-between transition-colors cursor-pointer group"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Sliders className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+                      <span>Sistem &amp; Arayüz Tercihleri</span>
+                    </span>
+                  </button>
+
+                  {onNavigate && (
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onNavigate('yetkilendirmeler');
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50/70 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer group"
+                    >
+                      <Shield className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+                      <span>Yetki ve Roller Sayfası</span>
+                    </button>
+                  )}
+
                   <a
                     href="https://sportsfly.app"
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50/70 rounded-xl flex items-center justify-between transition-colors"
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2.5">
                       <ExternalLink className="w-4 h-4 text-slate-400" />
-                      SportsFly Web Sitesi
+                      <span>SportsFly Web Sitesi</span>
                     </span>
                   </a>
                 </div>
 
-                <div className="pt-1 border-t border-slate-100">
-                  <button className="w-full px-4 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2">
-                    <LogOut className="w-4 h-4 text-red-500" />
-                    Çıkış Yap
+                <div className="pt-1.5 px-1 border-t border-slate-100">
+                  <button
+                    id="btn-profile-logout"
+                    onClick={handleLogout}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>Çıkış Yap</span>
                   </button>
                 </div>
               </div>
@@ -242,6 +417,23 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Logout Notification Toast */}
+      {logoutNotification && (
+        <div className="absolute top-18 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{logoutNotification}</span>
+        </div>
+      )}
+
+      {/* Profile Settings Modal */}
+      <ProfileSettingsModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentProfile={userProfile}
+        onProfileUpdated={(updated) => setUserProfile(updated)}
+        initialTab={profileModalTab}
+      />
     </header>
   );
 };

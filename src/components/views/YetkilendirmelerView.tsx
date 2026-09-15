@@ -1,405 +1,452 @@
 import React, { useState } from 'react';
 import {
+  Check,
+  X,
   Search,
-  UserCog,
-  ShieldCheck,
-  UserPlus,
-  Phone,
-  Calendar,
+  RotateCcw,
   CheckCircle2,
-  KeyRound,
-  Trash2,
+  ShieldCheck,
+  Sparkles,
+  Info,
 } from 'lucide-react';
-import { INITIAL_YETKILENDIRMELER } from '../../data/mockData';
-import { YetkilendirmeItem } from '../../types';
+
+export type PermissionAction =
+  | 'List'
+  | 'Add'
+  | 'Update'
+  | 'Delete'
+  | 'Password'
+  | 'Account'
+  | 'SendMail'
+  | 'SendSMS';
+
+export interface PagePermission {
+  id: string;
+  name: string;
+  category?: string;
+  actions: Record<PermissionAction, boolean>;
+}
+
+const ACTION_COLUMNS: { key: PermissionAction; label: string }[] = [
+  { key: 'List', label: 'List' },
+  { key: 'Add', label: 'Add' },
+  { key: 'Update', label: 'Update' },
+  { key: 'Delete', label: 'Delete' },
+  { key: 'Password', label: 'Password' },
+  { key: 'Account', label: 'Account' },
+  { key: 'SendMail', label: 'SendMail' },
+  { key: 'SendSMS', label: 'SendSMS' },
+];
+
+// 32 modules exactly as in the user's screenshots (image 1 & image 2)
+const INITIAL_PAGES_CONFIG: { id: string; name: string; defaultChecked?: PermissionAction[] }[] = [
+  { id: 'yoneticiler', name: 'Yöneticiler' },
+  { id: 'egitmenler', name: 'Eğitmenler' },
+  { id: 'uyeler', name: 'Üyeler' },
+  { id: 'kulubum', name: 'Kulübüm' },
+  { id: 'hesabim', name: 'Hesabım' },
+  { id: 'antrenman-takvimi', name: 'Antrenman Takvimi' },
+  { id: 'kulupler', name: 'Kulüpler' },
+  { id: 'mesajlar', name: 'Mesajlar' },
+  { id: 'mesaj-yonetimi', name: 'Mesaj Yönetimi' },
+  { id: 'basvurular', name: 'Başvurular' },
+  { id: 'yoklama', name: 'Yoklama' },
+  { id: 'on-muhasebe', name: 'Ön Muhasebe' },
+  { id: 'anket-yonetimi', name: 'Anket Yönetimi' },
+  { id: 'kampanya-yonetimi', name: 'Kampanya Yönetimi' },
+  { id: 'gruplar', name: 'Gruplar' },
+  { id: 'grup-yoklamalari', name: 'Grup Yoklamaları' },
+  { id: 'veli-yonetimi', name: 'Veli Yönetimi' },
+  { id: 'veli-toplu-mesaj', name: 'Veli Toplu Mesaj' },
+  { id: 'odeme-plani', name: 'Ödeme Planı' },
+  { id: 'gelir-gider-yonetimi', name: 'Gelir/Gider Yönetimi' },
+  { id: 'gecmis-kayitlar', name: 'Geçmiş Kayıtlar' },
+  { id: 'gelir-gider-kategori', name: 'Gelir/Gider Kategori Yönetimi' },
+  { id: 'brans-yonetimi', name: 'Branş Yönetimi' },
+  { id: 'odeme-plani-kontrol', name: 'Ödeme Planı Kontrol' },
+  {
+    id: 'fatura-adresi',
+    name: 'Fatura Adresi',
+    defaultChecked: ['List', 'Add', 'Update', 'Delete'], // Checked in user's 2nd screenshot!
+  },
+  {
+    id: 'paketler',
+    name: 'Paketler',
+    defaultChecked: ['List', 'Add', 'Update', 'Delete'], // Checked in user's 2nd screenshot!
+  },
+  { id: 'aktivite-yonetimi', name: 'Aktivite Yönetimi' },
+  { id: 'aktivite-kategorileri', name: 'Aktivite Kategorileri' },
+  { id: 'aktivite-randevulari', name: 'Aktivite Randevuları' },
+  { id: 'subeler', name: 'Şubeler' },
+  { id: 'on-kayit-linkleri', name: 'Ön Kayıt Linkleri' },
+  { id: 'on-kayit', name: 'Ön Kayıt' },
+];
 
 export const YetkilendirmelerView: React.FC = () => {
-  const [managers, setManagers] = useState<YetkilendirmeItem[]>(INITIAL_YETKILENDIRMELER);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editingManager, setEditingManager] = useState<YetkilendirmeItem | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  // Initialize state based on the 32 pages
+  const [permissions, setPermissions] = useState<PagePermission[]>(() => {
+    return INITIAL_PAGES_CONFIG.map((cfg) => {
+      const actionsObj: Record<PermissionAction, boolean> = {
+        List: false,
+        Add: false,
+        Update: false,
+        Delete: false,
+        Password: false,
+        Account: false,
+        SendMail: false,
+        SendSMS: false,
+      };
 
-  // New admin form state
-  const [newName, setNewName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newPhone, setNewPhone] = useState('+90 532 525 82 71');
-  const [newRole, setNewRole] = useState('Spor Okulu Admin');
+      if (cfg.defaultChecked) {
+        cfg.defaultChecked.forEach((act) => {
+          actionsObj[act] = true;
+        });
+      }
 
-  const filteredManagers = managers.filter((m) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      m.name.toLowerCase().includes(query) ||
-      m.email.toLowerCase().includes(query) ||
-      m.code.includes(query) ||
-      m.role.toLowerCase().includes(query) ||
-      m.phone.includes(query)
-    );
+      return {
+        id: cfg.id,
+        name: cfg.name,
+        actions: actionsObj,
+      };
+    });
   });
 
-  const handleUpdateRole = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingManager) return;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'antrenor' | 'muhasebe'>('admin');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
-    setManagers((prev) =>
-      prev.map((m) => (m.id === editingManager.id ? editingManager : m))
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Toggle specific checkbox
+  const togglePermission = (pageId: string, action: PermissionAction) => {
+    setPermissions((prev) =>
+      prev.map((item) => {
+        if (item.id === pageId) {
+          return {
+            ...item,
+            actions: {
+              ...item.actions,
+              [action]: !item.actions[action],
+            },
+          };
+        }
+        return item;
+      })
     );
-    setSuccessToast(`${editingManager.name} yetkileri güncellendi.`);
-    setEditingManager(null);
-    setTimeout(() => setSuccessToast(null), 2500);
+    setIsSaved(false);
   };
 
-  const handleAddManager = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim() || !newEmail.trim()) return;
-
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const now = new Date();
-    const formattedDate = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
-    const formattedDateTime = `${formattedDate} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-
-    const newMgr: YetkilendirmeItem = {
-      id: `y-${Date.now()}`,
-      name: newName,
-      email: newEmail,
-      code,
-      createdAt: formattedDateTime,
-      phone: newPhone,
-      role: newRole,
-      date: formattedDate,
-    };
-
-    setManagers([newMgr, ...managers]);
-    setShowAddModal(false);
-    setNewName('');
-    setNewEmail('');
-    setSuccessToast(`Yeni yetkili yönetici ${newName} eklendi.`);
-    setTimeout(() => setSuccessToast(null), 2500);
+  // Toggle whole row
+  const toggleWholeRow = (pageId: string) => {
+    setPermissions((prev) =>
+      prev.map((item) => {
+        if (item.id === pageId) {
+          const allActive = ACTION_COLUMNS.every((col) => item.actions[col.key]);
+          const newActions = { ...item.actions };
+          ACTION_COLUMNS.forEach((col) => {
+            newActions[col.key] = !allActive;
+          });
+          return { ...item, actions: newActions };
+        }
+        return item;
+      })
+    );
+    setIsSaved(false);
   };
+
+  // Toggle whole column
+  const toggleWholeColumn = (action: PermissionAction) => {
+    const allChecked = permissions.every((p) => p.actions[action]);
+    setPermissions((prev) =>
+      prev.map((item) => ({
+        ...item,
+        actions: {
+          ...item.actions,
+          [action]: !allChecked,
+        },
+      }))
+    );
+    setIsSaved(false);
+  };
+
+  // Reset to default preset
+  const handleResetToDefault = () => {
+    setPermissions(
+      INITIAL_PAGES_CONFIG.map((cfg) => {
+        const actionsObj: Record<PermissionAction, boolean> = {
+          List: false,
+          Add: false,
+          Update: false,
+          Delete: false,
+          Password: false,
+          Account: false,
+          SendMail: false,
+          SendSMS: false,
+        };
+        if (cfg.defaultChecked) {
+          cfg.defaultChecked.forEach((act) => {
+            actionsObj[act] = true;
+          });
+        }
+        return {
+          id: cfg.id,
+          name: cfg.name,
+          actions: actionsObj,
+        };
+      })
+    );
+    showToast('Varsayılan yetkilendirme şablonuna dönüldü.');
+  };
+
+  // Save / Güncelle
+  const handleSave = () => {
+    setIsSaved(true);
+    showToast('Sayfa yetkilendirmeleri başarıyla güncellendi.');
+  };
+
+  const filteredPermissions = permissions.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
+
+  // Stats calculation
+  const totalChecked = permissions.reduce(
+    (acc, curr) => acc + Object.values(curr.actions).filter(Boolean).length,
+    0
+  );
 
   return (
-    <div className="space-y-4">
+    <div className="w-full max-w-[1400px] mx-auto space-y-4">
       {/* Toast Alert */}
-      {successToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-150">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="text-sm font-medium">{successToast}</span>
+      {toastMessage && (
+        <div
+          id="permission-toast"
+          className="fixed bottom-6 right-6 z-50 bg-slate-900/95 backdrop-blur-xs text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 border border-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-150 text-sm font-medium"
+        >
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Main Container Card matching Screenshot 7 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6">
-        {/* Actions bar matching Screenshot 7 */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
-          <div className="flex items-center gap-2">
+      {/* Role and Quick Helper Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Hedef Rol:
+          </span>
+          <div className="inline-flex rounded-lg bg-slate-100 p-1">
             <button
-              onClick={() => setShowAddModal(true)}
-              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
+              onClick={() => setSelectedRole('admin')}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                selectedRole === 'admin'
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <UserPlus className="w-4 h-4" />
-              Yeni Yetkili Ata
+              Spor Okulu Admin
             </button>
-            <span className="text-xs text-slate-500 font-medium">
-              {filteredManagers.length} Yetkili Yönetici
-            </span>
+            <button
+              onClick={() => setSelectedRole('antrenor')}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                selectedRole === 'antrenor'
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Eğitmen / Antrenör
+            </button>
+            <button
+              onClick={() => setSelectedRole('muhasebe')}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                selectedRole === 'muhasebe'
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Ön Muhasebe
+            </button>
           </div>
-
-          {/* "Yönetici Ara" search input */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Yönetici Ara"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all font-medium"
-            />
-          </div>
+          <span className="text-xs text-slate-400 ml-1 hidden md:inline">
+            ({totalChecked} yetki tanımlı)
+          </span>
         </div>
 
-        {/* Table matching Screenshot 7 */}
-        <div className="overflow-x-auto pt-4">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-xs font-bold text-slate-700">
-                <th className="pb-3 px-3 w-10"></th>
-                <th className="pb-3 px-3">Yönetici</th>
-                <th className="pb-3 px-3">Telefon</th>
-                <th className="pb-3 px-3">Kullanıcı Türü</th>
-                <th className="pb-3 px-3">Oluşturulma Tarihi</th>
-                <th className="pb-3 px-3 text-right">Yetki Ayarı</th>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          {/* Quick Search */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Sayfa / Menü Ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={handleResetToDefault}
+            title="Şablonu Sıfırla"
+            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* EXACT CONTAINER MATCHING USER SCREENSHOTS */}
+      <div
+        id="sayfa-yetkilendirmeleri-container"
+        className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+      >
+        {/* Header matching screenshot: "Sayfa Yetkilendirmeleri" with "X" */}
+        <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight select-none">
+            Sayfa Yetkilendirmeleri
+          </h2>
+          <button
+            onClick={() => {
+              showToast('Pencere kapatıldı veya varsayılan konuma dönüldü.');
+            }}
+            className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"
+            title="Kapat"
+          >
+            <X className="w-5 h-5 stroke-[2.2]" />
+          </button>
+        </div>
+
+        {/* Scrollable Table Matrix matching screenshots */}
+        <div className="overflow-x-auto max-h-[72vh] overflow-y-auto">
+          <table className="w-full text-left border-collapse select-none">
+            {/* Table Header */}
+            <thead className="sticky top-0 bg-white z-20 shadow-2xs">
+              <tr className="border-b border-slate-200 text-slate-900 text-sm font-bold">
+                {/* Left Module column header */}
+                <th className="py-3.5 px-6 font-bold text-slate-900 w-[240px] sm:w-[280px]">
+                  {/* Empty or can hold row select all */}
+                </th>
+
+                {/* 8 Action Columns: List, Add, Update, Delete, Password, Account, SendMail, SendSMS */}
+                {ACTION_COLUMNS.map((col) => (
+                  <th
+                    key={col.key}
+                    onClick={() => toggleWholeColumn(col.key)}
+                    className="py-3.5 px-3 text-center text-slate-900 font-bold text-sm tracking-tight cursor-pointer hover:text-blue-600 transition-colors whitespace-nowrap min-w-[76px]"
+                    title={`${col.label} sütunundaki tümünü aç/kapat`}
+                  >
+                    {col.label}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredManagers.length > 0 ? (
-                filteredManagers.map((mgr) => {
-                  const isChecked = selectedId === mgr.id;
 
-                  return (
-                    <tr
-                      key={mgr.id}
-                      onClick={() => setSelectedId(mgr.id)}
-                      className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${
-                        isChecked ? 'bg-blue-50/40' : ''
-                      }`}
-                    >
-                      {/* Radio button column */}
-                      <td className="py-4 px-3">
-                        <input
-                          type="radio"
-                          name="selectedManager"
-                          checked={isChecked}
-                          onChange={() => setSelectedId(mgr.id)}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300"
-                        />
-                      </td>
+            {/* Table Body with 32 Rows */}
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {filteredPermissions.map((page) => {
+                const hasAnyActive = Object.values(page.actions).some(Boolean);
+                const allActive = ACTION_COLUMNS.every((col) => page.actions[col.key]);
 
-                      {/* Yönetici column: Avatar placeholder + Name + Email + Code + Timestamp */}
-                      <td className="py-4 px-3">
-                        <div className="flex items-start gap-3.5">
-                          {/* Avatar icon matching the silhouette avatar in screenshot 7 */}
-                          <div className="w-12 h-12 rounded-full bg-slate-600 flex items-center justify-center text-white shrink-0 shadow-2xs">
-                            <svg
-                              className="w-8 h-8 text-slate-100"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                            </svg>
-                          </div>
-
-                          <div className="space-y-0.5">
-                            <p className="font-bold text-slate-900 text-base">
-                              {mgr.name}
-                            </p>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {mgr.email}
-                            </p>
-                            <p className="text-xs font-mono font-semibold text-slate-700">
-                              {mgr.code}
-                            </p>
-                            <p className="text-[11px] text-slate-400 font-mono">
-                              {mgr.createdAt}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Telefon */}
-                      <td className="py-4 px-3 whitespace-nowrap text-sm font-semibold text-slate-700">
-                        {mgr.phone}
-                      </td>
-
-                      {/* Kullanıcı Türü */}
-                      <td className="py-4 px-3 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
-                          {mgr.role}
+                return (
+                  <tr
+                    key={page.id}
+                    className={`transition-colors hover:bg-slate-50/80 ${
+                      hasAnyActive ? 'bg-blue-50/20' : ''
+                    }`}
+                  >
+                    {/* Module / Page Name */}
+                    <td className="py-3 px-6 font-semibold text-slate-900 whitespace-nowrap">
+                      <button
+                        onClick={() => toggleWholeRow(page.id)}
+                        className="text-left font-semibold text-slate-900 hover:text-blue-600 transition-colors flex items-center gap-2 group"
+                        title="Tüm satırı seç/kaldır"
+                      >
+                        <span>{page.name}</span>
+                        <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 font-normal">
+                          {allActive ? 'Tümünü Kaldır' : 'Tümünü Seç'}
                         </span>
-                      </td>
+                      </button>
+                    </td>
 
-                      {/* Oluşturulma Tarihi */}
-                      <td className="py-4 px-3 whitespace-nowrap text-sm text-slate-600 font-medium">
-                        {mgr.date}
-                      </td>
+                    {/* Checkbox columns */}
+                    {ACTION_COLUMNS.map((col) => {
+                      const isChecked = page.actions[col.key];
 
-                      {/* Actions: Manage role button */}
-                      <td className="py-4 px-3 text-right whitespace-nowrap">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingManager(mgr);
-                          }}
-                          className="p-2 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 rounded-xl transition-colors inline-flex items-center gap-1.5 font-semibold text-xs border border-cyan-200/60"
-                          title="Yetki Ayarlarını Düzenle"
+                      return (
+                        <td
+                          key={col.key}
+                          className="py-3 px-3 text-center align-middle"
                         >
-                          <UserCog className="w-5 h-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
+                          <div className="flex items-center justify-center">
+                            <button
+                              id={`perm-${page.id}-${col.key}`}
+                              type="button"
+                              onClick={() => togglePermission(page.id, col.key)}
+                              className={`w-4 h-4 rounded-[3.5px] flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+                                isChecked
+                                  ? 'bg-[#007bff] hover:bg-blue-600 text-white shadow-2xs'
+                                  : 'bg-white hover:bg-slate-50 border border-slate-300'
+                              }`}
+                              title={`${page.name} - ${col.label}: ${isChecked ? 'Açık' : 'Kapalı'}`}
+                            >
+                              {isChecked && (
+                                <Check className="w-3.5 h-3.5 stroke-[3.2] text-white" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+
+              {filteredPermissions.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
-                    Arama kriterine uygun yönetici bulunamadı.
+                  <td colSpan={9} className="py-12 text-center text-slate-500">
+                    <p className="font-semibold">Aramanıza uygun yetkilendirme sayfası bulunamadı.</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Arama terimini temizleyerek tüm listeyi görebilirsiniz.
+                    </p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Bottom Footer Action Bar with "Güncelle" Button matching screenshots */}
+        <div className="px-6 py-3.5 border-t border-slate-100 bg-white flex items-center justify-between">
+          <div className="text-xs text-slate-500 hidden sm:flex items-center gap-2">
+            <Info className="w-3.5 h-3.5 text-slate-400" />
+            <span>
+              Sütun veya satır isimlerine tıklayarak toplu seçim yapabilirsiniz.
+            </span>
+          </div>
+
+          <div className="flex items-center justify-end w-full sm:w-auto">
+            {/* Blue "Güncelle" button matching exact screenshot styling */}
+            <button
+              id="btn-update-permissions"
+              type="button"
+              onClick={handleSave}
+              className="bg-[#007bff] hover:bg-[#0069d9] active:bg-[#0062cc] text-white font-medium text-sm px-6 py-2 rounded-md shadow-2xs transition-all cursor-pointer"
+            >
+              Güncelle
+            </button>
+          </div>
+        </div>
       </div>
-
-      {/* Edit Role Modal */}
-      {editingManager && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <UserCog className="w-5 h-5 text-cyan-600" />
-                Yetki &amp; Rol Düzenle
-              </h3>
-              <button
-                onClick={() => setEditingManager(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg p-1"
-              >
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateRole} className="py-4 space-y-4">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-1">
-                <p className="font-bold text-slate-800">{editingManager.name}</p>
-                <p className="text-xs text-slate-500">{editingManager.email}</p>
-                <p className="text-xs font-mono text-slate-400">Kod: {editingManager.code}</p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Kullanıcı Rolü
-                </label>
-                <select
-                  value={editingManager.role}
-                  onChange={(e) =>
-                    setEditingManager({ ...editingManager, role: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                >
-                  <option value="Spor Okulu Admin">Spor Okulu Admin</option>
-                  <option value="Süper Admin">Süper Admin</option>
-                  <option value="İşletme Yöneticisi">İşletme Yöneticisi</option>
-                  <option value="Eğitmen Sorumlusu">Eğitmen Sorumlusu</option>
-                  <option value="Gözlemci / Raporlayıcı">Gözlemci / Raporlayıcı</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Telefon Numarası
-                </label>
-                <input
-                  type="text"
-                  value={editingManager.phone}
-                  onChange={(e) =>
-                    setEditingManager({ ...editingManager, phone: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingManager(null)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg shadow-xs"
-                >
-                  Değişiklikleri Kaydet
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add New Admin Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-blue-600" />
-                Yeni Yetkili Yönetici Ekle
-              </h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg p-1"
-              >
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleAddManager} className="py-4 space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Yönetici Adı Soyadı *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Örn: Abdullah acet"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  E-posta Adresi *
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="Örn: abdullahacet43@hotmail.com"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Telefon Numarası
-                </label>
-                <input
-                  type="text"
-                  value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Yetki Türü
-                </label>
-                <select
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                >
-                  <option value="Spor Okulu Admin">Spor Okulu Admin</option>
-                  <option value="Süper Admin">Süper Admin</option>
-                  <option value="İşletme Yöneticisi">İşletme Yöneticisi</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs"
-                >
-                  Yöneticiyi Kaydet
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
