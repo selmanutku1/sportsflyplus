@@ -1,11 +1,14 @@
 export interface SportsFlyNotification {
   id: string;
-  category: 'system' | 'support' | 'payment' | 'message' | 'birthday' | 'training';
+  category: 'system' | 'support' | 'payment' | 'message' | 'birthday' | 'training' | 'sporpuan';
   title: string;
   description: string;
   time: string;
   isUnread: boolean;
   actionUrl?: string;
+  points?: number;
+  sporcuName?: string;
+  sporcuId?: string;
 }
 
 export const DEFAULT_NOTIFICATIONS: Record<string, SportsFlyNotification[]> = {
@@ -205,4 +208,49 @@ export function saveStoredNotifications(role: string, notifications: SportsFlyNo
   } catch (err) {
     console.error('Failed to save notifications', err);
   }
+}
+
+export function addSporPuanNotification(detail: {
+  sporcuName: string;
+  ruleName: string;
+  points: number;
+  category: string;
+  note?: string;
+  sporcuId?: string;
+}): SportsFlyNotification {
+  const newNotification: SportsFlyNotification = {
+    id: `sporpuan-${Date.now()}`,
+    category: 'sporpuan',
+    title: 'Yeni Puan Kazanımı',
+    description: `${detail.sporcuName} sporcusuna "${detail.ruleName}" kapsamında +${detail.points} SP puanı tanımlandı.${detail.note ? ` (Not: ${detail.note})` : ''}`,
+    time: 'Şimdi',
+    isUnread: true,
+    points: detail.points,
+    sporcuName: detail.sporcuName,
+    sporcuId: detail.sporcuId,
+    actionUrl: 'sporpuan-sporcu-degerlendirme',
+  };
+
+  // Add notification for admin, trainer and parent so all user roles see it in the notification center
+  const roles = ['admin', 'trainer', 'parent'];
+  roles.forEach((r) => {
+    const current = getStoredNotifications(r);
+    const updated = [newNotification, ...current];
+    saveStoredNotifications(r, updated);
+  });
+
+  // Dispatch custom push event for instant mobile/desktop toast notification and haptic vibration
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('sportsfly_point_earned', {
+        detail: {
+          ...detail,
+          notificationId: newNotification.id,
+          notification: newNotification,
+        },
+      })
+    );
+  }
+
+  return newNotification;
 }

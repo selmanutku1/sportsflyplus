@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -35,6 +35,7 @@ import {
   UploadCloud,
   Eye,
   FileDown,
+  Zap,
 } from 'lucide-react';
 import {
   SporcuItem,
@@ -176,6 +177,83 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
 
   const currentProfil: SporcuProfil =
     profiller[sporcu.id] || getOrCreateSporcuProfil(sporcu);
+
+  // SporPuan real-time logs & events synchronization
+  const [sporpuanLogs, setSporpuanLogs] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sportsfly_sporpuan_logs_new');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return [
+      {
+        id: 'sp-init-1',
+        sporcuId: sporcu.id,
+        sporcuName: sporcu.name,
+        category: 'Devam',
+        ruleName: 'Haftalık düzenli antrenman katılımı',
+        points: 25,
+        date: 'Bugün',
+        source: 'Otomatik',
+        note: 'Eylül ayı tam katılım',
+      },
+      {
+        id: 'sp-init-2',
+        sporcuId: sporcu.id,
+        sporcuName: sporcu.name,
+        category: 'Davranış',
+        ruleName: 'Fair-play ve örnek davranış',
+        points: 50,
+        date: 'Dün',
+        source: 'Koç Onayı',
+        note: 'Takım arkadaşına destek olma ve saha disiplini',
+      },
+    ];
+  });
+
+  useEffect(() => {
+    const handleSyncSporpuan = () => {
+      try {
+        const saved = localStorage.getItem('sportsfly_sporpuan_logs_new');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setSporpuanLogs(parsed);
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('sportsfly_point_earned', handleSyncSporpuan);
+    window.addEventListener('sportsfly_notifications_updated', handleSyncSporpuan);
+    window.addEventListener('storage', handleSyncSporpuan);
+    return () => {
+      window.removeEventListener('sportsfly_point_earned', handleSyncSporpuan);
+      window.removeEventListener('sportsfly_notifications_updated', handleSyncSporpuan);
+      window.removeEventListener('storage', handleSyncSporpuan);
+    };
+  }, []);
+
+  // Filter logs for current athlete
+  const athleteSporpuanLogs = sporpuanLogs.filter((l) => {
+    const matchId =
+      l.sporcuId &&
+      (l.sporcuId === sporcu.id ||
+        l.sporcuId === currentProfil.kimlik.tcKimlik ||
+        String(l.sporcuId).includes(sporcu.id));
+    const matchName =
+      l.sporcuName &&
+      (l.sporcuName.toLowerCase().includes(sporcu.name.toLowerCase()) ||
+        sporcu.name.toLowerCase().includes(l.sporcuName.toLowerCase()) ||
+        (currentProfil.kimlik.adSoyad &&
+          l.sporcuName.toLowerCase().includes(currentProfil.kimlik.adSoyad.toLowerCase())));
+    return matchId || matchName;
+  });
+
+  const athleteTotalPoints =
+    420 + athleteSporpuanLogs.reduce((sum, l) => sum + (Number(l.points) || 0), 0);
+
 
   // Previous & Next athlete handlers
   const currentIndex = allSporcular.findIndex((s) => s.id === sporcu.id);
@@ -562,18 +640,27 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           {/* Avatar and Identity Info */}
           <div className="flex items-start gap-4 sm:gap-5">
-            {/* Interactive Avatar with Camera Overlay */}
+            {/* Interactive Avatar with Camera Overlay & Corner Action Badge */}
             <div
+              role="button"
+              tabIndex={0}
               onClick={() => setIsPhotoModalOpen(true)}
-              className="relative group cursor-pointer shrink-0"
-              title="Sporcu Profil Fotoğrafı Ekle / Değiştir"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsPhotoModalOpen(true);
+                }
+              }}
+              className="relative group cursor-pointer shrink-0 select-none"
+              title="Profil Fotoğrafı Ekle / Değiştir (Tıklayın)"
+              aria-label="Profil Fotoğrafı Ekle veya Değiştir"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-xs relative overflow-hidden border-2 border-slate-200/90 hover:border-blue-500 transition-colors">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-xs relative overflow-hidden border-2 border-slate-200/90 group-hover:border-blue-500 transition-all">
                 {currentProfil.kimlik.fotoUrl || (sporcu as any).avatarUrl ? (
                   <img
                     src={currentProfil.kimlik.fotoUrl || (sporcu as any).avatarUrl}
                     alt={currentProfil.kimlik.adSoyad}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
@@ -581,15 +668,24 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
                 )}
 
                 {/* Camera Overlay on Hover */}
-                <div className="absolute inset-0 bg-slate-900/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                  <Camera className="w-5 h-5 mb-0.5 text-white" />
-                  <span className="text-[9px] font-bold">Fotoğraf</span>
+                <div className="absolute inset-0 bg-slate-900/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white backdrop-blur-[1px]">
+                  <Camera className="w-5 h-5 mb-0.5 text-white drop-shadow-xs" />
+                  <span className="text-[10px] font-bold">Değiştir</span>
                 </div>
               </div>
 
-              <span className="absolute -bottom-2 -right-2 bg-blue-600 text-white text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border border-white z-10 shadow-xs">
+              {/* Jersey Number Badge (Top-Left) */}
+              <span className="absolute -top-2 -left-2 bg-slate-900/90 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md border border-white/80 z-10 shadow-xs">
                 #{currentProfil.kimlik.formaNo}
               </span>
+
+              {/* Prominent Camera Action Badge (Bottom-Right) */}
+              <div
+                className="absolute -bottom-1.5 -right-1.5 bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-full shadow-md border-2 border-white ring-1 ring-blue-500/20 group-hover:scale-110 active:scale-95 transition-all z-10 flex items-center justify-center"
+                title="Fotoğraf Yükle veya Değiştir"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -623,31 +719,11 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
           <div className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
             <button
               type="button"
-              onClick={() => setIsPhotoModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-              title="Profil Fotoğrafı Ekle / Değiştir"
-            >
-              <Camera className="w-3.5 h-3.5 text-blue-600" />
-              <span>Fotoğraf Ekle</span>
-            </button>
-
-            <button
-              type="button"
               onClick={handleOpenEditModal}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               <Edit2 className="w-3.5 h-3.5 text-slate-600" />
               <span>Düzenle</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSendWhatsApp}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-              title="Veliye WhatsApp Mesajı Gönder"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Veliye İletişim</span>
             </button>
 
             <button
@@ -679,8 +755,8 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
           </div>
         </div>
 
-        {/* 5 Quick Key Metrics Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-slate-100">
+        {/* 6 Quick Key Metrics Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-5 border-t border-slate-100">
           <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100">
             <span className="text-[11px] font-semibold text-slate-500 block">Yaş ve Doğum</span>
             <p className="text-sm font-bold text-slate-800 mt-0.5">
@@ -715,12 +791,25 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
             <span className="text-[11px] text-blue-600 font-semibold">Üst Düzey Başarı</span>
           </div>
 
-          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 col-span-2 sm:col-span-1">
+          <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100">
             <span className="text-[11px] font-semibold text-slate-500 block">Aidat & Bakiye</span>
             <p className="text-sm font-bold text-emerald-700 mt-0.5">
               {currentProfil.finans.durum}
             </p>
-            <span className="text-[11px] text-slate-500">{currentProfil.finans.paketAdi.slice(0, 22)}...</span>
+            <span className="text-[11px] text-slate-500">{currentProfil.finans.paketAdi.slice(0, 18)}...</span>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-xl p-3 border border-amber-200/80">
+            <span className="text-[11px] font-bold text-amber-800 flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
+              <span>SporPuan (SP)</span>
+            </span>
+            <p className="text-sm font-black text-amber-950 mt-0.5">
+              {athleteTotalPoints} SP
+            </p>
+            <span className="text-[11px] text-amber-700 font-semibold">
+              {athleteSporpuanLogs.length} Etkinlik Kaydı
+            </span>
           </div>
         </div>
       </div>
@@ -956,6 +1045,109 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
                   <span className="text-sm font-bold text-emerald-700 mt-0.5 block">{currentProfil.kimlik.durum}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Son Puan & Gelişim Etkinlikleri (SporPuan) */}
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                      <Zap className="w-4 h-4 fill-amber-500" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      Son Puan & Gelişim Etkinlikleri (SporPuan)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Kulüp yöneticisi ve antrenör tarafından tanımlanan anlık puan kazanımları ve bildirim geçmişi
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{athleteTotalPoints} SP</span>
+                  </div>
+
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('sporpuan-sporcu-degerlendirme')}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                      title="Sporcuya yeni puan tanımla ve bildirim merkezini tetikle"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Yeni Puan Tanımla</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Activity Timeline List */}
+              {athleteSporpuanLogs.length === 0 ? (
+                <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <Zap className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-700">Henüz puan etkinliği kaydedilmemiş.</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Antrenör veya yönetici tarafından tanımlanan puanlar burada anlık listelenecektir.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {athleteSporpuanLogs.map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      className="p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <Zap className="w-4 h-4 fill-amber-500" />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-slate-900">
+                              {item.ruleName}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
+                              {item.category}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {item.date || 'Şimdi'}
+                            </span>
+                          </div>
+
+                          {item.note && (
+                            <p className="text-[11px] text-slate-600 mt-1 italic">
+                              "{item.note}"
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-500">
+                            <span className="font-semibold text-slate-600">
+                              Kaynak: {item.source || 'Koç Onayı'}
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 text-emerald-700 font-bold">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span>Bildirim Merkezine İletildi</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex items-center sm:flex-col sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60">
+                        <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/80">
+                          +{item.points} SP
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium mt-0.5 hidden sm:inline">
+                          Kazanım Onaylandı
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1915,16 +2107,6 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPhotoModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                  title="Profil Fotoğrafını Değiştir"
-                >
-                  <Camera className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Profil Görseli</span>
-                </button>
-
                 <button
                   type="button"
                   onClick={() => setIsAddGaleriModalOpen(true)}

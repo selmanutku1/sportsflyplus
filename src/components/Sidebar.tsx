@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Home,
   User,
@@ -145,12 +146,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Mobile backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs z-40 lg:hidden"
-          onClick={onCloseMobile}
-        />
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs z-40 lg:hidden"
+            onClick={onCloseMobile}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Desktop Compact Icon Rail when sidebar is collapsed (matches screenshot) */}
       {!isOpen && (
@@ -395,14 +402,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </aside>
       )}
 
-      <aside
-        id="app-sidebar"
-        className={`fixed top-0 left-0 bottom-0 z-50 w-72 bg-white dark:bg-[#111c2e] border-r border-slate-200/90 dark:border-slate-800 flex flex-col transition-transform duration-200 ease-in-out shadow-2xl ${
-          isOpen
-            ? 'translate-x-0 lg:static lg:w-64 lg:flex lg:flex-col lg:shadow-none'
-            : '-translate-x-full lg:hidden'
-        }`}
-      >
+      <AnimatePresence>
+        {(isOpen || (typeof window !== 'undefined' && window.innerWidth >= 1024)) && (
+          <motion.aside
+            id="app-sidebar"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
+            className={`fixed top-0 left-0 bottom-0 z-50 w-72 bg-white dark:bg-[#111c2e] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shadow-2xl lg:static lg:w-64 lg:flex lg:flex-col lg:shadow-none lg:!transform-none`}
+          >
         {/* Brand Logo matching the screenshots */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
@@ -1032,7 +1041,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Sporsepeti &amp; SportsFly &copy; 2026
           </p>
         </div>
-      </aside>
+      </motion.aside>
+      )}
+    </AnimatePresence>
     </>
   );
 };

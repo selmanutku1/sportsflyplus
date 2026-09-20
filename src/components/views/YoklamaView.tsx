@@ -276,47 +276,48 @@ export const YoklamaView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Attendance Buttons */}
-                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0 bg-slate-50/80 p-1 rounded-xl border border-slate-200/60">
+                    {/* Attendance Segmented Control */}
+                    <div className="flex items-center p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl border border-slate-200/80 dark:border-slate-700/80 w-full sm:w-auto shrink-0 mt-2 sm:mt-0 gap-1 select-none">
                       <button
+                        type="button"
                         onClick={() => handleStatusChange(member.id, 'present')}
-                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs transition-all ${
-                          status === 'present' 
-                            ? 'bg-emerald-500 text-white shadow-xs' 
-                            : 'bg-transparent text-slate-500 hover:bg-emerald-100 hover:text-emerald-700'
+                        className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[38px] rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                          status === 'present'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-emerald-700 hover:bg-white/60 dark:hover:bg-slate-700/60'
                         }`}
+                        title="Geldi Olarak İşaretle"
                       >
-                        <CheckCircle className={`w-4 h-4 ${status === 'present' ? 'text-white' : ''}`} />
+                        <CheckCircle className={`w-3.5 h-3.5 ${status === 'present' ? 'text-white' : 'text-emerald-600'}`} />
                         <span>Geldi</span>
                       </button>
-                      
-                      <div className="w-[1px] h-6 bg-slate-200 hidden sm:block"></div>
-                      
+
                       <button
+                        type="button"
                         onClick={() => handleStatusChange(member.id, 'absent')}
-                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs transition-all ${
-                          status === 'absent' 
-                            ? 'bg-rose-500 text-white shadow-xs' 
-                            : 'bg-transparent text-slate-500 hover:bg-rose-100 hover:text-rose-700'
+                        className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[38px] rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                          status === 'absent'
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-rose-700 hover:bg-white/60 dark:hover:bg-slate-700/60'
                         }`}
+                        title="Gelmedi Olarak İşaretle"
                       >
-                        <XCircle className={`w-4 h-4 ${status === 'absent' ? 'text-white' : ''}`} />
+                        <XCircle className={`w-3.5 h-3.5 ${status === 'absent' ? 'text-white' : 'text-rose-600'}`} />
                         <span>Gelmedi</span>
                       </button>
 
-                      <div className="w-[1px] h-6 bg-slate-200 hidden sm:block"></div>
-
                       <button
+                        type="button"
                         onClick={() => handleStatusChange(member.id, 'excused')}
-                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs transition-all ${
-                          status === 'excused' 
-                            ? 'bg-amber-500 text-white shadow-xs' 
-                            : 'bg-transparent text-slate-500 hover:bg-amber-100 hover:text-amber-700'
+                        className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[38px] rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                          status === 'excused'
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-amber-700 hover:bg-white/60 dark:hover:bg-slate-700/60'
                         }`}
-                        title="İzinli / Raporlu"
+                        title="İzinli / Raporlu Olarak İşaretle"
                       >
-                        <MinusCircle className={`w-4 h-4 ${status === 'excused' ? 'text-white' : ''}`} />
-                        <span className="sm:hidden">İzinli</span>
+                        <MinusCircle className={`w-3.5 h-3.5 ${status === 'excused' ? 'text-white' : 'text-amber-600'}`} />
+                        <span>İzinli</span>
                       </button>
                     </div>
                   </div>

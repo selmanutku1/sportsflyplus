@@ -60,6 +60,8 @@ import {
   PuanlamaProfiliSablon
 } from '../../../data/degerlendirmeSablonlari';
 import { getStoredUserProfile } from '../../../data/userProfile';
+import { addSporPuanNotification } from '../../../data/notifications';
+import { QuickPointAwardModal } from '../../modals/QuickPointAwardModal';
 
 interface SporcuDegerlendirmeViewProps {
   onNavigate?: (page: NavPage) => void;
@@ -68,6 +70,7 @@ interface SporcuDegerlendirmeViewProps {
 export interface SporPuanLog {
   id: string;
   sporcuId: string;
+  sporcuName?: string;
   ruleId: string;
   category: 'Devam' | 'Seri' | 'Davranış' | 'Gelişim' | 'Aile ve İlişki' | 'Etkinlik';
   ruleName: string;
@@ -141,7 +144,19 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
     return SPORPUAN_RULES;
   });
 
-  const [viewMode, setViewMode] = useState<'degerlendirme' | 'kriterler'>('degerlendirme');
+  const [viewMode, setViewMode] = useState<'degerlendirme' | 'hesaplayici' | 'kriterler'>('degerlendirme');
+  const [quickPointTarget, setQuickPointTarget] = useState<{ id: string; name: string; branch?: string; teamGroup?: string } | null>(null);
+
+  // SporPuan Simulation Calculator state
+  const [calcAgeGroup, setCalcAgeGroup] = useState<'5-8' | '9-12' | '13-17'>('9-12');
+  const [calcMonthlyTraining, setCalcMonthlyTraining] = useState<number>(10);
+  const [calcQuantities, setCalcQuantities] = useState<Record<string, number>>({
+    r1: 10,  // Antrenmana katılım
+    r2: 10,  // Zamanında gelme
+    r6: 1,   // 4 hafta seri
+    r8: 1,   // Fair-play ve örnek davranış
+    r12: 1,  // Aidatı zamanında ödeme
+  });
 
   // Custom new rule modal/state
   const [showAddRuleModal, setShowAddRuleModal] = useState(false);
@@ -221,6 +236,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
     const newLog: SporPuanLog = {
       id: `sp-l-${Date.now()}`,
       sporcuId: currentEdit.id,
+      sporcuName: currentEdit.adSoyad,
       ruleId: rule.id,
       category: rule.category,
       ruleName: rule.ruleName,
@@ -232,7 +248,18 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
 
     setSporpuanLogs([newLog, ...sporpuanLogs]);
     setSporpuanNote('');
-    showToast(`${currentEdit.adSoyad} için +${rule.points} SP puanı başarıyla tanımlandı!`);
+
+    // Trigger notification center update and instant push/toast alert
+    addSporPuanNotification({
+      sporcuId: currentEdit.id,
+      sporcuName: currentEdit.adSoyad,
+      ruleName: rule.ruleName,
+      points: rule.points,
+      category: rule.category,
+      note: sporpuanNote.trim() || undefined,
+    });
+
+    showToast(`${currentEdit.adSoyad} için +${rule.points} SP puanı başarıyla tanımlandı ve bildirim merkezine iletildi!`);
   };
 
   const handleDeleteLog = (logId: string) => {
@@ -896,7 +923,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
   const totalSporPuan = selectedAthleteLogs.reduce((sum, log) => sum + log.points, 0);
 
   return (
-    <div className="flex-1 p-4 lg:p-8 pt-6 overflow-y-auto w-full space-y-6">
+    <div className="flex-1 p-6 lg:p-10 overflow-y-auto w-full space-y-8">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-150">
@@ -962,30 +989,42 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
       </div>
 
       {/* View Mode Switcher */}
-      <div className="bg-slate-100 p-1 rounded-xl flex items-center max-w-md border border-slate-200">
+      <div className="bg-slate-100 p-1 rounded-xl grid grid-cols-3 max-w-2xl border border-slate-200">
         <button
           type="button"
           onClick={() => setViewMode('degerlendirme')}
-          className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`py-2 px-1.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
             viewMode === 'degerlendirme'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
-          <ClipboardCheck className="w-4 h-4 text-blue-600" />
-          <span>Sporcu Değerlendirme</span>
+          <ClipboardCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+          <span className="truncate">Değerlendirme</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('hesaplayici')}
+          className={`py-2 px-1.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+            viewMode === 'hesaplayici'
+              ? 'bg-white text-slate-900 shadow-xs'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+          <span className="truncate">Hesaplayıcı</span>
         </button>
         <button
           type="button"
           onClick={() => setViewMode('kriterler')}
-          className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`py-2 px-1.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
             viewMode === 'kriterler'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
-          <Settings2 className="w-4 h-4 text-amber-500" />
-          <span>Puan Kriterleri (Yönetici)</span>
+          <Settings2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span className="truncate">Kriterler</span>
         </button>
       </div>
 
@@ -1057,40 +1096,69 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                 ).toFixed(1);
 
                 return (
-                  <button
+                  <div
                     key={k.id}
-                    onClick={() => setSelectedKarneId(k.id)}
-                    className={`w-full text-left p-3 rounded-xl transition-all border flex items-center justify-between gap-3 ${
+                    className={`w-full p-2.5 sm:p-3 rounded-xl transition-all border flex items-center justify-between gap-2.5 ${
                       isSelected
-                        ? 'bg-blue-50/90 border-blue-300 ring-2 ring-blue-100 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        ? 'bg-blue-50/90 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 ring-2 ring-blue-100 dark:ring-blue-900 shadow-xs'
+                        : 'bg-white dark:bg-[#111c2e] border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40'
                     }`}
                   >
-                    <div className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedKarneId(k.id)}
+                      className="min-w-0 flex-1 text-left cursor-pointer"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-slate-800 text-xs truncate">
+                        <span className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">
                           {k.adSoyad}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 font-semibold rounded">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded">
                           {k.yasGubu}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">{k.grup}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{k.grup}</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                         Antrenör: {k.antrenor || 'Selman Utku'}
                       </p>
-                    </div>
+                    </button>
 
-                    <div className="text-right shrink-0">
-                      <div className="text-xs font-black text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md flex items-center gap-1">
-                        <span>{avg}</span>
-                        <span className="text-[9px] text-blue-500 font-normal">/10</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* HIZLI PUAN KISAYOL BUTONU - Geniş Dokunmatik Alan (min 44px) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedKarneId(k.id);
+                          setQuickPointTarget({
+                            id: k.id,
+                            name: k.adSoyad,
+                            branch: k.brans,
+                            teamGroup: k.grup,
+                          });
+                        }}
+                        className="min-w-[44px] min-h-[44px] p-2 bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 rounded-xl flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                        title={`${k.adSoyad} için Hızlı Puan Ver`}
+                        aria-label={`${k.adSoyad} için Hızlı Puan Ver`}
+                      >
+                        <Zap className="w-5 h-5 fill-slate-950 text-slate-950" />
+                      </button>
+
+                      {/* Not Ortalaması & Katılım */}
+                      <div
+                        onClick={() => setSelectedKarneId(k.id)}
+                        className="text-right shrink-0 cursor-pointer min-w-[54px]"
+                      >
+                        <div className="text-xs font-black text-blue-700 dark:text-blue-300 bg-blue-100/70 dark:bg-blue-950/60 px-1.5 py-0.5 rounded-md flex items-center justify-end gap-1">
+                          <span>{avg}</span>
+                          <span className="text-[9px] text-blue-500 dark:text-blue-400 font-normal">/10</span>
+                        </div>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 block truncate">
+                          %{k.katilimYuzdesi}
+                        </span>
                       </div>
-                      <span className="text-[9px] text-slate-400 mt-1 block">
-                        {k.katilimYuzdesi}% Katılım
-                      </span>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
 
@@ -2319,6 +2387,483 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
           )}
         </div>
       </div>
+      ) : viewMode === 'hesaplayici' ? (
+        (() => {
+          const getMultiplierForCategory = (category: string, age: '5-8' | '9-12' | '13-17') => {
+            const multipliers = {
+              'Devam': { '5-8': 1.0, '9-12': 1.0, '13-17': 1.0 },
+              'Seri': { '5-8': 1.5, '9-12': 1.0, '13-17': 1.0 },
+              'Davranış': { '5-8': 1.2, '9-12': 1.0, '13-17': 1.0 },
+              'Gelişim': { '5-8': 0.8, '9-12': 1.2, '13-17': 1.2 },
+              'Aile ve İlişki': { '5-8': 1.0, '9-12': 1.0, '13-17': 1.0 },
+              'Etkinlik': { '5-8': 1.0, '9-12': 1.0, '13-17': 1.2 }
+            };
+            const catKey = category as keyof typeof multipliers;
+            return multipliers[catKey]?.[age] ?? 1.0;
+          };
+
+          const handleUpdateCalcQuantity = (ruleId: string, val: number) => {
+            const rule = sporpuanRules.find(r => r.id === ruleId);
+            if (!rule) return;
+            let max = 100;
+            if (ruleId === 'r1' || ruleId === 'r2') {
+              max = calcMonthlyTraining;
+            } else if (rule.monthlyLimit) {
+              max = rule.monthlyLimit;
+            }
+            const finalVal = Math.max(0, Math.min(max, val));
+            setCalcQuantities(prev => ({ ...prev, [ruleId]: finalVal }));
+          };
+
+          const handleUpdateMonthlyTraining = (newVal: number) => {
+            const clampedVal = Math.max(1, Math.min(31, newVal));
+            setCalcMonthlyTraining(clampedVal);
+            setCalcQuantities(prev => {
+              const next = { ...prev };
+              if (prev.r1 !== undefined) next.r1 = Math.min(clampedVal, prev.r1);
+              if (prev.r2 !== undefined) next.r2 = Math.min(clampedVal, prev.r2);
+              return next;
+            });
+          };
+
+          // Calculate dynamic stats
+          const totalBeforeCap = sporpuanRules.reduce((acc, rule) => {
+            const qty = calcQuantities[rule.id] ?? 0;
+            const multiplier = getMultiplierForCategory(rule.category, calcAgeGroup);
+            return acc + Math.round(rule.points * qty * multiplier);
+          }, 0);
+          const monthlyCap = 700;
+          const estimatedGain = Math.min(totalBeforeCap, monthlyCap);
+          const isCapped = totalBeforeCap >= monthlyCap;
+
+          return (
+            <div className="space-y-6">
+              {/* Sporpuan Kazanç Hesaplayıcı Header */}
+              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
+                      <Sliders className="w-5 h-5 text-emerald-600" />
+                      SporPuan Kazanç Hesaplayıcı &amp; Ödül Simülatörü
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
+                      Sporcuların yaş gruplarına ve aylık antrenman sayılarına göre kazanacakları puanları simüle edin, hedefledikleri ödüllere ulaşma durumlarını anlık olarak izleyin.
+                    </p>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-3.5 py-2 text-[11px] text-amber-800 flex items-center gap-2 shrink-0 max-w-xs">
+                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Mavi yazılı/sarı zeminli hücreler simülasyon için değiştirilebilir.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Left Column (8 cols): Inputs and Interactive Calculator List */}
+                <div className="lg:col-span-8 space-y-6">
+                  {/* Setup Configuration Card */}
+                  <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Age Group Selector (Mavi yazılı / sarı zeminli hücreleri simüle eden) */}
+                    <div className="space-y-2.5">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                        Yaş Grubu Seçimi (Çarpan Belirler)
+                      </label>
+                      <div className="bg-amber-50/70 border border-amber-200/80 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                        <span className="text-xs font-black text-amber-950">Yaş grubu:</span>
+                        <div className="flex items-center gap-1.5 bg-amber-100/60 p-1 rounded-lg">
+                          {(['5-8', '9-12', '13-17'] as const).map(age => (
+                            <button
+                              key={age}
+                              type="button"
+                              onClick={() => setCalcAgeGroup(age)}
+                              className={`px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                calcAgeGroup === age
+                                  ? 'bg-blue-600 text-white shadow-xs'
+                                  : 'text-slate-700 hover:bg-amber-200/60'
+                              }`}
+                            >
+                              {age} yaş
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Monthly Training Count */}
+                    <div className="space-y-2.5">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                        Aylık Toplam Antrenman Sayısı
+                      </label>
+                      <div className="bg-amber-50/70 border border-amber-200/80 p-2.5 rounded-xl flex items-center justify-between gap-4">
+                        <span className="text-xs font-black text-amber-950">Aylık antrenman sayısı:</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateMonthlyTraining(calcMonthlyTraining - 1)}
+                            className="w-10 h-10 rounded-lg bg-amber-100/80 hover:bg-amber-200/80 text-amber-950 font-black flex items-center justify-center text-lg cursor-pointer select-none border border-amber-200"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="text"
+                            value={calcMonthlyTraining}
+                            readOnly
+                            className="w-12 h-10 bg-white border border-amber-200 text-center font-black text-blue-700 rounded-lg text-sm outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateMonthlyTraining(calcMonthlyTraining + 1)}
+                            className="w-10 h-10 rounded-lg bg-amber-100/80 hover:bg-amber-200/80 text-amber-950 font-black flex items-center justify-center text-lg cursor-pointer select-none border border-amber-200"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Main Interactive Matrix list */}
+                  <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-emerald-600" />
+                        Kural Bazlı Kazanım Hesaplama Cetveli
+                      </h3>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        Ölçümleri değiştirmek için adetleri artırın/azaltın
+                      </span>
+                    </div>
+
+                    {/* Desktop view (Hidden on mobile) */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            <th className="py-3 px-4">Kural</th>
+                            <th className="py-3 px-4">Kategori</th>
+                            <th className="py-3 px-4 text-center">Birim Puan</th>
+                            <th className="py-3 px-4 text-center">Aylık Sınır</th>
+                            <th className="py-3 px-4 text-center">Bu Ay Adet</th>
+                            <th className="py-3 px-4 text-center">Çarpan</th>
+                            <th className="py-3 px-4 text-right">Kazanılan SP</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100/80">
+                          {sporpuanRules.map(rule => {
+                            const qty = calcQuantities[rule.id] ?? 0;
+                            const multiplier = getMultiplierForCategory(rule.category, calcAgeGroup);
+                            const earnedSP = Math.round(rule.points * qty * multiplier);
+
+                            return (
+                              <tr key={rule.id} className="hover:bg-slate-50/40 text-xs transition-colors">
+                                <td className="py-3.5 px-4 font-semibold text-slate-800">{rule.ruleName}</td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    rule.category === 'Devam' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                                    rule.category === 'Seri' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
+                                    rule.category === 'Davranış' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                    rule.category === 'Gelişim' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                                    rule.category === 'Aile ve İlişki' ? 'bg-rose-50 text-rose-700 border border-rose-100' :
+                                    'bg-slate-50 text-slate-700 border border-slate-100'
+                                  }`}>
+                                    {rule.category}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-center font-bold text-slate-600">{rule.points} SP</td>
+                                <td className="py-3.5 px-4 text-center text-slate-500 font-medium">{rule.limit}</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center justify-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg p-1 max-w-[100px] mx-auto">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateCalcQuantity(rule.id, qty - 1)}
+                                      className="w-6 h-6 rounded bg-amber-100/80 hover:bg-amber-200 text-amber-950 font-black flex items-center justify-center text-xs cursor-pointer select-none"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="w-6 text-center font-black text-blue-700 text-xs">{qty}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateCalcQuantity(rule.id, qty + 1)}
+                                      className="w-6 h-6 rounded bg-amber-100/80 hover:bg-amber-200 text-amber-950 font-black flex items-center justify-center text-xs cursor-pointer select-none"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4 text-center font-bold text-slate-500">x{multiplier.toFixed(1)}</td>
+                                <td className="py-3.5 px-4 text-right font-black text-blue-600 text-sm">
+                                  {earnedSP} SP
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile list view (Shows on mobile, hidden on desktop) - satisfies specific user request */}
+                    <div className="block md:hidden divide-y divide-slate-100 p-3 space-y-3 bg-white">
+                      {sporpuanRules.map(rule => {
+                        const qty = calcQuantities[rule.id] ?? 0;
+                        const multiplier = getMultiplierForCategory(rule.category, calcAgeGroup);
+                        const earnedSP = Math.round(rule.points * qty * multiplier);
+
+                        return (
+                          <div key={rule.id} className="pt-3 first:pt-0 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <h4 className="text-xs font-bold text-slate-800 leading-tight">{rule.ruleName}</h4>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded text-[9px] font-bold">
+                                    {rule.category}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-semibold">
+                                    {rule.points} SP × x{multiplier.toFixed(1)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-xs font-black text-blue-600 block">{earnedSP} SP</span>
+                                <span className="text-[9px] text-slate-400 font-medium block">{rule.limit}</span>
+                              </div>
+                            </div>
+
+                            {/* Quantity picker wrapper optimized for touch (at least 44px layout height) */}
+                            <div className="flex items-center justify-between bg-amber-50/50 border border-amber-200/60 p-1.5 rounded-xl">
+                              <span className="text-[11px] font-black text-amber-900 ml-1">Bu Ayki Adet:</span>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateCalcQuantity(rule.id, qty - 1)}
+                                  className="w-10 h-10 rounded-lg bg-amber-100 active:bg-amber-200 text-amber-950 font-black flex items-center justify-center text-sm cursor-pointer select-none border border-amber-200"
+                                >
+                                  -
+                                </button>
+                                <span className="w-6 text-center font-black text-blue-700 text-sm">{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateCalcQuantity(rule.id, qty + 1)}
+                                  className="w-10 h-10 rounded-lg bg-amber-100 active:bg-amber-200 text-amber-950 font-black flex items-center justify-center text-sm cursor-pointer select-none border border-amber-200"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column (4 cols): Live Results and Milestones */}
+                <div className="lg:col-span-4 space-y-6">
+                  {/* Score summary Card */}
+                  <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white rounded-2xl p-5 shadow-md border border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                        Aylık Kazanılan SP
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        isCapped 
+                          ? 'bg-amber-400 text-slate-950' 
+                          : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      }`}>
+                        {isCapped ? 'Tavanda' : 'Tavan Altında'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs font-semibold text-slate-400">Toplam (tavan öncesi)</span>
+                        <span className="text-base font-black text-slate-200">{totalBeforeCap}</span>
+                      </div>
+
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs font-semibold text-slate-400">Aylık puan tavanı</span>
+                        <span className="text-xs font-bold text-amber-400">{monthlyCap}</span>
+                      </div>
+
+                      <div className="bg-slate-900 rounded-xl p-3.5 border border-slate-800 text-center space-y-1">
+                        <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">
+                          TAHMİNİ AYLIK KAZANÇ (SP)
+                        </span>
+                        <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300">
+                          {estimatedGain}
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline justify-between text-[11px]">
+                        <span className="font-semibold text-slate-400">Durum:</span>
+                        <span className={`font-black ${isCapped ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {isCapped ? 'Tavanda' : 'Tavan altında'}
+                        </span>
+                      </div>
+
+                      {/* Progress meter to Cap */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
+                          <span>Tavana İlerleme</span>
+                          <span>{Math.min(100, Math.round((totalBeforeCap / monthlyCap) * 100))}%</span>
+                        </div>
+                        <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isCapped ? 'bg-amber-400' : 'bg-emerald-500'
+                            }`} 
+                            style={{ width: `${Math.min(100, (totalBeforeCap / monthlyCap) * 100)}%` }} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ödüllere Ulaşma Durumu Tracker */}
+                  <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                      <Award className="w-5 h-5 text-amber-500" />
+                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Ödüllere Ulaşma Durumu
+                      </h3>
+                    </div>
+
+                    <div className="space-y-4 max-h-[460px] overflow-y-auto pr-1">
+                      {[
+                        { name: 'Rozet / çıkartma seti', tier: 'Küçük', required: 300 },
+                        { name: 'SportsFly Profesyonel Termos Suluk', tier: 'Küçük', required: 450 },
+                        { name: 'SportsFly Dry-Fit Antrenman Tişörtü', tier: 'Orta', required: 750 },
+                        { name: 'SportsFly Su Geçirmez Sırt & Krampon Çantası', tier: 'Orta', required: 950 },
+                        { name: 'Koç ile 1-e-1 Bireysel Şut / Beceri Kliniği (45 dk)', tier: 'Orta', required: 1200 },
+                        { name: 'Ayın Fair-Play & Örnek Sporcu Kristal Plaketi', tier: 'Büyük', required: 1500 },
+                        { name: 'Aidat indirimi (ör. aylık aidatın %10\'u)', tier: 'Büyük', required: 1800 },
+                        { name: 'Süper Lig / EuroLeague Maç Bileti (2 kişilik)', tier: 'Büyük', required: 2000 },
+                      ].map((reward, idx) => {
+                        const remaining = Math.max(0, reward.required - estimatedGain);
+                        const progress = Math.min(100, Math.round((estimatedGain / reward.required) * 100));
+                        const monthsNeeded = estimatedGain <= 0 
+                          ? 'Süresiz' 
+                          : Math.ceil(reward.required / estimatedGain) === 1 
+                            ? '1 ay' 
+                            : `${Math.ceil(reward.required / estimatedGain)} ay`;
+
+                        return (
+                          <div key={idx} className="space-y-2 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-0.5">
+                                <span className="text-[11px] font-black text-slate-800 block leading-tight border-b border-transparent">
+                                  {reward.name}
+                                </span>
+                                <span className="text-[9px] font-bold text-slate-400 bg-slate-100 rounded px-1.5 py-0.2">
+                                  {reward.tier}
+                                </span>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-[11px] font-bold text-slate-700 block">Gereken SP: {reward.required}</span>
+                                <span className="text-[10px] font-bold text-emerald-600 block">{monthsNeeded}</span>
+                              </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="space-y-1">
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div 
+                                  className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
+                                  style={{ width: `${progress}%` }} 
+                                />
+                              </div>
+                              <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold">
+                                <span>İlerleme: %{progress}</span>
+                                <span>Kalan SP: {remaining}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reference Matrices (Image 2 & Image 4 grids) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Age Group Multipliers table (Image 2) */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-3">
+                    <Sliders className="w-4 h-4 text-emerald-500" />
+                    Yaş Grubuna Göre Puan Çarpanı
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b border-slate-100">
+                          <th className="py-2.5 px-3">Kategori</th>
+                          <th className="py-2.5 px-3 text-center">5-8 yaş</th>
+                          <th className="py-2.5 px-3 text-center">9-12 yaş</th>
+                          <th className="py-2.5 px-3 text-center">13-17 yaş</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100/80 font-medium text-slate-700">
+                        {[
+                          { cat: 'Devam', g1: '1.0', g2: '1.0', g3: '1.0' },
+                          { cat: 'Seri', g1: '1.5', g2: '1.0', g3: '1.0' },
+                          { cat: 'Davranış', g1: '1.2', g2: '1.0', g3: '1.0' },
+                          { cat: 'Gelişim', g1: '0.8', g2: '1.2', g3: '1.2' },
+                          { cat: 'Aile ve İlişki', g1: '1.0', g2: '1.0', g3: '1.0' },
+                          { cat: 'Etkinlik', g1: '1.0', g2: '1.0', g3: '1.2' },
+                        ].map((row, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="py-2.5 px-3 font-bold text-slate-800">{row.cat}</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-blue-600">{row.g1}</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-emerald-600">{row.g2}</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-purple-600">{row.g3}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed italic font-medium">
+                    * Varsayım: Küçük yaşta seri ve davranış, büyük yaşta gelişim ve etkinlik ağırlığı yüksektir.
+                  </p>
+                </div>
+
+                {/* System settings details grid (Image 4) */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-3">
+                    <Settings2 className="w-4 h-4 text-slate-500" />
+                    Sistem Ayarları
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b border-slate-100">
+                          <th className="py-2.5 px-3">Ayar</th>
+                          <th className="py-2.5 px-3 text-center">Değer</th>
+                          <th className="py-2.5 px-3">Açıklama</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100/80 font-medium text-slate-700">
+                        {[
+                          { param: 'Aylık toplam puan tavanı (SP / sporcu)', val: '700', desc: 'Hesaplayıcıda kullanılır. Öneri değerdir.' },
+                          { param: 'Puan geçerlilik süresi (ay)', val: '12', desc: 'Kayan süre: her puan kazanıldığı tarihten itibaren geçerli.' },
+                          { param: 'Seri koruma hakkı (ay başına)', val: '1', desc: 'Mazeretli 1 devamsızlık seriyi bozmaz.' },
+                          { param: 'Puan silme', val: 'Yok', desc: 'Devamsızlıkta sadece kazanma durur; ceza yok.' },
+                          { param: 'Öznel puan kaydı', val: 'Gerekçe zorunlu', desc: 'Koç puan verirken listeden gerekçe seçer (ör. yardımseverlik).' },
+                          { param: 'Sıralama tablosu', val: 'Takma ad / baş harf', desc: 'Veli rızasıyla; çocuk verisi KVKK kapsamındadır.' },
+                          { param: 'Bildirim', val: 'Veliye', desc: 'Puan kazanıldığında ve ödül açıldığında.' },
+                        ].map((row, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="py-2.5 px-3 font-bold text-slate-800">{row.param}</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-blue-600 bg-blue-50/30">{row.val}</td>
+                            <td className="py-2.5 px-3 text-slate-500 leading-normal">{row.desc}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()
       ) : (
         <div className="space-y-6">
           {/* Header Card for Central Scoring Matrix */}
@@ -3196,6 +3741,23 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
           </div>
         </div>
       )}
+      {/* Modal: Hızlı Puan Ver (SporPuan) Modal */}
+      <QuickPointAwardModal
+        isOpen={!!quickPointTarget}
+        onClose={() => setQuickPointTarget(null)}
+        sporcu={quickPointTarget}
+        onSuccess={(msg) => {
+          showToast(msg);
+          const updated = localStorage.getItem('sportsfly_sporpuan_logs_new');
+          if (updated) {
+            try {
+              setSporpuanLogs(JSON.parse(updated));
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }}
+      />
     </div>
   );
 };

@@ -25,6 +25,8 @@ import {
   FileSpreadsheet,
   FileText,
   DollarSign,
+  Lightbulb,
+  X,
 } from 'lucide-react';
 import { NavPage } from '../../../types';
 import { SportsFlyIcon } from '../../SportsFlyLogo';
@@ -41,6 +43,7 @@ interface ClubManagerHomeViewProps {
 export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavigate }) => {
   const [userProfile] = useState(() => getStoredUserProfile());
   const [activePlan] = useState(() => getActiveSessionPlan());
+  const [showHint, setShowHint] = useState(true);
 
   // Real-time clock for top bar
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -245,6 +248,19 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
 
   return (
     <div className="space-y-6">
+      {/* İpucu Kartı */}
+      {showHint && (
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start gap-4 shadow-sm">
+           <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+           <div className="flex-1">
+              <h4 className="font-semibold text-blue-900 dark:text-blue-100">Yeni Özellikler Keşfedin!</h4>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">Sporcularınızın gelişimini Sporpuan ile değerlendirebilir ve yeni Eğitim Planlama aracı ile antrenmanlarınızı organize edebilirsiniz.</p>
+           </div>
+           <button onClick={() => setShowHint(false)} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-300">
+              <X className="w-4 h-4" />
+           </button>
+        </div>
+      )}
       {/* 1. Header Bar: Club Info & Live Time */}
       <div className="bg-white dark:bg-[#111c2e] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

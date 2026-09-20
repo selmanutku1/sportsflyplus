@@ -31,6 +31,7 @@ import { GenericPageView } from './components/views/GenericPageView';
 
 import { PackageAccessRestrictedView } from './components/views/PackageAccessRestrictedView';
 import { LoginView } from './components/LoginView';
+import { PointEarnedPushToast } from './components/notifications/PointEarnedPushToast';
 import {
   getActiveSessionPlan,
   isPageAllowedForPlan,
@@ -232,6 +233,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b1320] text-slate-800 dark:text-slate-100 flex flex-col antialiased relative transition-colors duration-200">
+      {/* Mobile/Desktop Instant Point Award Push Notification Toast */}
+      <PointEarnedPushToast onNavigate={handlePageSelect} />
+
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <Sidebar

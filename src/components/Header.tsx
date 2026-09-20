@@ -24,7 +24,10 @@ import {
   ClipboardCheck,
   AlertCircle,
   Sparkles,
-  Info
+  Info,
+  Zap,
+  ArrowRight,
+  X,
 } from 'lucide-react';
 import { NavPage } from '../types';
 import {
@@ -40,7 +43,8 @@ import {
 import {
   getStoredNotifications,
   saveStoredNotifications,
-  SportsFlyNotification
+  SportsFlyNotification,
+  addSporPuanNotification
 } from '../data/notifications';
 import { ProfileSettingsModal } from './modals/ProfileSettingsModal';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -213,6 +217,25 @@ export const Header: React.FC<HeaderProps> = ({
     setNotifications(updated);
     saveStoredNotifications(userProfile.role, updated);
   };
+
+  const handleSimulateSporPuan = () => {
+    const sampleAthletes = [
+      { name: 'Ali Yılmaz', rule: 'Fair-play ve örnek davranış', points: 50, cat: 'Davranış', note: 'Maç sonunda rakip takımı tebrik etme' },
+      { name: 'Ece Demir', rule: 'Haftalık tam antrenman devamı', points: 25, cat: 'Devam', note: 'Haftanın tüm seanslarına eksiksiz katılım' },
+      { name: 'Mert Kaya', rule: 'Gelişim testinde kişisel rekor', points: 40, cat: 'Gelişim', note: 'Çeviklik testinde 0.4 sn hızlanma' },
+      { name: 'Zeynep Akın', rule: 'Turnuva katılımı ve kulüp temsili', points: 75, cat: 'Etkinlik', note: 'Bölge şampiyonası takım temsili' },
+      { name: 'Caner Solak', rule: 'Antrenmana vaktinde katılım', points: 15, cat: 'Devam', note: 'Isınma öncesi hazırlık' },
+    ];
+    const picked = sampleAthletes[Math.floor(Math.random() * sampleAthletes.length)];
+    addSporPuanNotification({
+      sporcuName: picked.name,
+      ruleName: picked.rule,
+      points: picked.points,
+      category: picked.cat,
+      note: picked.note,
+    });
+  };
+
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileModalTab, setProfileModalTab] = useState<'genel' | 'guvenlik' | 'bildirimler' | 'tercihler'>('genel');
   const [logoutNotification, setLogoutNotification] = useState<string | null>(null);
@@ -271,8 +294,15 @@ export const Header: React.FC<HeaderProps> = ({
         setNotifications(getStoredNotifications(currentRole));
       }
     };
+    const handleOpenNotifications = () => {
+      setShowNotifications(true);
+    };
     window.addEventListener('sportsfly_notifications_updated', handleNotificationsUpdate);
-    return () => window.removeEventListener('sportsfly_notifications_updated', handleNotificationsUpdate);
+    window.addEventListener('sportsfly_open_notifications', handleOpenNotifications);
+    return () => {
+      window.removeEventListener('sportsfly_notifications_updated', handleNotificationsUpdate);
+      window.removeEventListener('sportsfly_open_notifications', handleOpenNotifications);
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -448,17 +478,16 @@ export const Header: React.FC<HeaderProps> = ({
                   setShowProfileMenu(false);
                   setShowThemeMenu(false);
                 }}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#162238] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#162238] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-bold transition-all shadow-sm cursor-pointer"
                 title="Aktif Kulüp Şubesini Değiştir"
               >
-                <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span className="hidden md:inline text-slate-400 dark:text-slate-500 font-medium text-[11px]">Şube:</span>
-                <span className="max-w-[100px] sm:max-w-[140px] truncate">
+                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="max-w-[120px] sm:max-w-[200px] truncate">
                   {activeBranchId === 'all'
                     ? 'Tüm Şubeler'
                     : subeler.find((s) => s.id === activeBranchId)?.ad || 'Şube Seç'}
                 </span>
-                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
               </button>
             ) : (
               <div
@@ -474,34 +503,42 @@ export const Header: React.FC<HeaderProps> = ({
             )}
 
             {isSuperAdmin && showBranchMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#111c2e] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <div className="px-3.5 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <div className="fixed inset-0 sm:absolute sm:inset-auto sm:right-auto sm:left-0 sm:mt-3 w-full sm:w-[360px] sm:max-w-[calc(100vw-32px)] bg-white dark:bg-[#111c2e] sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 py-4 z-[9999] animate-in fade-in overflow-hidden">
+                {/* Mobile Header for closing */}
+                <div className="sm:hidden px-6 pb-4 flex justify-end">
+                   <button onClick={() => setShowBranchMenu(false)} className="p-2 bg-slate-100 rounded-full">
+                     <X className="w-5 h-5 text-slate-600" />
+                   </button>
+                </div>
+                <div className="px-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Kulüp Şubeleri
                   </span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                     {subeler.length} Şube
                   </span>
                 </div>
 
-                <div className="p-1 space-y-0.5 max-h-60 overflow-y-auto">
+                <div className="p-2 space-y-1 max-h-[60vh] overflow-y-auto">
                   <button
                     onClick={() => {
                       setActiveSubeId('all');
                       setActiveBranchIdState('all');
                       setShowBranchMenu(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
                       activeBranchId === 'all'
-                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-2xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
                       <span>Tüm Şubeler (Konsolide)</span>
                     </div>
-                    {activeBranchId === 'all' && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                    {activeBranchId === 'all' && <Check className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
                   </button>
 
                   {subeler.map((sube) => (
@@ -512,41 +549,38 @@ export const Header: React.FC<HeaderProps> = ({
                         setActiveBranchIdState(sube.id);
                         setShowBranchMenu(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
                         activeBranchId === sube.id
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
-                      <div className="text-left">
-                        <div className="font-semibold text-slate-800 dark:text-slate-200">{sube.ad}</div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                          {sube.ilce}, {sube.sehir} • {sube.sporcuSayisi} Sporcu
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                           <Building2 className="w-5 h-5 text-slate-500" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{sube.ad}</div>
+                          <div className="text-xs text-slate-500">{sube.sporcuSayisi} Sporcu</div>
                         </div>
                       </div>
-                      {activeBranchId === sube.id && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />}
+                      {activeBranchId === sube.id && <Check className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
                     </button>
                   ))}
                 </div>
 
-                <div className="p-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 mt-1 flex flex-col gap-1">
+                <div className="px-6 pt-4 border-t border-slate-100 dark:border-slate-800 mt-2 space-y-3">
                   <button
-                    onClick={() => {
-                      setShowBranchMenu(false);
-                      onNavigate?.('sube-ozet');
-                    }}
-                    className="w-full text-center py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-colors cursor-pointer"
+                    onClick={() => { setShowBranchMenu(false); onNavigate?.('sube-ozet'); }}
+                    className="w-full flex items-center justify-between text-blue-600 dark:text-blue-400 text-sm font-bold hover:underline"
                   >
-                    📊 Şube Özeti &amp; Finansal Rapor &rarr;
+                    Şube Özeti & Finansal Rapor <ArrowRight className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowBranchMenu(false);
-                      onNavigate?.('subeler');
-                    }}
-                    className="w-full text-center py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                  <button 
+                     onClick={() => { setShowBranchMenu(false); onNavigate?.('subeler'); }}
+                     className="w-full text-left text-slate-600 dark:text-slate-400 text-sm font-semibold hover:text-slate-900 dark:hover:text-slate-100"
                   >
-                    🏢 Şube Listesi &amp; Tesis Yönetimi
+                    Şube Listesi & Tesis Yönetimi
                   </button>
                 </div>
               </div>
@@ -676,14 +710,24 @@ export const Header: React.FC<HeaderProps> = ({
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-1.5">
+                    {/* SporPuan Push Toast Test Button */}
+                    <button
+                      onClick={handleSimulateSporPuan}
+                      className="text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 hover:text-amber-900 px-2 py-1 rounded-md font-bold border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                      title="Anlık SporPuan Kazanımı ve Push Uyarısı Tetikle"
+                    >
+                      <Zap className="w-2.5 h-2.5 fill-amber-500 text-amber-600" />
+                      <span>+ Puan Push</span>
+                    </button>
+
                     {/* Simulator Button */}
                     <button
                       onClick={handleSimulateNotification}
                       className="text-[10px] bg-slate-100 dark:bg-[#162238] hover:bg-blue-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded-md font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                       title="Yeni simüle bildirim tetikle"
                     >
-                      ⚡ Test Bildirim
+                      Test
                     </button>
                     
                     <button
@@ -723,6 +767,8 @@ export const Header: React.FC<HeaderProps> = ({
                             return <Gift className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
                           case 'training':
                             return <ClipboardCheck className="w-4 h-4 text-rose-500 dark:text-rose-400" />;
+                          case 'sporpuan':
+                            return <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />;
                           default:
                             return <Info className="w-4 h-4 text-slate-500" />;
                         }
@@ -742,6 +788,8 @@ export const Header: React.FC<HeaderProps> = ({
                             return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100/50 dark:border-emerald-900/30';
                           case 'training':
                             return 'bg-rose-50 dark:bg-rose-950/30 border-rose-100/50 dark:border-rose-900/30';
+                          case 'sporpuan':
+                            return 'bg-amber-50 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/50';
                           default:
                             return 'bg-slate-50 dark:bg-slate-900/50 border-slate-100';
                         }

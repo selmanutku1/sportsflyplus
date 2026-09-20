@@ -577,18 +577,16 @@ export const YoneticilerView: React.FC = () => {
           })}
         </div>
 
-        {/* Informational Sub-header on "Erişilme / Spor Okulu Girişi & Paket Sınırları" */}
-        <div className="mb-4 px-3.5 py-2.5 rounded-lg bg-blue-50/70 border border-blue-200/70 flex items-center justify-between text-xs text-blue-900 gap-3">
+        {/* Sub-header */}
+        <div className="mb-4 px-3.5 py-2.5 flex items-center justify-between text-xs text-slate-500">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>
-              <b>Yönetici Paket &amp; Yetki Sınırları:</b> Yöneticinin paket türünü doğrudan değiştirebilirsiniz. Değiştirilen paket türü doğrultusunda ilgili spor okulu yöneticisinin modüllere (Eğitmenler, Gruplar, Ön Muhasebe, Sporpuan) erişimi anında sınırlandırılır veya açılır.
-            </span>
+            <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>Yönetici Listesi ve Yetkilendirme</span>
           </div>
           {selectedIds.length > 0 && (
             <button
               onClick={() => setSelectedIds([])}
-              className="text-blue-700 hover:underline shrink-0 font-medium"
+              className="text-emerald-700 hover:underline shrink-0 font-medium"
             >
               Seçimi Temizle ({selectedIds.length})
             </button>
@@ -606,12 +604,12 @@ export const YoneticilerView: React.FC = () => {
             return (
               <div
                 key={manager.id}
-                className={`p-3.5 rounded-xl border transition-all space-y-3 ${
+                className={`group p-5 rounded-2xl border transition-all space-y-4 ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-50/40 shadow-xs ring-1 ring-blue-500/20'
+                    ? 'border-emerald-500 bg-emerald-50/30 shadow-sm'
                     : isCurrentActive
-                    ? 'border-cyan-500 bg-cyan-50/30'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-cyan-500 bg-cyan-50/20'
+                    : 'border-slate-100 bg-white hover:border-slate-200 shadow-sm hover:shadow-md'
                 }`}
               >
                 {/* Header: Select + Avatar + Info + Accessibility Pill */}
@@ -674,33 +672,33 @@ export const YoneticilerView: React.FC = () => {
                   {/* Accessibility Toggle Button */}
                   <button
                     onClick={(e) => handleToggleAccessibility(manager.id, e)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shadow-2xs shrink-0 cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 cursor-pointer ${
                       manager.accessibility === 'Erişilebilir'
                         ? 'bg-[#188038] hover:bg-[#137333] text-white'
                         : 'bg-[#d93025] hover:bg-[#b3261e] text-white'
                     }`}
                   >
                     {manager.accessibility === 'Erişilebilir' ? (
-                      <Unlock className="w-3 h-3" />
+                      <Unlock className="w-4 h-4" />
                     ) : (
-                      <Lock className="w-3 h-3" />
+                      <Lock className="w-4 h-4" />
                     )}
                     <span>{manager.accessibility}</span>
                   </button>
                 </div>
 
                 {/* Details Grid: Telefon, Kod, Kayıt Tarihi */}
-                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
+                <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50/70 p-4 rounded-xl border border-slate-100">
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Telefon:</span>
-                    <a href={`tel:${manager.phone}`} className="font-medium text-slate-800 hover:text-blue-600">
+                    <span className="text-slate-400 block text-[11px] mb-0.5">Telefon:</span>
+                    <a href={`tel:${manager.phone}`} className="font-medium text-slate-900 hover:text-blue-600">
                       {manager.phone}
                     </a>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Kod / Tarih:</span>
-                    <span className="font-mono text-slate-700 font-semibold text-[11px]">{manager.code}</span>
-                    <span className="text-[10px] text-slate-400 block">{manager.createdAt}</span>
+                    <span className="text-slate-400 block text-[11px] mb-0.5">Kod / Tarih:</span>
+                    <span className="font-mono text-slate-900 font-semibold text-xs">{manager.code}</span>
+                    <span className="text-[11px] text-slate-500 block">{manager.createdAt}</span>
                   </div>
                 </div>
 
@@ -714,7 +712,7 @@ export const YoneticilerView: React.FC = () => {
                       onChange={(e) =>
                         handleChangeManagerPackage(manager.id, e.target.value as PackagePlanType)
                       }
-                      className={`text-xs font-bold px-2 py-1 rounded-lg border appearance-none pr-5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs ${planDetails.badgeClass}`}
+                      className={`text-sm font-bold px-4 py-2.5 rounded-xl border appearance-none pr-10 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm ${planDetails.badgeClass}`}
                     >
                       {CANONICAL_PACKAGES.map((plan) => {
                         const details = PACKAGE_DETAILS[plan];
@@ -727,10 +725,10 @@ export const YoneticilerView: React.FC = () => {
                     </select>
                     <button
                       onClick={() => handleOpenPackageModal(manager)}
-                      className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
                       title="Paket izinleri"
                     >
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                      <SlidersHorizontal className="w-5 h-5" />
                     </button>
                   </div>
 
@@ -744,10 +742,10 @@ export const YoneticilerView: React.FC = () => {
                         setInaccessibleModalManager(manager);
                       }
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+                    className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer ${
                       manager.accessibility === 'Erişilebilir'
                         ? 'bg-[#00c5eb] hover:bg-[#00b2d6] text-white'
-                        : 'bg-slate-200 text-slate-500'
+                        : 'bg-slate-100 text-slate-400'
                     }`}
                   >
                     <User className="w-3.5 h-3.5 fill-current" />
