@@ -22,6 +22,7 @@ export interface UserProfileData {
     defaultPage: string;
     dateFormat: string;
     soundEnabled: boolean;
+    theme?: 'light' | 'dark' | 'system';
   };
 }
 
@@ -48,6 +49,7 @@ export const DEFAULT_USER_PROFILE: UserProfileData = {
     defaultPage: 'on-kayit',
     dateFormat: 'DD.MM.YYYY',
     soundEnabled: true,
+    theme: 'light',
   },
 };
 

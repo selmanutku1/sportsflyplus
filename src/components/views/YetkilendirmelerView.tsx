@@ -6,7 +6,6 @@ import {
   RotateCcw,
   CheckCircle2,
   ShieldCheck,
-  Sparkles,
   Info,
 } from 'lucide-react';
 

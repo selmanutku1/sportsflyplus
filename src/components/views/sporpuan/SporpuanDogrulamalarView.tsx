@@ -15,11 +15,14 @@ import {
   QrCode,
   Check,
   X,
-  Sparkles,
 } from 'lucide-react';
+import { SportsFlyIcon } from '../../SportsFlyLogo';
 import { SporpuanVerification } from '../../../types';
+import { isSuperAdminUser } from '../../../data/packagePermissions';
+import { getStoredUserProfile } from '../../../data/userProfile';
 
 export const SporpuanDogrulamalarView: React.FC = () => {
+  const isSuperAdmin = isSuperAdminUser(getStoredUserProfile()?.role);
   const [verifications, setVerifications] = useState<SporpuanVerification[]>([
     {
       id: 'v-1',
@@ -187,11 +190,17 @@ export const SporpuanDogrulamalarView: React.FC = () => {
       {/* Hero Banner */}
       <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 rounded-2xl p-6 text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-xs flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-200" />
               Sporpuan Güven &amp; Akreditasyon
             </span>
+            {isSuperAdmin && (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold text-xs border border-amber-400/30 flex items-center gap-1 shadow-2xs backdrop-blur-xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+                Süper Admin Yetkisiyle Açık
+              </span>
+            )}
             <span className="text-xs text-blue-200 font-medium">
               sporpuan.com Rozet Doğrulama Sistemi
             </span>
@@ -240,7 +249,7 @@ export const SporpuanDogrulamalarView: React.FC = () => {
           </div>
 
           <div className="text-xs text-slate-500 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500" />
+            <SportsFlyIcon className="w-4 h-4" />
             <span>Doğrulanmış rozetler sporpuan.com aramalarında 3 kat daha fazla görüntülenir.</span>
           </div>
         </div>

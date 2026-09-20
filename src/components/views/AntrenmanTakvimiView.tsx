@@ -15,8 +15,8 @@ import {
   FileText,
   Filter,
   Layers,
-  Sparkles,
 } from 'lucide-react';
+import { SportsFlyIcon } from '../SportsFlyLogo';
 import { INITIAL_ANTRENMANLAR } from '../../data/mockAntrenmanlar';
 import { AntrenmanItem, AntrenmanAttendee } from '../../types';
 
@@ -435,7 +435,7 @@ export const AntrenmanTakvimiView: React.FC = () => {
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <Sparkles className="w-4 h-4 text-blue-400" />
+          <SportsFlyIcon className="w-4 h-4" />
           <span>{toastMessage}</span>
         </div>
       )}

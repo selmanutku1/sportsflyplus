@@ -1,20 +1,22 @@
 import React from 'react';
 import {
   Lock,
-  Sparkles,
   ArrowRight,
   CheckCircle2,
   Phone,
   ShieldAlert,
   Zap,
 } from 'lucide-react';
+import { SportsFlyIcon } from '../SportsFlyLogo';
 import { NavPage, PackagePlanType } from '../../types';
 import {
   PACKAGE_DETAILS,
   PageRestrictionRule,
   setActiveSessionPlan,
   getPageRestrictionInfo,
+  isSuperAdminUser,
 } from '../../data/packagePermissions';
+import { getStoredUserProfile, saveStoredUserProfile } from '../../data/userProfile';
 
 interface PackageAccessRestrictedViewProps {
   page: NavPage;
@@ -37,18 +39,27 @@ export const PackageAccessRestrictedView: React.FC<PackageAccessRestrictedViewPr
     restriction ||
     restrictionInfo ||
     getPageRestrictionInfo(page) || {
-      page,
-      minPlan: 'Profesyonel',
+      minPlan: 'Kulüp & Akademi',
       minLevel: 2,
       featureTitle: 'Modül Erişimi Kısıtlandı',
       description: 'Bu sayfaya erişebilmek için spor okulu paketinizin yükseltilmesi gerekmektedir.',
     };
 
-  const currentDetail = PACKAGE_DETAILS[currentPlan] || PACKAGE_DETAILS.Başlangıç;
-  const requiredDetail = PACKAGE_DETAILS[activeRestriction.minPlan] || PACKAGE_DETAILS.Kurumsal;
+  const currentDetail = PACKAGE_DETAILS[currentPlan] || PACKAGE_DETAILS['Başlangıç Kulübü'];
+  const requiredDetail = PACKAGE_DETAILS[activeRestriction.minPlan] || PACKAGE_DETAILS['Pro Akademi & Çoklu Şube'];
+
+  const userProfile = getStoredUserProfile();
+  const isSuper = isSuperAdminUser(userProfile?.role);
 
   const handleInstantUpgrade = () => {
     setActiveSessionPlan(activeRestriction.minPlan);
+  };
+
+  const handleSuperAdminBypass = () => {
+    if (!isSuper) {
+      saveStoredUserProfile({ ...userProfile, role: 'Süper Admin' });
+    }
+    onNavigate(page);
   };
 
   const handleUpgradeClick = () => {
@@ -96,13 +107,21 @@ export const PackageAccessRestrictedView: React.FC<PackageAccessRestrictedViewPr
               onClick={handleUpgradeClick}
               className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4" />
+              <SportsFlyIcon className="w-4 h-4" />
               <span>Paketleri İncele &amp; Yükselt</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
+              onClick={handleSuperAdminBypass}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+              title="Süper Admin hesabı ile bu modüle doğrudan erişin"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-slate-900" />
+              <span>Süper Admin Olarak Eriş</span>
+            </button>
+            <button
               onClick={handleInstantUpgrade}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-indigo-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-white/15 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-indigo-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-white/15 cursor-pointer"
               title="Geliştirici / Yönetici Hızlı Testi: Bu pakete anında geçiş yapın"
             >
               <Zap className="w-3.5 h-3.5 text-amber-400" />
@@ -170,7 +189,7 @@ export const PackageAccessRestrictedView: React.FC<PackageAccessRestrictedViewPr
             <ul className="space-y-1.5 text-xs text-slate-700">
               {requiredDetail.allowedModules.map((m, idx) => (
                 <li key={idx} className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                  <SportsFlyIcon className="w-4 h-4 shrink-0" />
                   <span className="font-medium text-slate-900">{m}</span>
                 </li>
               ))}

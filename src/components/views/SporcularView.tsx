@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   UploadCloud,
@@ -6,7 +6,6 @@ import {
   Link2,
   Send,
   Search,
-  FileText,
   FileSpreadsheet,
   Check,
   Edit2,
@@ -16,14 +15,63 @@ import {
   CheckCircle2,
   QrCode,
   FileUp,
+  User,
+  FileDown,
+  Filter,
+  Users,
+  UserCheck,
+  UserX,
+  Phone,
+  Calendar,
+  ChevronRight,
+  BarChart3,
+  Building2,
 } from 'lucide-react';
 import { INITIAL_SPORCULAR } from '../../data/mockData';
-import { SporcuItem } from '../../types';
+import { SporcuItem, NavPage } from '../../types';
+import { SporcuProfiliView } from './SporcuProfiliView';
+import { SporcuD3OzetAlani } from './sporcu/SporcuD3OzetAlani';
+import { downloadSporcuDevelopmentPdfReport } from '../../utils/sporcuPdfReportGenerator';
 
-export const SporcularView: React.FC = () => {
-  const [sporcular, setSporcular] = useState<SporcuItem[]>(INITIAL_SPORCULAR);
+interface SporcularViewProps {
+  onNavigate?: (page: NavPage) => void;
+}
+
+export const SporcularView: React.FC<SporcularViewProps> = ({ onNavigate }) => {
+  const [sporcular, setSporcular] = useState<SporcuItem[]>(() => {
+    const saved = localStorage.getItem('sportsfly_sporcular');
+    return saved ? JSON.parse(saved) : INITIAL_SPORCULAR;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sportsfly_sporcular', JSON.stringify(sporcular));
+  }, [sporcular]);
+
+  // Synchronize on cross-view changes
+  useEffect(() => {
+    const handleSync = () => {
+      const saved = localStorage.getItem('sportsfly_sporcular');
+      if (saved) {
+        setSporcular(JSON.parse(saved));
+      }
+    };
+    window.addEventListener('sportsfly_sporcular_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('sportsfly_sporcular_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'passive'>('all');
+  const [selectedFacility, setSelectedFacility] = useState<string>('all');
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => INITIAL_SPORCULAR[0]?.id || 's-1'
+  );
+  const [viewingProfileSporcu, setViewingProfileSporcu] = useState<SporcuItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modals
@@ -37,12 +85,16 @@ export const SporcularView: React.FC = () => {
   // Form states
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formPhone, setFormPhone] = useState('');
+  const [formBranch, setFormBranch] = useState('Basketbol');
+  const [formTeamGroup, setFormTeamGroup] = useState('U14 Erkek Gelişim');
   const [formFacility, setFormFacility] = useState('DigiMondi');
+  const [formBirthDate, setFormBirthDate] = useState('2012-05-15');
 
   // Pre-registration list mock
   const [preRegistrations, setPreRegistrations] = useState([
-    { id: 'pr-1', name: 'Barış Koçak', email: 'baris.k@gmail.com', phone: '+90 530 111 22 33', facility: 'Saraçgym', date: '09.09.2024' },
-    { id: 'pr-2', name: 'Ezgi Yılmaz', email: 'ezgiyilmaz@gmail.com', phone: '+90 535 999 88 77', facility: 'DigiMondi', date: '08.09.2024' },
+    { id: 'pr-1', name: 'Barış Koçak', email: 'baris.k@gmail.com', phone: '+90 530 111 22 33', facility: 'Saraçgym', branch: 'Basketbol', date: '09.09.2024' },
+    { id: 'pr-2', name: 'Ezgi Yılmaz', email: 'ezgiyilmaz@gmail.com', phone: '+90 535 999 88 77', facility: 'DigiMondi', branch: 'Voleybol', date: '08.09.2024' },
   ]);
 
   // Invite link
@@ -52,6 +104,7 @@ export const SporcularView: React.FC = () => {
   // Message modal state
   const [messageChannel, setMessageChannel] = useState<'sms' | 'email'>('sms');
   const [messageContent, setMessageContent] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -66,28 +119,42 @@ export const SporcularView: React.FC = () => {
     triggerToast('Sporcu aktiflik durumu güncellendi.');
   };
 
+  const handleDeleteSporcu = (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`${name} isimli sporcuyu listeden kaldırmak istediğinize emin misiniz?`)) {
+      setSporcular((prev) => prev.filter((s) => s.id !== id));
+      triggerToast(`${name} listeden kaldırıldı.`);
+    }
+  };
+
   const handleAddSporcu = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) return;
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const now = new Date();
-    const formattedDate = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+    const formattedDate = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
 
     const newSporcu: SporcuItem = {
       id: `s-${Date.now()}`,
       name: formName,
       email: formEmail,
+      phone: formPhone || '+90 530 000 00 00',
+      branch: formBranch,
+      teamGroup: formTeamGroup,
+      birthDate: formBirthDate,
       code,
       date: formattedDate,
       facility: formFacility,
       isActive: true,
+      avatarUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&auto=format&fit=crop&q=80',
     };
 
     setSporcular([newSporcu, ...sporcular]);
     setShowAddModal(false);
     setFormName('');
     setFormEmail('');
+    setFormPhone('');
     triggerToast(`Yeni sporcu ${formName} başarıyla eklendi.`);
   };
 
@@ -108,10 +175,14 @@ export const SporcularView: React.FC = () => {
       id: `s-${Date.now()}`,
       name: item.name,
       email: item.email,
+      phone: item.phone,
+      branch: item.branch || 'Basketbol',
+      teamGroup: 'Aday Grubu',
       code,
       date: item.date,
       facility: item.facility,
       isActive: true,
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
     };
     setSporcular([newSporcu, ...sporcular]);
     setPreRegistrations(preRegistrations.filter((p) => p.id !== item.id));
@@ -121,10 +192,13 @@ export const SporcularView: React.FC = () => {
   const handleExportExcel = () => {
     triggerToast('Sporcu listesi Excel olarak dışa aktarılıyor...');
     setTimeout(() => {
-      const headers = ['Sporcu Adı', 'E-posta', 'Sporcu Kodu', 'Kayıt Tarihi', 'Kulüp', 'Aktif'];
-      const rows = sporcular.map((s) => [
+      const headers = ['Sporcu Adı', 'E-posta', 'Telefon', 'Branş', 'Grup', 'Sporcu Kodu', 'Kayıt Tarihi', 'Kulüp', 'Aktiflik'];
+      const rows = filteredSporcular.map((s) => [
         s.name,
         s.email,
+        s.phone || '-',
+        s.branch || '-',
+        s.teamGroup || '-',
         s.code,
         s.date,
         s.facility,
@@ -141,14 +215,28 @@ export const SporcularView: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       triggerToast('Excel başarıyla indirildi.');
-    }, 500);
+    }, 400);
   };
 
-  const handleExportPDF = () => {
-    triggerToast('PDF Sporcu Raporu oluşturuluyor...');
-    setTimeout(() => {
-      window.print();
-    }, 400);
+  const handleDownloadPDFReport = async (targetSporcu?: SporcuItem) => {
+    const target =
+      targetSporcu ||
+      sporcular.find((s) => s.id === selectedId) ||
+      sporcular[0];
+
+    if (!target || isGeneratingPdf) return;
+
+    try {
+      setIsGeneratingPdf(true);
+      triggerToast(`${target.name} için gelişim & katılım PDF raporu hazırlanıyor...`);
+      await downloadSporcuDevelopmentPdfReport({ sporcu: target });
+      triggerToast(`✓ ${target.name} PDF raporu başarıyla indirildi!`);
+    } catch (err) {
+      console.error('PDF indirme hatası:', err);
+      triggerToast('PDF oluşturulurken bir hata meydana geldi.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -156,230 +244,291 @@ export const SporcularView: React.FC = () => {
     if (!messageContent.trim()) return;
     setShowMessageModal(false);
     setMessageContent('');
-    triggerToast(`Mesaj ${sporcular.length} sporcuya başarıyla gönderildi.`);
+    triggerToast(`Mesaj ${filteredSporcular.length} sporcuya başarıyla iletildi.`);
   };
 
+  // Filter athletes
   const filteredSporcular = sporcular.filter((s) => {
     const q = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       s.name.toLowerCase().includes(q) ||
       s.email.toLowerCase().includes(q) ||
       s.code.includes(q) ||
-      s.facility.toLowerCase().includes(q)
-    );
+      (s.phone && s.phone.includes(q)) ||
+      (s.branch && s.branch.toLowerCase().includes(q)) ||
+      (s.facility && s.facility.toLowerCase().includes(q));
+
+    const matchesBranch = selectedBranch === 'all' || s.branch === selectedBranch;
+    const matchesStatus =
+      selectedStatus === 'all' ||
+      (selectedStatus === 'active' && s.isActive) ||
+      (selectedStatus === 'passive' && !s.isActive);
+    const matchesFacility =
+      selectedFacility === 'all' || s.facility.toLowerCase() === selectedFacility.toLowerCase();
+
+    return matchesSearch && matchesBranch && matchesStatus && matchesFacility;
   });
+
+  const totalCount = sporcular.length;
+  const activeCount = sporcular.filter((s) => s.isActive).length;
+  const passiveCount = totalCount - activeCount;
+
+  // If a sporcu profile is being viewed, render the detailed profile view
+  if (viewingProfileSporcu) {
+    return (
+      <div className="space-y-4">
+        <SporcuProfiliView
+          sporcu={viewingProfileSporcu}
+          allSporcular={sporcular}
+          onBack={() => setViewingProfileSporcu(null)}
+          onSelectSporcu={(next) => {
+            setSelectedId(next.id);
+            setViewingProfileSporcu(next);
+          }}
+          onNavigate={onNavigate}
+          onEditSporcu={(s) => setEditingSporcu(s)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Toast */}
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-150">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="text-sm font-medium">{toastMessage}</span>
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 border border-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs sm:text-sm font-medium">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Main Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6">
-        {/* Top Control Bar matching Screenshot 8 exactly */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-slate-100">
-          {/* Action buttons on the left matching Screenshot 8 */}
+      {/* 1. Sade Başlık & Özet Metrik Çubuğu */}
+      <div className="bg-white dark:bg-[#111c2e] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+              Sporcular
+            </h1>
+            <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/60">
+              {totalCount} Kayıtlı
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Kulüp sporcu havuzunuzu, lisans bilgilerini, aktiflik durumlarını ve iletişim detaylarını yönetin.
+          </p>
+        </div>
+
+        {/* Hızlı Özet Sayaçları (Kompakt Rozetler) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#162238] border border-slate-200/70 dark:border-slate-700">
+            <UserCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs text-slate-500 dark:text-slate-400">Aktif:</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{activeCount}</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#162238] border border-slate-200/70 dark:border-slate-700">
+            <UserX className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs text-slate-500 dark:text-slate-400">Pasif:</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{passiveCount}</span>
+          </div>
+
+          <button
+            onClick={() => setShowPreRegModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 transition-colors cursor-pointer"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold">Ön Kayıt:</span>
+            <span className="text-xs font-bold bg-blue-600 text-white rounded-full px-1.5 py-0.2">{preRegistrations.length}</span>
+          </button>
+
+          <button
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+              showAnalytics
+                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                : 'bg-white dark:bg-[#111c2e] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+            }`}
+            title="D3 Performans ve Katılım Grafiği"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>{showAnalytics ? 'Grafiği Gizle' : 'Grafik Analiz'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* İsteğe Bağlı D3 Gelişim & Katılım Analizi Alanı (Açılıp Kapanabilir) */}
+      {showAnalytics && (
+        <div className="animate-in fade-in duration-200">
+          <SporcuD3OzetAlani
+            sporcular={sporcular}
+            selectedSporcuId={selectedId}
+            onSelectSporcu={(id) => setSelectedId(id)}
+            onOpenProfile={(sporcu) => {
+              setSelectedId(sporcu.id);
+              setViewingProfileSporcu(sporcu);
+            }}
+          />
+        </div>
+      )}
+
+      {/* 2. Ana Kart: Sade Kontrol Çubuğu, Filtreler & Tablo */}
+      <div className="bg-white dark:bg-[#111c2e] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
+        {/* Üst İşlem ve Arama Çubuğu */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          {/* Sol İşlem Butonları (Sade & Düzenli Grup) */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Green "+" button */}
+            {/* Primary: Yeni Sporcu Ekle */}
             <button
               id="btn-add-sporcu"
               onClick={() => setShowAddModal(true)}
-              className="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center shadow-xs transition-colors"
-              title="Yeni Sporcu Ekle"
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
+              <span>Yeni Sporcu Ekle</span>
             </button>
 
-            {/* Blue "Sporcu Yükle" button */}
+            {/* Toplu Yükle */}
             <button
               id="btn-upload-sporcu"
               onClick={() => setShowUploadModal(true)}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
+              className="px-3 py-2 bg-slate-100 dark:bg-[#162238] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/70 dark:border-slate-700"
             >
-              <UploadCloud className="w-4 h-4" />
-              Sporcu Yükle
+              <UploadCloud className="w-3.5 h-3.5 text-slate-500" />
+              <span>Toplu Yükle</span>
             </button>
 
-            {/* Dark gray "Ön Kayıt" button */}
-            <button
-              id="btn-pre-reg"
-              onClick={() => setShowPreRegModal(true)}
-              className="px-4 py-2.5 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
-            >
-              <ClipboardList className="w-4 h-4" />
-              Ön Kayıt ({preRegistrations.length})
-            </button>
-
-            {/* Red "Davet Linki Oluştur" button */}
+            {/* Davet Linki */}
             <button
               id="btn-invite-link"
               onClick={() => setShowInviteModal(true)}
-              className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
+              className="px-3 py-2 bg-slate-100 dark:bg-[#162238] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/70 dark:border-slate-700"
             >
-              <Link2 className="w-4 h-4" />
-              Davet Linki Oluştur
+              <Link2 className="w-3.5 h-3.5 text-slate-500" />
+              <span>Davet Linki</span>
             </button>
 
-            {/* Cyan "Mesaj Gönder" button */}
+            {/* Mesaj Gönder */}
             <button
               id="btn-send-message"
               onClick={() => setShowMessageModal(true)}
-              className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
+              className="px-3 py-2 bg-slate-100 dark:bg-[#162238] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/70 dark:border-slate-700"
             >
-              <Send className="w-4 h-4" />
-              Mesaj Gönder
+              <Send className="w-3.5 h-3.5 text-slate-500" />
+              <span>Toplu Mesaj</span>
             </button>
           </div>
 
-          {/* Search, PDF, Excel on the right matching Screenshot 8 */}
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-60">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          {/* Sağ Alan: Arama, PDF Rapor, Excel */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Arama Input */}
+            <div className="relative flex-1 sm:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Sporcu Ara"
+                placeholder="İsim, e-posta veya kod ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all font-medium"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-[#162238] border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100 placeholder-slate-400 font-medium"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
             </div>
 
-            {/* Red "PDF" button */}
+            {/* Rapor İndir (PDF) */}
             <button
-              onClick={handleExportPDF}
-              className="px-3.5 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 shadow-xs transition-colors"
-              title="PDF İndir"
+              id="btn-sporcular-rapor-indir"
+              onClick={() => handleDownloadPDFReport()}
+              disabled={isGeneratingPdf}
+              className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
+              title="Seçili sporcu için gelişim & katılım PDF raporu oluştur"
             >
-              <FileText className="w-4 h-4" />
-              PDF
+              {isGeneratingPdf ? (
+                <div className="w-3.5 h-3.5 border-2 border-rose-600/30 border-t-rose-600 rounded-full animate-spin" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5" />
+              )}
+              <span>{isGeneratingPdf ? 'İndiriliyor...' : 'PDF Rapor'}</span>
             </button>
 
-            {/* Green "Excel" button */}
+            {/* Excel Dışa Aktar */}
             <button
               onClick={handleExportExcel}
-              className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 shadow-xs transition-colors"
-              title="Excel İndir"
+              className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Excel (CSV) Olarak İndir"
             >
-              <FileSpreadsheet className="w-4 h-4" />
-              Excel
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Excel</span>
             </button>
           </div>
         </div>
 
-        {/* Mobile Cards for Athletes (<640px) */}
-        <div className="block sm:hidden space-y-3 pt-4">
-          {filteredSporcular.length > 0 ? (
-            filteredSporcular.map((sporcu) => {
-              const isChecked = selectedId === sporcu.id;
+        {/* Branş ve Durum Hızlı Filtre Sekmeleri */}
+        <div className="px-4 py-2.5 bg-slate-50/60 dark:bg-[#162238]/30 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+          {/* Branş Tabları */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-slate-400 font-medium mr-1 text-[11px]">Branş:</span>
+            {['all', 'Basketbol', 'Voleybol', 'Yüzme', 'Jimnastik'].map((b) => (
+              <button
+                key={b}
+                onClick={() => setSelectedBranch(b)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  selectedBranch === b
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-white dark:bg-[#111c2e] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700'
+                }`}
+              >
+                {b === 'all' ? 'Tüm Branşlar' : b}
+              </button>
+            ))}
+          </div>
 
-              return (
-                <div
-                  key={sporcu.id}
-                  onClick={() => setSelectedId(sporcu.id)}
-                  className={`p-3.5 rounded-xl border transition-all space-y-3 cursor-pointer ${
-                    isChecked
-                      ? 'border-blue-500 bg-blue-50/40 shadow-xs ring-1 ring-blue-500/20'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      {/* Radio / Checkbox */}
-                      <div className="pt-1 shrink-0">
-                        <input
-                          type="radio"
-                          name="selectedSporcuMobile"
-                          checked={isChecked}
-                          onChange={() => setSelectedId(sporcu.id)}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                        />
-                      </div>
+          {/* Durum & Tesis Filtresi */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value as any)}
+              className="px-2.5 py-1 text-xs bg-white dark:bg-[#111c2e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-hidden"
+            >
+              <option value="all">Tüm Durumlar</option>
+              <option value="active">Yalnızca Aktifler</option>
+              <option value="passive">Yalnızca Pasifler</option>
+            </select>
 
-                      {/* Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center text-white shrink-0 shadow-2xs">
-                        <svg className="w-6 h-6 text-slate-100" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                        </svg>
-                      </div>
-
-                      {/* Name & Code */}
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">
-                          {sporcu.name}
-                        </h4>
-                        <p className="text-xs text-slate-500 truncate">{sporcu.email}</p>
-                        <p className="text-[11px] font-mono text-slate-600 font-semibold mt-0.5">
-                          {sporcu.code}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Active toggle */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleActive(sporcu.id, e);
-                      }}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shrink-0 ${
-                        sporcu.isActive
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-slate-100 text-slate-400 border border-slate-200'
-                      }`}
-                      title={sporcu.isActive ? 'Aktif (Pasife al)' : 'Pasif (Aktif et)'}
-                    >
-                      <Check className={`w-3.5 h-3.5 stroke-[2.5] ${sporcu.isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
-                      <span>{sporcu.isActive ? 'Aktif' : 'Pasif'}</span>
-                    </button>
-                  </div>
-
-                  {/* Club & Date & Edit Action */}
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                    <div className="text-slate-600 min-w-0 pr-2">
-                      <span className="text-slate-400 block text-[10px]">Kulüp / Tarih:</span>
-                      <p className="font-semibold text-slate-800 truncate">{sporcu.facility}</p>
-                      <p className="text-[11px] text-slate-400">{sporcu.date}</p>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingSporcu(sporcu);
-                      }}
-                      className="px-3 py-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span>Düzenle</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="py-10 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 p-4">
-              <p className="text-sm font-semibold text-slate-600">Arama kriterine uygun sporcu bulunamadı.</p>
-            </div>
-          )}
+            <select
+              value={selectedFacility}
+              onChange={(e) => setSelectedFacility(e.target.value)}
+              className="px-2.5 py-1 text-xs bg-white dark:bg-[#111c2e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-hidden"
+            >
+              <option value="all">Tüm Tesisler</option>
+              <option value="DigiMondi">DigiMondi</option>
+              <option value="Saraçgym">Saraçgym</option>
+              <option value="aicosports">aicosports</option>
+              <option value="Selman Utku">Selman Utku</option>
+            </select>
+          </div>
         </div>
 
-        {/* Table matching Screenshot 8 */}
-        <div className="hidden sm:block overflow-x-auto pt-4">
-          <table className="w-full text-left text-sm">
+        {/* Sporcu Tablosu (Masaüstü & Tablet) */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-xs font-bold text-slate-700">
-                <th className="pb-3 px-3 w-10"></th>
-                <th className="pb-3 px-3">Sporcu</th>
-                <th className="pb-3 px-3">Tarih</th>
-                <th className="pb-3 px-3">Kulüp/Bireysel Adı</th>
-                <th className="pb-3 px-3 text-center">Aktif</th>
-                <th className="pb-3 px-3 text-right">İşlem</th>
+              <tr className="bg-slate-50/70 dark:bg-[#162238]/60 border-b border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+                <th className="py-3 px-4 w-10 text-center">Seçim</th>
+                <th className="py-3 px-4">Sporcu Bilgileri</th>
+                <th className="py-3 px-4">Branş &amp; Yaş Grubu</th>
+                <th className="py-3 px-4">Tesis / Kulüp</th>
+                <th className="py-3 px-4">Kayıt Tarihi</th>
+                <th className="py-3 px-4 text-center">Durum</th>
+                <th className="py-3 px-4 text-right">İşlemler</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredSporcular.length > 0 ? (
                 filteredSporcular.map((sporcu) => {
                   const isChecked = selectedId === sporcu.id;
@@ -388,179 +537,307 @@ export const SporcularView: React.FC = () => {
                     <tr
                       key={sporcu.id}
                       onClick={() => setSelectedId(sporcu.id)}
-                      className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${
-                        isChecked ? 'bg-blue-50/30' : ''
+                      className={`hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors cursor-pointer ${
+                        isChecked ? 'bg-blue-50/30 dark:bg-blue-950/20' : ''
                       }`}
                     >
-                      {/* Checkbox */}
-                      <td className="py-4 px-3">
+                      {/* Radio Selection */}
+                      <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="radio"
                           name="selectedSporcu"
                           checked={isChecked}
                           onChange={() => setSelectedId(sporcu.id)}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300"
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600 cursor-pointer"
                         />
                       </td>
 
-                      {/* Sporcu: Avatar + Name + Email + Code */}
-                      <td className="py-4 px-3">
-                        <div className="flex items-start gap-3.5">
-                          {/* Silhouette Avatar matching screenshot */}
-                          <div className="w-12 h-12 rounded-full bg-slate-600 flex items-center justify-center text-white shrink-0 shadow-2xs">
-                            <svg
-                              className="w-8 h-8 text-slate-100"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                            </svg>
-                          </div>
-
-                          <div className="space-y-0.5">
-                            <p className="font-bold text-slate-900 text-base">
-                              {sporcu.name}
-                            </p>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {sporcu.email}
-                            </p>
-                            <p className="text-xs font-mono font-semibold text-slate-700">
-                              {sporcu.code}
-                            </p>
+                      {/* Sporcu Info: Avatar + Name + Email + Phone + Code */}
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={sporcu.avatarUrl || 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&auto=format&fit=crop&q=80'}
+                            alt={sporcu.name}
+                            referrerPolicy="no-referrer"
+                            className="w-9 h-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0"
+                          />
+                          <div>
+                            <div className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm flex items-center gap-1.5">
+                              <span>{sporcu.name}</span>
+                              {sporcu.isActive && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Aktif Sporcu" />
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                              <span>{sporcu.email}</span>
+                              {sporcu.phone && (
+                                <>
+                                  <span className="mx-1">&bull;</span>
+                                  <span>{sporcu.phone}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+                              Lisans Kodu: <strong className="text-slate-600 dark:text-slate-400">{sporcu.code}</strong>
+                            </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Tarih */}
-                      <td className="py-4 px-3 whitespace-nowrap text-sm font-medium text-slate-700">
+                      {/* Branş & Yaş Grubu */}
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-800 dark:text-slate-200">
+                          {sporcu.teamGroup || 'Gelişim Takımı'}
+                        </div>
+                        <span className="inline-block text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded mt-0.5">
+                          {sporcu.branch || 'Basketbol'}
+                        </span>
+                      </td>
+
+                      {/* Tesis / Kulüp */}
+                      <td className="py-3 px-4">
+                        <div className="text-slate-700 dark:text-slate-300 font-medium">
+                          {sporcu.facility}
+                        </div>
+                      </td>
+
+                      {/* Kayıt Tarihi */}
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                         {sporcu.date}
                       </td>
 
-                      {/* İşletme/Bireysel Adı */}
-                      <td className="py-4 px-3 whitespace-nowrap text-sm font-semibold text-slate-800">
-                        {sporcu.facility}
-                      </td>
-
-                      {/* Aktif: Green checkmark in screenshot */}
-                      <td className="py-4 px-3 text-center">
+                      {/* Durum / Aktiflik Toggle */}
+                      <td className="py-3 px-4 text-center">
                         <button
                           onClick={(e) => handleToggleActive(sporcu.id, e)}
-                          className={`p-1.5 rounded-lg transition-colors ${
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
                             sporcu.isActive
-                              ? 'text-emerald-600 hover:bg-emerald-50'
-                              : 'text-slate-300 hover:bg-slate-100'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 hover:bg-emerald-100'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-200'
                           }`}
-                          title={sporcu.isActive ? 'Aktif (Pasif yap)' : 'Pasif (Aktif yap)'}
+                          title={sporcu.isActive ? 'Tıkla: Pasife al' : 'Tıkla: Aktif et'}
                         >
-                          <Check
-                            className={`w-6 h-6 stroke-[2.5] ${
-                              sporcu.isActive ? 'text-emerald-600' : 'text-slate-300'
-                            }`}
-                          />
+                          <Check className={`w-3 h-3 ${sporcu.isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+                          <span>{sporcu.isActive ? 'Aktif' : 'Pasif'}</span>
                         </button>
                       </td>
 
-                      {/* Actions: Edit pencil in screenshot */}
-                      <td className="py-4 px-3 text-right whitespace-nowrap">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingSporcu(sporcu);
-                          }}
-                          className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-xl transition-colors inline-flex items-center gap-1.5 font-semibold text-xs border border-amber-200/70"
-                          title="Sporcu Bilgilerini Düzenle"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                      {/* İşlemler */}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5">
+                          {/* Profil Butonu */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedId(sporcu.id);
+                              setViewingProfileSporcu(sporcu);
+                            }}
+                            className="px-2.5 py-1 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 rounded-lg transition-colors inline-flex items-center gap-1 font-bold text-xs border border-blue-200/70 dark:border-blue-800/70 cursor-pointer"
+                            title="Sporcu Profilini Aç"
+                          >
+                            <User className="w-3 h-3" />
+                            <span>Profil</span>
+                          </button>
+
+                          {/* Rapor PDF */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedId(sporcu.id);
+                              handleDownloadPDFReport(sporcu);
+                            }}
+                            className="px-2.5 py-1 text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-lg transition-colors inline-flex items-center gap-1 font-bold text-xs border border-rose-200/70 dark:border-rose-800/70 cursor-pointer"
+                            title="Gelişim ve Katılım PDF Raporunu İndir"
+                          >
+                            <FileDown className="w-3 h-3" />
+                            <span>Rapor</span>
+                          </button>
+
+                          {/* Düzenle */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingSporcu(sporcu);
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                            title="Düzenle"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Sil */}
+                          <button
+                            onClick={(e) => handleDeleteSporcu(sporcu.id, sporcu.name, e)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors cursor-pointer"
+                            title="Listeden Kaldır"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
-                    Arama kriterine uygun sporcu bulunamadı.
+                  <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                    <p className="font-semibold text-sm">Arama kriterlerine uygun sporcu bulunamadı.</p>
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedBranch('all');
+                        setSelectedStatus('all');
+                        setSelectedFacility('all');
+                      }}
+                      className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline mt-2 inline-block cursor-pointer"
+                    >
+                      Filtreleri Temizle
+                    </button>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Tablo Alt Bilgi Çubuğu */}
+        <div className="p-3.5 bg-slate-50/70 dark:bg-[#162238]/40 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <div>
+            Görüntülenen: <strong>{filteredSporcular.length}</strong> / {totalCount} Sporcu
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Aktif: {activeCount}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-slate-400" />
+              Pasif: {passiveCount}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Modal 1: Yeni Sporcu Ekle */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <Plus className="w-5 h-5 text-emerald-600" />
-                Yeni Sporcu Ekle
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c2e] rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <Plus className="w-4 h-4 text-blue-600" />
+                Yeni Sporcu Kaydı
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
               >
-                &times;
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddSporcu} className="py-4 space-y-3">
+            <form onSubmit={handleAddSporcu} className="py-4 space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Sporcu Adı Soyadı *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Örn: Selman Utku"
+                  placeholder="Örn: Emirhan Yıldız"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  E-posta Adresi *
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="Örn: selmanutkumarmara@gmail.com"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    E-posta Adresi *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="sporcu@gmail.com"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Telefon / Veli Telefonu
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+90 532 000 00 00"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Branş
+                  </label>
+                  <select
+                    value={formBranch}
+                    onChange={(e) => setFormBranch(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="Basketbol">Basketbol</option>
+                    <option value="Voleybol">Voleybol</option>
+                    <option value="Yüzme">Yüzme</option>
+                    <option value="Jimnastik">Jimnastik</option>
+                    <option value="Futbol">Futbol</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Grup / Kategori
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Örn: U14 Erkek Gelişim A"
+                    value={formTeamGroup}
+                    onChange={(e) => setFormTeamGroup(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kulüp / Bireysel Adı
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Kulüp / Tesis
                 </label>
                 <select
                   value={formFacility}
                   onChange={(e) => setFormFacility(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
                 >
-                  <option value="DigiMondi">DigiMondi</option>
-                  <option value="Selman Utku">Selman Utku</option>
-                  <option value="Saraçgym">Saraçgym</option>
-                  <option value="aicosports">aicosports</option>
+                  <option value="DigiMondi">DigiMondi (Merkez Kampüs)</option>
+                  <option value="Saraçgym">Saraçgym (Batı Tesisi)</option>
+                  <option value="aicosports">aicosports (Doğu Akademi)</option>
+                  <option value="Selman Utku">Selman Utku Bireysel</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs"
+                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-2xs cursor-pointer"
                 >
                   Sporcuyu Kaydet
                 </button>
@@ -570,27 +847,27 @@ export const SporcularView: React.FC = () => {
         </div>
       )}
 
-      {/* Modal 2: Sporcu Yükle (Excel/CSV drag-drop) */}
+      {/* Modal 2: Toplu Sporcu Yükle (Excel/CSV drag-drop) */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <UploadCloud className="w-5 h-5 text-blue-600" />
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c2e] rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <UploadCloud className="w-4 h-4 text-blue-600" />
                 Toplu Sporcu Yükleme (Excel / CSV)
               </h3>
               <button
                 onClick={() => setShowUploadModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
-                &times;
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="py-5 space-y-4">
-              <div className="border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-2xl p-8 text-center bg-blue-50/40 transition-colors cursor-pointer">
-                <FileUp className="w-10 h-10 text-blue-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-slate-800">
+            <div className="py-4 space-y-4">
+              <div className="border-2 border-dashed border-blue-200 dark:border-blue-900/60 hover:border-blue-400 rounded-2xl p-7 text-center bg-blue-50/30 dark:bg-blue-950/20 transition-colors cursor-pointer">
+                <FileUp className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Excel veya CSV dosyanızı buraya sürükleyin
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
@@ -603,64 +880,64 @@ export const SporcularView: React.FC = () => {
                   id="excel-file-input"
                   onChange={() => {
                     setShowUploadModal(false);
-                    triggerToast('Dosyadaki 12 sporcu başarıyla aktarıldı!');
+                    triggerToast('Dosyadaki sporcular başarıyla listeye aktarıldı!');
                   }}
                 />
                 <label
                   htmlFor="excel-file-input"
-                  className="inline-block mt-4 px-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
+                  className="inline-block mt-3 px-4 py-2 bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 cursor-pointer shadow-2xs"
                 >
                   Dosya Seç
                 </label>
               </div>
 
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 text-xs text-slate-600">
-                <span className="font-semibold text-slate-800 block mb-1">
-                  Örnek Şablon Sütunları:
+              <div className="bg-slate-50 dark:bg-[#162238]/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+                <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">
+                  Desteklenen Kolonlar:
                 </span>
-                Ad Soyad, E-posta, Telefon, Kulüp Adı, Lisans/Sporcu Kodu
+                Ad Soyad, E-posta, Telefon, Branş, Yaş Grubu, Tesis Adı, Lisans No
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal 3: Ön Kayıt Listesi */}
+      {/* Modal 3: Ön Kayıt Talepleri */}
       {showPreRegModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-slate-600" />
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c2e] rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-blue-600" />
                 Ön Kayıt Talepleri ({preRegistrations.length})
               </h3>
               <button
                 onClick={() => setShowPreRegModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
-                &times;
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="py-4 space-y-3 max-h-80 overflow-y-auto">
+            <div className="py-4 space-y-2.5 max-h-80 overflow-y-auto">
               {preRegistrations.length > 0 ? (
                 preRegistrations.map((item) => (
                   <div
                     key={item.id}
-                    className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3"
+                    className="p-3.5 bg-slate-50 dark:bg-[#162238]/60 border border-slate-200/80 dark:border-slate-700 rounded-xl flex items-center justify-between gap-3"
                   >
                     <div>
-                      <p className="font-bold text-slate-900 text-sm">{item.name}</p>
-                      <p className="text-xs text-slate-500">{item.email} • {item.phone}</p>
-                      <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mt-1 inline-block">
-                        {item.facility} • {item.date}
+                      <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{item.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.email} • {item.phone}</p>
+                      <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded mt-1 inline-block">
+                        {item.facility} • {item.branch} • {item.date}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => handleApprovePreReg(item)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-2xs cursor-pointer"
                       >
                         Onayla &amp; Ekle
                       </button>
@@ -669,7 +946,7 @@ export const SporcularView: React.FC = () => {
                           setPreRegistrations(preRegistrations.filter((p) => p.id !== item.id));
                           triggerToast('Ön kayıt reddedildi.');
                         }}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer"
                         title="Reddet"
                       >
                         <X className="w-4 h-4" />
@@ -687,34 +964,34 @@ export const SporcularView: React.FC = () => {
         </div>
       )}
 
-      {/* Modal 4: Davet Linki Oluştur */}
+      {/* Modal 4: Davet Linki & Karekod */}
       {showInviteModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <Link2 className="w-5 h-5 text-rose-600" />
-                Sporcu Davet Linki Oluştur
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c2e] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-blue-600" />
+                Sporcu Kayıt Davet Linki
               </h3>
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
-                &times;
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="py-4 space-y-4">
-              <p className="text-xs text-slate-600">
-                Bu davet bağlantısını sporcularınızla paylaşarak onların kendi bilgilerini ve sporcu kayıt formunu doldurmalarını sağlayabilirsiniz.
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Bu bağlantıyı veliler ve sporcularla paylaşarak dijital kayıt formunu doldurmalarını sağlayabilirsiniz.
               </p>
 
-              <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-[#162238] border border-slate-200 dark:border-slate-700 rounded-xl">
                 <input
                   type="text"
                   readOnly
                   value={inviteUrl}
-                  className="bg-transparent text-xs text-slate-700 font-mono flex-1 outline-hidden"
+                  className="bg-transparent text-xs text-slate-700 dark:text-slate-300 font-mono flex-1 outline-hidden px-2"
                 />
                 <button
                   onClick={() => {
@@ -722,20 +999,20 @@ export const SporcularView: React.FC = () => {
                     setCopiedLink(true);
                     setTimeout(() => setCopiedLink(false), 2000);
                   }}
-                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors"
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {copiedLink ? 'Kopyalandı' : 'Kopyala'}
                 </button>
               </div>
 
-              <div className="flex items-center justify-center p-4 bg-slate-50 rounded-xl border border-slate-200/60">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-white border border-slate-300 rounded-lg mx-auto flex items-center justify-center shadow-xs">
+              <div className="flex items-center justify-center p-4 bg-slate-50 dark:bg-[#162238]/60 rounded-xl border border-slate-200/60 dark:border-slate-700 text-center">
+                <div>
+                  <div className="w-24 h-24 bg-white border border-slate-300 rounded-lg mx-auto flex items-center justify-center shadow-2xs">
                     <QrCode className="w-20 h-20 text-slate-800" />
                   </div>
-                  <span className="text-[11px] text-slate-500 mt-2 block">
-                    Karekod ile Anında Katılım
+                  <span className="text-[11px] text-slate-500 mt-2 block font-medium">
+                    Karekod ile Kolay Kayıt
                   </span>
                 </div>
               </div>
@@ -746,47 +1023,47 @@ export const SporcularView: React.FC = () => {
 
       {/* Modal 5: Mesaj Gönder */}
       {showMessageModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <Send className="w-5 h-5 text-cyan-600" />
-                Sporculara Toplu Mesaj Gönder
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c2e] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <Send className="w-4 h-4 text-blue-600" />
+                Sporculara Toplu Duyuru / Mesaj
               </h3>
               <button
                 onClick={() => setShowMessageModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
-                &times;
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSendMessage} className="py-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input
                     type="radio"
                     name="msgChannel"
                     checked={messageChannel === 'sms'}
                     onChange={() => setMessageChannel('sms')}
-                    className="text-cyan-600 focus:ring-cyan-500"
+                    className="text-blue-600 focus:ring-blue-500"
                   />
                   SMS Bildirimi
                 </label>
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input
                     type="radio"
                     name="msgChannel"
                     checked={messageChannel === 'email'}
                     onChange={() => setMessageChannel('email')}
-                    className="text-cyan-600 focus:ring-cyan-500"
+                    className="text-blue-600 focus:ring-blue-500"
                   />
                   E-Posta Bülteni
                 </label>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Mesaj Metni *
                 </label>
                 <textarea
@@ -794,22 +1071,22 @@ export const SporcularView: React.FC = () => {
                   rows={4}
                   value={messageContent}
                   onChange={(e) => setMessageContent(e.target.value)}
-                  placeholder="Sporculara iletilecek duyuru veya mesaj metni..."
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500"
+                  placeholder="Sporculara veya velilere iletilecek bilgilendirme metni..."
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowMessageModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg shadow-xs flex items-center gap-1.5"
+                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   Gönder ({filteredSporcular.length} Sporcu)
@@ -822,24 +1099,24 @@ export const SporcularView: React.FC = () => {
 
       {/* Modal 6: Sporcu Bilgilerini Düzenle */}
       {editingSporcu && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <Edit2 className="w-5 h-5 text-amber-600" />
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c2e] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-amber-600" />
                 Sporcu Bilgilerini Düzenle
               </h3>
               <button
                 onClick={() => setEditingSporcu(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
-                &times;
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleEditSubmit} className="py-4 space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Ad Soyad
                 </label>
                 <input
@@ -849,12 +1126,12 @@ export const SporcularView: React.FC = () => {
                   onChange={(e) =>
                     setEditingSporcu({ ...editingSporcu, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   E-posta
                 </label>
                 <input
@@ -864,36 +1141,52 @@ export const SporcularView: React.FC = () => {
                   onChange={(e) =>
                     setEditingSporcu({ ...editingSporcu, email: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kulüp / Bireysel Adı
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editingSporcu.facility}
-                  onChange={(e) =>
-                    setEditingSporcu({ ...editingSporcu, facility: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Branş
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSporcu.branch || ''}
+                    onChange={(e) =>
+                      setEditingSporcu({ ...editingSporcu, branch: e.target.value })
+                    }
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Tesis / Kulüp
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingSporcu.facility}
+                    onChange={(e) =>
+                      setEditingSporcu({ ...editingSporcu, facility: e.target.value })
+                    }
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-[#162238] border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditingSporcu(null)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-xs"
+                  className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-2xs cursor-pointer"
                 >
                   Güncelle
                 </button>

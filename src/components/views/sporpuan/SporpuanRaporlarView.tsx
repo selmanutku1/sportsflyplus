@@ -14,12 +14,15 @@ import {
   FileText,
   Calendar,
   Building,
-  Sparkles,
   ArrowUpRight,
   ExternalLink,
 } from 'lucide-react';
+import { SportsFlyIcon } from '../../SportsFlyLogo';
+import { isSuperAdminUser } from '../../../data/packagePermissions';
+import { getStoredUserProfile } from '../../../data/userProfile';
 
 export const SporpuanRaporlarView: React.FC = () => {
+  const isSuperAdmin = isSuperAdminUser(getStoredUserProfile()?.role);
   const [dateRange, setDateRange] = useState('Son 30 Gün');
   const [selectedFacility, setSelectedFacility] = useState('Tümü');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -53,11 +56,17 @@ export const SporpuanRaporlarView: React.FC = () => {
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-2xl p-6 text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-xs flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-200" />
               Sporpuan İtibar &amp; Performans Raporu
             </span>
+            {isSuperAdmin && (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold text-xs border border-amber-400/30 flex items-center gap-1 shadow-2xs backdrop-blur-xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+                Süper Admin Yetkisiyle Açık
+              </span>
+            )}
             <span className="text-xs text-emerald-100 font-medium">
               sporpuan.com Analitik Motoru
             </span>
@@ -293,7 +302,7 @@ export const SporpuanRaporlarView: React.FC = () => {
           <div className="space-y-3 pt-2">
             <div>
               <span className="text-xs font-bold text-slate-800 block mb-1.5 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <SportsFlyIcon className="w-3.5 h-3.5" />
                 En Çok Övgü Alan Noktalar (Sporpuan Etiketleri):
               </span>
               <div className="flex flex-wrap gap-1.5">

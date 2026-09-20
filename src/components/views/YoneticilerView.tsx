@@ -22,17 +22,19 @@ import {
   X,
   Lock,
   Unlock,
-  Sparkles,
   Layers,
   Eye,
   Check,
   Zap,
   SlidersHorizontal,
 } from 'lucide-react';
+import { SportsFlyIcon } from '../SportsFlyLogo';
 import { INITIAL_YONETICILER } from '../../data/mockData';
 import { YoneticiItem, PackagePlanType } from '../../types';
 import {
   PACKAGE_DETAILS,
+  CANONICAL_PACKAGES,
+  normalizePlanName,
   setActiveSessionPlan,
 } from '../../data/packagePermissions';
 
@@ -67,7 +69,7 @@ export const YoneticilerView: React.FC = () => {
   const [loginModalManager, setLoginModalManager] = useState<YoneticiItem | null>(null);
   const [inaccessibleModalManager, setInaccessibleModalManager] = useState<YoneticiItem | null>(null);
   const [packageModalManager, setPackageModalManager] = useState<YoneticiItem | null>(null);
-  const [modalSelectedPlan, setModalSelectedPlan] = useState<PackagePlanType>('Profesyonel');
+  const [modalSelectedPlan, setModalSelectedPlan] = useState<PackagePlanType>('Kulüp & Akademi');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -95,7 +97,7 @@ export const YoneticilerView: React.FC = () => {
   const [newPhone, setNewPhone] = useState('+90 532 ');
   const [newSchoolName, setNewSchoolName] = useState('');
   const [newAccessibility, setNewAccessibility] = useState<'Erişilebilir' | 'Erişilemez'>('Erişilebilir');
-  const [newPackageType, setNewPackageType] = useState<PackagePlanType>('Profesyonel');
+  const [newPackageType, setNewPackageType] = useState<PackagePlanType>('Kulüp & Akademi');
 
   // Filtered List
   const filteredList = yoneticiler.filter((item) => {
@@ -109,7 +111,7 @@ export const YoneticilerView: React.FC = () => {
       item.schoolName.toLowerCase().includes(q);
 
     const matchesStatus = statusFilter === 'all' || item.accessibility === statusFilter;
-    const matchesPackage = packageFilter === 'all' || (item.packageType || 'Başlangıç') === packageFilter;
+    const matchesPackage = packageFilter === 'all' || normalizePlanName(item.packageType) === packageFilter;
 
     return matchesSearch && matchesStatus && matchesPackage;
   });
@@ -156,7 +158,7 @@ export const YoneticilerView: React.FC = () => {
   // Open detailed package modal
   const handleOpenPackageModal = (manager: YoneticiItem) => {
     setPackageModalManager(manager);
-    setModalSelectedPlan(manager.packageType || 'Başlangıç');
+    setModalSelectedPlan(normalizePlanName(manager.packageType));
   };
 
   // Save from package modal
@@ -170,7 +172,7 @@ export const YoneticilerView: React.FC = () => {
   const handleLoginToSchool = (manager: YoneticiItem) => {
     if (manager.accessibility === 'Erişilebilir') {
       setActiveImpersonation(manager);
-      const plan = manager.packageType || 'Premium';
+      const plan = normalizePlanName(manager.packageType);
       setActiveSessionPlan(plan);
       setLoginModalManager(null);
       showToast(
@@ -208,7 +210,7 @@ export const YoneticilerView: React.FC = () => {
     const updated = { ...manager, accessibility: 'Erişilebilir' as const };
     setInaccessibleModalManager(null);
     setActiveImpersonation(updated);
-    const plan = updated.packageType || 'Premium';
+    const plan = normalizePlanName(updated.packageType);
     setActiveSessionPlan(plan);
     showToast(
       `Süper Admin erişim yetkisi aktif edildi ve "${updated.schoolName}" hesabına giriş yapıldı (Paket: ${plan}).`,
@@ -252,7 +254,7 @@ export const YoneticilerView: React.FC = () => {
     setNewEmail('');
     setNewPhone('+90 532 ');
     setNewSchoolName('');
-    setNewPackageType('Profesyonel');
+    setNewPackageType('Kulüp & Akademi');
     showToast(`Yeni yönetici "${newManager.name}" (${newPackageType} Paketi) başarıyla eklendi.`, 'success');
   };
 
@@ -317,7 +319,7 @@ export const YoneticilerView: React.FC = () => {
           ) : toastMessage.type === 'warning' ? (
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
           ) : (
-            <Sparkles className="w-5 h-5 text-blue-600 shrink-0" />
+            <SportsFlyIcon className="w-5 h-5 shrink-0" />
           )}
           <span>{toastMessage.text}</span>
         </div>
@@ -544,8 +546,8 @@ export const YoneticilerView: React.FC = () => {
           >
             Tüm Paketler ({yoneticiler.length})
           </button>
-          {(['Başlangıç', 'Profesyonel', 'Premium', 'Kurumsal'] as PackagePlanType[]).map((plan) => {
-            const count = yoneticiler.filter((y) => (y.packageType || 'Başlangıç') === plan).length;
+          {CANONICAL_PACKAGES.map((plan) => {
+            const count = yoneticiler.filter((y) => normalizePlanName(y.packageType) === plan).length;
             const details = PACKAGE_DETAILS[plan];
             return (
               <button
@@ -568,7 +570,7 @@ export const YoneticilerView: React.FC = () => {
                   {count}
                 </span>
                 <span className="text-[10px] opacity-75 hidden sm:inline">
-                  ({details.priceFormatted})
+                  ({details?.priceFormatted})
                 </span>
               </button>
             );
@@ -598,8 +600,8 @@ export const YoneticilerView: React.FC = () => {
           {filteredList.map((manager) => {
             const isSelected = selectedIds.includes(manager.id);
             const isCurrentActive = activeImpersonation?.id === manager.id;
-            const currentPlan = manager.packageType || 'Başlangıç';
-            const planDetails = PACKAGE_DETAILS[currentPlan];
+            const currentPlan = normalizePlanName(manager.packageType);
+            const planDetails = PACKAGE_DETAILS[currentPlan] || PACKAGE_DETAILS['Başlangıç Kulübü'];
 
             return (
               <div
@@ -714,10 +716,14 @@ export const YoneticilerView: React.FC = () => {
                       }
                       className={`text-xs font-bold px-2 py-1 rounded-lg border appearance-none pr-5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs ${planDetails.badgeClass}`}
                     >
-                      <option value="Başlangıç">Başlangıç</option>
-                      <option value="Profesyonel">Profesyonel</option>
-                      <option value="Premium">Premium</option>
-                      <option value="Kurumsal">Kurumsal</option>
+                      {CANONICAL_PACKAGES.map((plan) => {
+                        const details = PACKAGE_DETAILS[plan];
+                        return (
+                          <option key={plan} value={plan}>
+                            {plan} (Seviye {details?.level})
+                          </option>
+                        );
+                      })}
                     </select>
                     <button
                       onClick={() => handleOpenPackageModal(manager)}
@@ -793,8 +799,8 @@ export const YoneticilerView: React.FC = () => {
               {filteredList.map((manager) => {
                 const isSelected = selectedIds.includes(manager.id);
                 const isCurrentActive = activeImpersonation?.id === manager.id;
-                const currentPlan = manager.packageType || 'Başlangıç';
-                const planDetails = PACKAGE_DETAILS[currentPlan];
+                const currentPlan = normalizePlanName(manager.packageType);
+                const planDetails = PACKAGE_DETAILS[currentPlan] || PACKAGE_DETAILS['Başlangıç Kulübü'];
 
                 return (
                   <tr
@@ -883,41 +889,57 @@ export const YoneticilerView: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Paket Türü (Dropdown + Detaylar Butonu) */}
+                    {/* Paket Türü & Yetki (Dropdown + Detaylar Butonu + Seviye Özeti) */}
                     <td className="py-4 px-3 align-middle whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        {/* Interactive Plan Selector Dropdown */}
-                        <div className="relative inline-block">
-                          <select
-                            id={`select-package-${manager.id}`}
-                            value={currentPlan}
-                            onChange={(e) =>
-                              handleChangeManagerPackage(
-                                manager.id,
-                                e.target.value as PackagePlanType
-                              )
-                            }
-                            className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border appearance-none pr-6 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs transition-all ${planDetails.badgeClass}`}
-                            title="Paket türünü değiştir (Erişim kısıtlamalarını anında günceller)"
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          {/* Interactive Plan Selector Dropdown */}
+                          <div className="relative inline-block">
+                            <select
+                              id={`select-package-${manager.id}`}
+                              value={currentPlan}
+                              onChange={(e) =>
+                                handleChangeManagerPackage(
+                                  manager.id,
+                                  e.target.value as PackagePlanType
+                                )
+                              }
+                              className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border appearance-none pr-6 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs transition-all ${planDetails?.badgeClass || ''}`}
+                              title="Paket türünü değiştir (Erişim kısıtlamalarını anında günceller)"
+                            >
+                              {CANONICAL_PACKAGES.map((plan) => {
+                                const details = PACKAGE_DETAILS[plan];
+                                return (
+                                  <option key={plan} value={plan}>
+                                    {plan} (Seviye {details?.level})
+                                  </option>
+                                );
+                              })}
+                            </select>
+                            <span className="text-[9px] text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                              ▼
+                            </span>
+                          </div>
+
+                          {/* Package Permissions & Limits Details Modal Opener */}
+                          <button
+                            onClick={() => handleOpenPackageModal(manager)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                            title={`"${manager.name}" için paket izinlerini & modül kısıtlamalarını incele/değiştir`}
                           >
-                            <option value="Başlangıç">Başlangıç (Seviye 1)</option>
-                            <option value="Profesyonel">Profesyonel (Seviye 2)</option>
-                            <option value="Premium">Premium (Seviye 3)</option>
-                            <option value="Kurumsal">Kurumsal (Seviye 4)</option>
-                          </select>
-                          <span className="text-[9px] text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                            ▼
-                          </span>
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                          </button>
                         </div>
 
-                        {/* Package Permissions & Limits Details Modal Opener */}
-                        <button
-                          onClick={() => handleOpenPackageModal(manager)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                          title={`"${manager.name}" için paket izinlerini & modül kısıtlamalarını incele/değiştir`}
-                        >
-                          <SlidersHorizontal className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Quick Permission Summary */}
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                          <span className={`w-1.5 h-1.5 rounded-full ${planDetails?.dotColor || 'bg-slate-400'}`} />
+                          <span className="font-medium text-slate-600">
+                            {planDetails?.level === 1 && 'Tek Şube • 100 Sporcu • Temel Yetki'}
+                            {planDetails?.level === 2 && '3 Şube • 350 Sporcu • Ön Muhasebe & Analitik'}
+                            {planDetails?.level === 3 && 'Sınırsız Şube • 1.500+ Sporcu • Sporpuan & Tam Yetki'}
+                          </span>
+                        </div>
                       </div>
                     </td>
 
@@ -1281,8 +1303,8 @@ export const YoneticilerView: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Paket Türü &amp; Erişim Yetki Düzeyi *
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {(['Başlangıç', 'Profesyonel', 'Premium', 'Kurumsal'] as PackagePlanType[]).map((plan) => {
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {CANONICAL_PACKAGES.map((plan) => {
                     const isSelected = newPackageType === plan;
                     const details = PACKAGE_DETAILS[plan];
                     return (
@@ -1301,10 +1323,10 @@ export const YoneticilerView: React.FC = () => {
                           {isSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
                         </div>
                         <span className="text-[11px] font-semibold text-blue-600 block mt-0.5">
-                          {details.priceFormatted}
+                          {details?.priceFormatted}
                         </span>
                         <span className="text-[10px] text-slate-400 block mt-0.5 line-clamp-1">
-                          {details.maxStudents} Öğrenci
+                          {details?.maxStudents} Öğrenci
                         </span>
                       </button>
                     );
@@ -1414,16 +1436,16 @@ export const YoneticilerView: React.FC = () => {
               </div>
             </div>
 
-            {/* 4 Package Cards */}
+            {/* 3 Package Cards */}
             <div className="mt-4">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
                 Uygulanacak Paket Planını Seçin:
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {(['Başlangıç', 'Profesyonel', 'Premium', 'Kurumsal'] as PackagePlanType[]).map((plan) => {
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {CANONICAL_PACKAGES.map((plan) => {
                   const details = PACKAGE_DETAILS[plan];
                   const isSelected = modalSelectedPlan === plan;
-                  const isOriginal = (packageModalManager.packageType || 'Başlangıç') === plan;
+                  const isOriginal = normalizePlanName(packageModalManager.packageType) === plan;
 
                   return (
                     <div

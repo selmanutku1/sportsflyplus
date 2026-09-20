@@ -24,9 +24,18 @@ export type NavPage =
   | 'uyeler'
   | 'mesaj-yonetimi'
   | 'subeler'
+  | 'sube-ozet'
   | 'sporpuan-degerlendirmeler'
+  | 'sporpuan-sporcu-degerlendirme'
   | 'sporpuan-dogrulamalar'
-  | 'sporpuan-raporlar';
+  | 'sporpuan-raporlar'
+  | 'yoklama'
+  | 'anket-yonetimi'
+  | 'sporcu-karnesi'
+  | 'egitim-planlama'
+  | 'destek'
+  | 'kulup-evraklari'
+  | 'kulup-galerisi';
 
 export interface DashboardPackage {
   id: string;
@@ -86,6 +95,55 @@ export interface SporcuItem {
   facility: string;
   isActive: boolean;
   avatarUrl?: string;
+  phone?: string;
+  birthDate?: string;
+  branch?: string;
+  teamGroup?: string;
+}
+
+export type KulupEvrakKategori =
+  | 'Lisans'
+  | 'Sağlık Raporu'
+  | 'Veli İzin Belgesi'
+  | 'Kimlik & Kayıt'
+  | 'Kulüp Sözleşmesi'
+  | 'Diğer';
+
+export interface KulupEvrakItem {
+  id: string;
+  title: string;
+  club: string; // Kulüp / Tesis (örn: DigiMondi, Saraçgym)
+  athleteId?: string;
+  athleteName?: string;
+  category: KulupEvrakKategori;
+  documentNumber?: string; // Lisans No, Rapor No vb.
+  issueDate: string; // Düzenleme tarihi
+  expiryDate?: string; // Son geçerlilik tarihi
+  status: 'Geçerli' | 'Süresi Yaklaşan' | 'Süresi Dolmuş' | 'Onay Bekliyor';
+  fileType: 'pdf' | 'jpg' | 'png' | 'doc';
+  fileSize: string;
+  fileUrl?: string;
+  uploadedBy: string;
+  notes?: string;
+}
+
+export type KulupGaleriKategori =
+  | 'Antrenman'
+  | 'Maç & Turnuva'
+  | 'Kupa & Madalya'
+  | 'Kamp & Etkinlik'
+  | 'Genel';
+
+export interface KulupGaleriItem {
+  id: string;
+  title: string;
+  club: string;
+  category: KulupGaleriKategori;
+  date: string;
+  imageUrl: string;
+  description?: string;
+  taggedAthletes?: string[];
+  uploaderName?: string;
 }
 
 export interface EgitmenItem {
@@ -212,7 +270,31 @@ export interface AntrenmanItem {
   attendees: AntrenmanAttendee[];
 }
 
-export type PackagePlanType = 'Başlangıç' | 'Profesyonel' | 'Premium' | 'Kurumsal';
+export type PackagePlanType =
+  | 'Başlangıç Kulübü'
+  | 'Kulüp & Akademi'
+  | 'Pro Akademi & Çoklu Şube'
+  | 'Başlangıç'
+  | 'Profesyonel'
+  | 'Premium'
+  | 'Kurumsal';
+
+export interface PackageLimits {
+  maxStudents: number | 'Sınırsız';
+  maxTrainers: number | 'Sınırsız';
+  maxManagers: number | 'Sınırsız';
+  maxBranches: string;
+  maxFacilities: number | 'Sınırsız';
+  reportCards: 'Yılda 2 Dönem' | 'Sınırsız';
+  whatsappDelivery: boolean;
+  radarAnalytics: boolean;
+  onlinePos: boolean;
+  accounting: boolean;
+  multiBranch: boolean;
+  whiteLabel: boolean;
+  sporpuanFeatures: string;
+  supportLevel: string;
+}
 
 export interface YoneticiItem {
   id: string;
@@ -233,6 +315,18 @@ export interface YoneticiItem {
   lastLogin?: string;
 }
 
+export interface GrupMember {
+  id: string;
+  name: string;
+  phone: string;
+  code: string;
+  birthYear?: number;
+  parentName?: string;
+  parentPhone?: string;
+  attendanceRate?: number;
+  licenseNumber?: string;
+}
+
 export interface GrupItem {
   id: string;
   name: string;
@@ -241,12 +335,17 @@ export interface GrupItem {
   facility: string;
   branch?: string;
   description?: string;
-  members?: {
-    id: string;
-    name: string;
-    phone: string;
-    code: string;
-  }[];
+  category?: string; // 'Altyapı', 'Yarışmacı Takım', 'Spor Okulu', 'Gelişim Grubu', 'Hobi'
+  ageGroup?: string; // 'U10', 'U12', 'U14', 'U16', 'U18', 'A Takım', '7-9 Yaş'
+  maxCapacity?: number;
+  monthlyFee?: number;
+  status?: 'Aktif' | 'Dolu' | 'Askıda';
+  schedule?: {
+    days: string[];
+    time: string;
+    location?: string;
+  };
+  members?: GrupMember[];
 }
 
 export interface GelirGiderItem {

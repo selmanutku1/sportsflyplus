@@ -16,12 +16,20 @@ import {
   User,
   Check,
   X,
-  Sparkles,
   ExternalLink,
+  ClipboardCheck,
 } from 'lucide-react';
-import { SporpuanReview } from '../../../types';
+import { SportsFlyIcon } from '../../SportsFlyLogo';
+import { SporpuanReview, NavPage } from '../../../types';
+import { isSuperAdminUser } from '../../../data/packagePermissions';
+import { getStoredUserProfile } from '../../../data/userProfile';
 
-export const SporpuanDegerlendirmelerView: React.FC = () => {
+interface SporpuanDegerlendirmelerViewProps {
+  onNavigate?: (page: NavPage) => void;
+}
+
+export const SporpuanDegerlendirmelerView: React.FC<SporpuanDegerlendirmelerViewProps> = ({ onNavigate }) => {
+  const isSuperAdmin = isSuperAdminUser(getStoredUserProfile()?.role);
   const [reviews, setReviews] = useState<SporpuanReview[]>([
     {
       id: 'rev-1',
@@ -309,9 +317,15 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
         <div className="space-y-2 relative z-10">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-300 font-bold text-[11px] uppercase tracking-wider border border-amber-400/25 flex items-center gap-1.5 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <SportsFlyIcon className="w-3.5 h-3.5" />
               Sporpuan İtibar Portalı
             </span>
+            {isSuperAdmin && (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold text-[11px] border border-amber-400/30 flex items-center gap-1 shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                Süper Admin Yetkisiyle Açık
+              </span>
+            )}
             <span className="text-xs text-slate-400 font-medium">
               sporpuan.com Entegrasyonu
             </span>
@@ -367,6 +381,16 @@ export const SporpuanDegerlendirmelerView: React.FC = () => {
               <Send className="w-4 h-4" />
               <span className="hidden xs:inline">Sporcuya</span> Davet Gönder
             </button>
+
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('sporpuan-sporcu-degerlendirme')}
+                className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors"
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                <span>Sporcu Değerlendirme</span>
+              </button>
+            )}
 
             <a
               href="https://www.sporpuan.com"

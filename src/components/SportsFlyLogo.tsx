@@ -16,9 +16,9 @@ export const SportsFlyLogo: React.FC<SportsFlyLogoProps> = ({
     : undefined;
 
   return (
-    <div className={`flex items-center gap-2.5 ${showText ? '' : 'shrink-0'}`}>
+    <div className={`inline-flex items-center gap-2.5 ${showText ? '' : 'shrink-0'}`}>
       <div
-        className={`relative flex items-center justify-center shrink-0 ${className}`}
+        className={`relative inline-flex items-center justify-center shrink-0 ${className}`}
         style={dimensionStyle}
       >
         <img
@@ -29,10 +29,22 @@ export const SportsFlyLogo: React.FC<SportsFlyLogoProps> = ({
         />
       </div>
       {showText && (
-        <span className="text-xl font-bold tracking-tight text-slate-800 font-sans">
+        <span className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 font-sans">
           SportsFly
         </span>
       )}
     </div>
   );
 };
+
+export const SportsFlyIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <span className={`inline-flex items-center justify-center shrink-0 ${className}`}>
+    <img
+      src="/sportsfly-logo.svg"
+      alt="SportsFly"
+      className="w-full h-full object-contain"
+      referrerPolicy="no-referrer"
+    />
+  </span>
+);
+

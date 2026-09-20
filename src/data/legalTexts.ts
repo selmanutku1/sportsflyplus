@@ -1,5 +1,5 @@
 export interface LegalDoc {
-  id: 'kvkk' | 'acik-riza' | 'fotograf-video' | 'iletisim' | 'veli-onay';
+  id: 'kullanim-kosullari' | 'kvkk' | 'gizlilik' | 'acik-riza' | 'fotograf-video' | 'iletisim' | 'veli-onay';
   title: string;
   badge: string;
   subtitle: string;
@@ -21,6 +21,62 @@ export interface LegalDoc {
 }
 
 export const LEGAL_TEXTS: Record<string, LegalDoc> = {
+  'kullanim-kosullari': {
+    id: 'kullanim-kosullari',
+    title: 'Kullanım Koşulları ve Üyelik Sözleşmesi',
+    badge: 'Hizmet ve Platform Şartları',
+    subtitle: 'SportsFly Spor Okulu, Akademi ve Tesis Yönetim Platformu Kullanım Esasları',
+    companyInfo: {
+      unvan: 'Sporsepeti Bilişim Teknolojileri ve Pazarlama Ltd. Şti.',
+      adres: 'Caferağa Mah. Moda Cad. No: 42/3 Kadıköy / İstanbul',
+      mersis: '0781054238900012',
+      vergiNo: 'Kadıköy V.D. 7810542389',
+      eposta: 'hukuk@sporsepeti.com.tr',
+      telefon: '0216 850 1907',
+    },
+    lastUpdated: '18 Eylül 2026',
+    summary:
+      'SportsFly yazılım platformuna erişim sağlayan kulüp yöneticileri, antrenörler, sporcular ve veliler için geçerli olan platform kullanım kuralları, hak ve yükümlülükler, telif hakları ve hesap güvenliği şartlarını içerir.',
+    sections: [
+      {
+        heading: '1. Taraflar ve Amaç',
+        content:
+          'İşbu Kullanım Koşulları ("Sözleşme"), Sporsepeti Bilişim Teknolojileri Ltd. Şti. ("SportsFly" veya "Şirket") ile SportsFly web ve mobil uygulamalarını kullanan kulüp, antrenör, veli ve sporcular ("Kullanıcı") arasında akdedilmiştir. Sözleşmenin amacı, platform üzerinden sunulan spor okulu yönetimi, yoklama takibi, aidat tahsilatı, performans ölçümü ve iletişim hizmetlerinden faydalanma şartlarını belirlemektir.',
+      },
+      {
+        heading: '2. Hesap Oluşturma ve Güvenlik',
+        content:
+          'Kullanıcı, platforma kayıt olurken ve giriş yaparken sağladığı tüm bilgilerin (ad, soyad, telefon, e-posta, T.C. kimlik numarası vb.) doğru, güncel ve eksiksiz olduğunu beyan eder.',
+        bulletPoints: [
+          'Kullanıcı giriş şifresini ve SMS doğrulama kodlarını üçüncü kişilerle paylaşamaz.',
+          'Hesap üzerinden gerçekleştirilen tüm işlemlerden doğrudan ilgili Kullanıcı sorumludur.',
+          'Yetkisiz erişim şüphesi durumunda derhal SportsFly destek ekibine (0216 850 1907) bilgi verilmelidir.',
+          '18 yaşından küçük sporcuların hesapları yalnızca yasal veli veya vasisi tarafından yönetilebilir veya onaylanabilir.',
+        ],
+      },
+      {
+        heading: '3. Hizmet Kapsamı ve Fikri Mülkiyet',
+        content:
+          'SportsFly arayüzü, yazılım kodları, veritabanı mimarisi, tasarımları, logoları ve algoritmaları münhasıran Şirket\'e aittir. Kullanıcı platformu kopyalayamaz, tersine mühendislik yapamaz, sistem güvenliğini ihlal edici otomatik sorgu/bot yazılımları kullanamaz.',
+      },
+      {
+        heading: '4. Ödeme, Aidat ve Finansal Modül İşlemleri',
+        content:
+          'SportsFly, spor kulüpleri ile veliler arasındaki aidat, lisans, kamp ve ürün ödemelerinde güvenli altyapı sağlayıcı olarak rol alır. Tahsilat süreçleri BDDK ve TCMB lisanslı ödeme kuruluşları altyapısıyla 256-bit SSL şifrelemeyle yürütülür.',
+      },
+      {
+        heading: '5. Sorumluluk Sınırları ve Hizmet Sürekliliği',
+        content:
+          'SportsFly, platformun kesintisiz ve hatasız çalışması için azami özeni gösterir. Planlı bakım çalışmaları önceden duyurulur. Mücbir sebepler, telekomünikasyon altyapı kesintileri veya kullanıcı donanımından kaynaklanan aksaklıklardan doğrudan Şirket sorumlu tutulamaz.',
+      },
+      {
+        heading: '6. Yürürlük ve Yetkili Mahkeme',
+        content:
+          'Kullanıcı, platforma giriş yaparak veya "Giriş Yap / Kayıt Ol" butonlarına basarak bu şartları kabul etmiş sayılır. İşbu sözleşmeden doğabilecek uyuşmazlıklarda İstanbul Anadolu Mahkemeleri ve İcra Daireleri yetkilidir.',
+      },
+    ],
+  },
+
   kvkk: {
     id: 'kvkk',
     title: 'KVKK Aydınlatma Metni',
@@ -29,10 +85,12 @@ export const LEGAL_TEXTS: Record<string, LegalDoc> = {
     companyInfo: {
       unvan: 'Sporsepeti Bilişim Teknolojileri ve Pazarlama Ltd. Şti.',
       adres: 'Caferağa Mah. Moda Cad. No: 42/3 Kadıköy / İstanbul',
+      mersis: '0781054238900012',
+      vergiNo: 'Kadıköy V.D. 7810542389',
       eposta: 'kvkk@sporsepeti.com.tr',
       telefon: '0216 850 1907',
     },
-    lastUpdated: '15 Eylül 2026',
+    lastUpdated: '18 Eylül 2026',
     summary:
       'Sporsepeti Bilişim Teknolojileri ve Pazarlama Ltd. Şti. (Kadıköy/İstanbul) olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca veri sorumlusu sıfatıyla sporcu ve velilerimize ait kişisel verileri yasal sınırlar ve meşru amaçlar çerçevesinde titizlikle koruyor ve işliyoruz.',
     sections: [
@@ -99,6 +157,49 @@ export const LEGAL_TEXTS: Record<string, LegalDoc> = {
     ],
   },
 
+  gizlilik: {
+    id: 'gizlilik',
+    title: 'Gizlilik ve Çerez (Cookie) Politikası',
+    badge: 'Veri Güvenliği ve Gizlilik',
+    subtitle: 'Kullanıcı Bilgilerinin Korunması, Şifreleme ve Çerez Standartları',
+    companyInfo: {
+      unvan: 'Sporsepeti Bilişim Teknolojileri ve Pazarlama Ltd. Şti.',
+      adres: 'Caferağa Mah. Moda Cad. No: 42/3 Kadıköy / İstanbul',
+      eposta: 'gizlilik@sporsepeti.com.tr',
+      telefon: '0216 850 1907',
+    },
+    lastUpdated: '18 Eylül 2026',
+    summary:
+      'SportsFly, kullanıcılarının gizliliğini en yüksek öncelikle korur. Platformda kullanılan şifreleme yöntemleri, veri saklama protokolleri, çerez türleri ve kullanıcı tercihleri bu metinde açıklanmıştır.',
+    sections: [
+      {
+        heading: '1. Veri Güvenliği ve Şifreleme',
+        content:
+          'SportsFly üzerinde depolanan tüm hassas veriler, uluslararası kabul görmüş AES-256 şifreleme standartları ve TLS 1.3 bağlantı protokolleri ile korunmaktadır. Kullanıcı şifreleri tek yönlü tuzlanmış karma (salted hash) algoritmalarıyla saklanır ve hiçbir şirket personeli tarafından açık metin olarak görülemez.',
+      },
+      {
+        heading: '2. Çerezler (Cookies) ve Kullanım Amaçları',
+        content:
+          'Platformumuzda kullanıcı deneyimini iyileştirmek, oturum güvenliğini sağlamak ve tercihlerinizi hatırlamak amacıyla çerezler kullanılmaktadır:',
+        bulletPoints: [
+          'Zorunlu Çerezler: Giriş oturumunun korunması ve güvenlik doğrulamaları için elzemdir.',
+          'İşlevsel Çerezler: Dil seçimi (TR/EN), tema ve kullanıcı arayüz tercihlerini hatırlar.',
+          'Analitik Çerezler: Platformun performansını optimize etmek ve sayfa yükleme hızlarını ölçmek amacıyla anonim olarak tutulur.',
+        ],
+      },
+      {
+        heading: '3. Üçüncü Taraf Entegrasyonları',
+        content:
+          'SportsFly, yalnızca lisanslı SMS sağlayıcıları, e-fatura entegratörleri ve BDDK lisanslı ödeme kuruluşları ile entegre çalışır. Hiçbir veri reklamverenlere veya veri simsarlarına satılamaz veya ticari amaçla paylaşılamaz.',
+      },
+      {
+        heading: '4. Veri Saklama ve İmha Süresi',
+        content:
+          'Kişisel veriler, yasal mevzuatta öngörülen süreler (Gençlik Spor Bakanlığı düzenlemeleri, Vergi Usul Kanunu ve TTK saklama süreleri) boyunca güvenli sunucularda saklanır; sürenin bitiminde periyodik imha süreçlerine tabi tutulur.',
+      },
+    ],
+  },
+
   'acik-riza': {
     id: 'acik-riza',
     title: 'Özel Nitelikli Kişisel Veri Açık Rıza Metni',
@@ -110,7 +211,7 @@ export const LEGAL_TEXTS: Record<string, LegalDoc> = {
       eposta: 'kvkk@sporsepeti.com.tr',
       telefon: '0216 850 1907',
     },
-    lastUpdated: '15 Eylül 2026',
+    lastUpdated: '18 Eylül 2026',
     summary:
       'Sporcunun spor aktiviteleri sırasında can güvenliği, antrenman uygunluğu ve acil sağlık müdahalelerinin doğru yönetilebilmesi adına sağlanan sağlık verilerinin işlenmesine ilişkin açık rıza beyanıdır.',
     sections: [
@@ -150,7 +251,7 @@ export const LEGAL_TEXTS: Record<string, LegalDoc> = {
       eposta: 'iletisim@sporsepeti.com.tr',
       telefon: '0216 850 1907',
     },
-    lastUpdated: '15 Eylül 2026',
+    lastUpdated: '18 Eylül 2026',
     summary:
       'Antrenmanlar, maçlar, kupa törenleri ve kulüp etkinliklerinde çekilen görsel/işitsel kayıtların veli ve sporcunun onurunu zedelemeyecek şekilde spor sevgisini teşvik ve kulüp faaliyetlerinin duyurulması amacıyla kullanılmasına dair izin metnidir.',
     sections: [
@@ -178,7 +279,7 @@ export const LEGAL_TEXTS: Record<string, LegalDoc> = {
     ],
   },
 
-  'iletisim': {
+  iletisim: {
     id: 'iletisim',
     title: 'Ticari Elektronik İleti ve İletişim İzni',
     badge: '6563 Sayılı ETK Uyarınca',
@@ -189,7 +290,7 @@ export const LEGAL_TEXTS: Record<string, LegalDoc> = {
       eposta: 'destek@sporsepeti.com.tr',
       telefon: '0216 850 1907',
     },
-    lastUpdated: '15 Eylül 2026',
+    lastUpdated: '18 Eylül 2026',
     summary:
       '6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun uyarınca antrenman saatleri, kamp duyuruları, yeni dönem erken kayıt indirimleri ve kulüp bilgilendirmelerinin veliye ulaştırılmasına dair onay metnidir.',
     sections: [
@@ -228,7 +329,7 @@ export const LEGAL_TEXTS: Record<string, LegalDoc> = {
       eposta: 'info@sporsepeti.com.tr',
       telefon: '0216 850 1907',
     },
-    lastUpdated: '15 Eylül 2026',
+    lastUpdated: '18 Eylül 2026',
     summary:
       'Velisi/vasisi bulunulan sporcunun antrenman, maç ve spor okulu faaliyetlerine katılmasına, formda girilen bilgilerin doğruluğuna ve kulüp iç tüzüğüne riayet edilmesine dair yasal veli taahhüdüdür.',
     sections: [

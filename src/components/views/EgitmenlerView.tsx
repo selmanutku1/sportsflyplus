@@ -14,7 +14,6 @@ import {
   Tag,
   Layers,
   ChevronDown,
-  Sparkles,
 } from 'lucide-react';
 import { INITIAL_EGITMENLER } from '../../data/mockData';
 import { EgitmenItem } from '../../types';

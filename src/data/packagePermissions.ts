@@ -1,4 +1,4 @@
-import { NavPage, PackagePlanType } from '../types';
+import { NavPage, PackagePlanType, PackageLimits } from '../types';
 
 export interface PackageDetail {
   id: string;
@@ -6,164 +6,407 @@ export interface PackageDetail {
   level: number;
   badgeClass: string;
   dotColor: string;
+  tagText?: string;
+  tagColor?: string;
   maxStudents: number | 'Sınırsız';
   monthlyPrice: number;
   highlight: string;
-  allowedModules: string[];
-  restrictedModules: string[];
   priceFormatted: string;
   maxTrainers: string;
   description: string;
+  ctaText: string;
   features: string[];
+  allowedModules: string[];
   restrictedFeatures: string[];
+  restrictedModules: string[];
+  limits: PackageLimits;
 }
 
+export const CANONICAL_PACKAGES: PackagePlanType[] = [
+  'Başlangıç Kulübü',
+  'Kulüp & Akademi',
+  'Pro Akademi & Çoklu Şube',
+];
+
 export const PACKAGE_DETAILS: Record<PackagePlanType, PackageDetail> = {
-  Başlangıç: {
-    id: 'baslangic',
-    name: 'Başlangıç',
+  'Başlangıç Kulübü': {
+    id: 'baslangic-kulubu',
+    name: 'Başlangıç Kulübü',
     level: 1,
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
     dotColor: 'bg-slate-400',
-    maxStudents: 30,
-    monthlyPrice: 0,
-    priceFormatted: 'Ücretsiz (0 ₺)',
-    maxTrainers: '1 Eğitmen',
-    description: 'Bireysel ve yeni açılan butik spor okulları için temel kayıt ve yoklama paketi.',
-    highlight: 'Temel Seviye • 30 Sporcu Kapasitesi',
+    maxStudents: 100,
+    monthlyPrice: 1190,
+    priceFormatted: '1.190 ₺ / ay',
+    maxTrainers: '2 Antrenör & 1 Yönetici',
+    description: 'Tek şubeli, büyümekte olan butik spor okulları ve atölyeler için ideal.',
+    highlight: '100 Sporcu • Tek Şube • Hızlı Yoklama & Karne',
+    ctaText: '14 GÜN ÜCRETSİZ BAŞLA',
     features: [
-      'Üye / Sporcu Yönetimi (30 Kişi Sınırı)',
-      'Yoklama ve QR Giriş Yönetimi',
-      'Antrenman Takvimi Planlama',
-      'Ön Kayıt Başvuruları',
+      '100 Aktif Sporcuya Kadar',
+      'Mobil Uyumlu Hızlı Yoklama',
+      'Temel Veli Bildirimleri (SMS & Mail)',
+      'Dijital Sporcu Karnesi (Yılda 2 Dönem)',
+      '2 Antrenör & 1 Yönetici Hesabı',
+      'E-posta ile Teknik Destek',
     ],
     allowedModules: [
-      'Üye / Sporcu Yönetimi (30 Kişi Sınırı)',
-      'Yoklama ve QR Giriş Yönetimi',
-      'Antrenman Takvimi Planlama',
-      'Ön Kayıt Başvuruları',
+      '100 Aktif Sporcu Yönetimi',
+      'Mobil Uyumlu Hızlı Yoklama & QR Seans Girişi',
+      'Temel Veli Bildirimleri (SMS & Mail)',
+      'Dijital Sporcu Karnesi (Yılda 2 Dönem)',
+      '2 Antrenör & 1 Yönetici Hesabı',
+      'Antrenman Takvimi & Planlama',
+      'Ön Kayıt Başvuru Portalı',
     ],
     restrictedFeatures: [
-      'Eğitmen Kadrosu',
-      'Gruplar & Takımlar',
-      'Ön Muhasebe & Kasa',
-      'Sporpuan İtibar Sistemi',
+      'Sporpuan İtibar, Sporcu Değerlendirme & Doğrulama (Pro)',
+      'Sanal POS & Otomatik Aidat Takibi',
+      'Velilere Otomatik WhatsApp Karnesi Gönderimi',
+      'Sınırsız Dijital Karne & Radar Grafikleri',
+      'Çoklu Şube & Tesis Yönetimi',
+      'Gelişmiş Finans, Kasa ve Muhasebe Entegrasyonu',
+      'Branş Bazlı Eğitim Planlama & Taktik Şablonları',
     ],
     restrictedModules: [
-      'Eğitmen ve Antrenör Yönetimi',
-      'Aidat ve Ödeme Takip Sistemi',
-      'SMS / E-Posta Toplu Gönderimi',
-      'Grup ve Seviye Yönetimi',
-      'Ön Muhasebe & Gelir-Gider Yönetimi',
-      'Sporpuan İtibar Sistemi',
+      'Sporpuan Değerlendirmeler, Doğrulamalar & Raporlar',
+      'Otomatik Aidat Takibi & Sanal POS Entegrasyonu',
+      'Velilere Otomatik WhatsApp Karnesi Gönderimi',
+      'Performans Radar Grafikleri ve Gelişim Analitiği',
+      'Grup, Seviye & Takım Yönetimi',
+      'Çoklu Şube & Tesis Yönetimi',
+      'Şube Özet & Karşılaştırmalı Finans Paneli',
+      'Ön Muhasebe & Kasa / Gelir-Gider Yönetimi',
+      'Branş Bazlı Eğitim Planlama & Taktik Şablonları',
     ],
+    limits: {
+      maxStudents: 100,
+      maxTrainers: 2,
+      maxManagers: 1,
+      maxBranches: 'Temel Branş',
+      maxFacilities: 1,
+      reportCards: 'Yılda 2 Dönem',
+      whatsappDelivery: false,
+      radarAnalytics: false,
+      onlinePos: false,
+      accounting: false,
+      multiBranch: false,
+      whiteLabel: false,
+      sporpuanFeatures: 'Dahil Değil (Pro Paket)',
+      supportLevel: 'E-posta ile Teknik Destek',
+    },
   },
-  Profesyonel: {
-    id: 'profesyonel',
-    name: 'Profesyonel',
+
+  'Kulüp & Akademi': {
+    id: 'kulup-akademi',
+    name: 'Kulüp & Akademi',
     level: 2,
-    badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
-    dotColor: 'bg-blue-500',
-    maxStudents: 250,
-    monthlyPrice: 2299,
-    priceFormatted: '2.299 ₺ / ay',
-    maxTrainers: '10 Eğitmen',
-    description: 'Büyümekte olan spor okulları ve birden fazla branşı olan kulüpler için eğitmen ve aidat takibi.',
-    highlight: 'Orta Ölçek • Eğitmen & Aidat Takibi',
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-400',
+    dotColor: 'bg-blue-600',
+    tagText: 'EN ÇOK TERCİH EDİLEN',
+    tagColor: 'bg-blue-600 text-white',
+    maxStudents: 350,
+    monthlyPrice: 2290,
+    priceFormatted: '2.290 ₺ / ay',
+    maxTrainers: 'Sınırsız Antrenör & Branş',
+    description: 'Devamlılığı ödüllendirmek, kurumsal veli iletişimi ve çoklu branş yönetimi isteyenler için.',
+    highlight: '350 Sporcu • WhatsApp Karne • Sanal POS & Aidat',
+    ctaText: 'HEMEN DENEYİN',
     features: [
-      'Üye / Sporcu Yönetimi (250 Kişi Sınırı)',
-      'Eğitmen Kadrosu Yönetimi',
-      'Sporcu / Üye Aidat Ödeme Takibi',
-      'SMS ve E-Posta Gönderim Modülü',
-      'Şube ve Tesis Yönetimi',
-      'Yoklama ve Antrenman Takvimi',
+      '350 Aktif Sporcuya Kadar',
+      'Sınırsız Dijital Sporcu Karnesi Oluşturma',
+      'Velilere Otomatik WhatsApp Karnesi Gönderimi',
+      'Performans Radar Grafikleri ve Gelişim Analitiği',
+      'Otomatik Aidat Takibi & Sanal POS Entegrasyonu',
+      'Sınırsız Antrenör & Branş Hesabı',
+      'Grup, Seviye & Takım Yönetimi',
+      '7/24 Öncelikli Canlı Destek & Kulüp Eğitimi',
     ],
     allowedModules: [
-      'Üye / Sporcu Yönetimi (250 Kişi Sınırı)',
-      'Eğitmen Kadrosu Yönetimi',
-      'Sporcu / Üye Aidat Ödeme Takibi',
-      'SMS ve E-Posta Gönderim Modülü',
-      'Şube ve Tesis Yönetimi',
-      'Yoklama ve Antrenman Takvimi',
+      'Tüm Başlangıç Kulübü Özellikleri',
+      '350 Aktif Sporcu Kapasitesi',
+      'Sınırsız Dijital Sporcu Karnesi Oluşturma',
+      'Velilere Otomatik WhatsApp Karnesi Gönderimi',
+      'Performans Radar Grafikleri ve Gelişim Analitiği',
+      'Otomatik Aidat Takibi & Sanal POS Entegrasyonu',
+      'Ödeme Planı Kontrolü & Tahsilat Raporları',
+      'Sınırsız Antrenör & Branş Hesabı',
+      'Grup, Seviye & Takım Yönetimi',
+      'Veli & Sporcu Memnuniyet Anketleri',
+      '7/24 Öncelikli Canlı Destek & Kulüp Eğitimi',
     ],
     restrictedFeatures: [
-      'Grup & Takım Yönetimi',
-      'Kapsamlı Ön Muhasebe (Gelir/Gider)',
-      'Sporpuan İtibar Sistemi',
+      'Sporpuan İtibar Portalı, Sporcu Değerlendirme & Doğrulama (Pro)',
+      'Birden Fazla Tesis & Çoklu Şube Yönetimi',
+      'Şube Özet & Karşılaştırmalı Finans Analitiği',
+      'Gelişmiş Çift Taraflı Ön Muhasebe & Kasa Entegrasyonu',
+      'Branş Bazlı Eğitim Planlama & Yaş Müfredat Şablonları',
+      'White-Label Özel Alan Adı ve Mobil Uygulama',
+      'Özel Sponsor ve Ödül Havuzu Entegrasyonu',
     ],
     restrictedModules: [
-      'Grup ve Takım Yönetimi',
-      'Ön Muhasebe & Kasa / Gelir-Gider',
-      'Sporpuan Değerlendirme & İtibar Portalı',
+      'Sporpuan Değerlendirmeler, Doğrulamalar & Raporlar',
+      'Çoklu Şube & Tesis Yönetimi',
+      'Şube Özet & Karşılaştırmalı Finans Paneli',
+      'Ön Muhasebe & Kasa / Gelir-Gider Yönetimi',
+      'Gelir/Gider Kategori Ağacı',
+      'Branş Bazlı Eğitim Planlama & Yaş Müfredat Şablonları',
+      'Özel Formlar, Turnuva ve Kamp Yönetimi',
+      'White-Label Kulüp Mobil Uygulaması',
     ],
+    limits: {
+      maxStudents: 350,
+      maxTrainers: 'Sınırsız',
+      maxManagers: 'Sınırsız',
+      maxBranches: 'Sınırsız Branş',
+      maxFacilities: 1,
+      reportCards: 'Sınırsız',
+      whatsappDelivery: true,
+      radarAnalytics: true,
+      onlinePos: true,
+      accounting: false,
+      multiBranch: false,
+      whiteLabel: false,
+      sporpuanFeatures: 'Dahil Değil (Pro Paket)',
+      supportLevel: '7/24 Öncelikli Canlı Destek & Kulüp Eğitimi',
+    },
   },
-  Premium: {
-    id: 'premium',
-    name: 'Premium',
+
+  'Pro Akademi & Çoklu Şube': {
+    id: 'pro-akademi-coklu-sube',
+    name: 'Pro Akademi & Çoklu Şube',
     level: 3,
-    badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+    badgeClass: 'bg-indigo-100 text-indigo-900 border-indigo-400',
     dotColor: 'bg-indigo-600',
-    maxStudents: 1000,
-    monthlyPrice: 3199,
-    priceFormatted: '3.199 ₺ / ay',
-    maxTrainers: '30 Eğitmen',
-    description: 'Gelişmiş spor kulüpleri için tam teşekküllü ön muhasebe, gelir-gider ve grup yönetimi.',
-    highlight: 'İleri Seviye • Muhasebe & Grup Yönetimi',
-    features: [
-      'Üye / Sporcu Yönetimi (1.000 Kişi Sınırı)',
-      'Ön Muhasebe (Gelir/Gider/Kasa/Faturalar)',
-      'Grup & Takım Yönetimi',
-      'Eğitmen ve Kadro Yönetimi',
-      'Aidat ve Online Ödeme Takibi',
-      'SMS & E-Posta Toplu Bildirim',
-      'Üye Memnuniyet Anketleri',
-    ],
-    allowedModules: [
-      'Üye / Sporcu Yönetimi (1.000 Kişi Sınırı)',
-      'Ön Muhasebe (Gelir/Gider/Kasa/Faturalar)',
-      'Grup & Takım Yönetimi',
-      'Eğitmen ve Kadro Yönetimi',
-      'Aidat ve Online Ödeme Takibi',
-      'SMS & E-Posta Toplu Bildirim',
-      'Üye Memnuniyet Anketleri',
-    ],
-    restrictedFeatures: [
-      'Sporpuan İtibar & Doğrulama Sistemi',
-    ],
-    restrictedModules: [
-      'Sporpuan İtibar Sistemi & Kurumsal Web Altyapısı',
-    ],
-  },
-  Kurumsal: {
-    id: 'kurumsal',
-    name: 'Kurumsal',
-    level: 4,
-    badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
-    dotColor: 'bg-amber-500',
+    tagText: 'MAKSİMUM GÜÇ',
+    tagColor: 'bg-blue-600 text-white',
     maxStudents: 'Sınırsız',
-    monthlyPrice: 0,
-    priceFormatted: 'Özel Fiyatlandırma',
-    maxTrainers: 'Sınırsız Eğitmen',
-    description: 'Federasyonlar, büyük akademi ağları ve çok şubeli franchise kulüpler için sınırsız erişim.',
-    highlight: 'Tam Kapsam • Sınırsız Veri & Sporpuan',
+    monthlyPrice: 3990,
+    priceFormatted: '3.990 ₺ / ay',
+    maxTrainers: 'Sınırsız Antrenör & Şube',
+    description: 'Birden fazla tesisi, yüzlerce sporcusu, Sporpuan yetkinlik motoru ve özel marka kimliği olan büyük kulüpler için.',
+    highlight: 'Sınırsız Sporcu & Şube • Tam Finans • Sporpuan Modülü',
+    ctaText: 'KURUMSAL GÖRÜŞME AYARLA',
     features: [
-      'Sınırsız Üye / Sporcu Veri Yönetimi',
-      'Tüm Muhasebe, Grup, Eğitmen Özellikleri',
-      'Sporcu / Üye Sporpuan Değerlendirme & Doğrulama',
-      'Spor Okulları & Kulüpler Şube Ağı',
-      'Özel Alan Adı ve Web Sitesi Entegrasyonu',
-      'SLA ve Öncelikli 7/24 Destek',
+      'Sınırsız Sporcu & Sınırsız Şube / Tesis',
+      'Sporpuan İtibar, Sporcu Değerlendirme & Yetkinlik Portalı',
+      'Sporpuan Doğrulama & Resmi Federasyon Raporları',
+      'Branş Bazlı Eğitim Planlama & Yaş Kategorisi Müfredat Şablonları',
+      'Kendi Alan Adınız ve Özel Kulüp Mobil Uygulaması (White-Label)',
+      'Kulübe Özel Sporpuan Ödül Havuzu ve Sponsor Entegrasyonu',
+      'Özel Formlar, Turnuva ve Kamp Yönetimi',
+      'Gelişmiş Finans, Kasa ve Muhasebe Entegrasyonu',
+      'Özel Müşteri Başarı Yöneticisi',
+      'Yerinde Kurulum ve Veri Taşıma Desteği',
     ],
     allowedModules: [
-      'Sınırsız Üye / Sporcu Veri Yönetimi',
-      'Tüm Muhasebe, Grup, Eğitmen Özellikleri',
-      'Sporcu / Üye Sporpuan Değerlendirme & Doğrulama',
-      'Spor Okulları & Kulüpler Şube Ağı',
-      'Özel Alan Adı ve Web Sitesi Entegrasyonu',
-      'SLA ve Öncelikli 7/24 Destek',
+      'Sınırsız Sporcu & Sınırsız Şube / Tesis Yönetimi',
+      'Sporpuan İtibar, Sporcu Değerlendirme & Yetkinlik Portalı',
+      'Sporpuan Doğrulama & Resmi Federasyon Raporları',
+      'Branş Bazlı Eğitim Planlama & Taktik Tahtası',
+      'Şube Özet & Karşılaştırmalı Finans Analitiği',
+      'Gelişmiş Finans, Kasa ve Muhasebe Entegrasyonu',
+      'Gelir / Gider Kategori Ağacı & Fatura Hareketleri',
+      'Kendi Alan Adınız ve Özel Kulüp Mobil Uygulaması (White-Label)',
+      'Kulübe Özel Sporpuan Ödül Havuzu ve Sponsor Entegrasyonu',
+      'Özel Formlar, Turnuva ve Kamp Yönetimi',
+      'Otomatik Aidat Takibi & Sanal POS Entegrasyonu',
+      'Sınırsız Dijital Karne & WhatsApp Otomasyonu',
+      'Performans Radar Grafikleri ve Gelişim Analitiği',
+      'Özel Müşteri Başarı Yöneticisi',
+      'Yerinde Kurulum ve Veri Taşıma Desteği',
     ],
     restrictedFeatures: [],
     restrictedModules: [],
+    limits: {
+      maxStudents: 'Sınırsız',
+      maxTrainers: 'Sınırsız',
+      maxManagers: 'Sınırsız',
+      maxBranches: 'Sınırsız Branş',
+      maxFacilities: 'Sınırsız',
+      reportCards: 'Sınırsız',
+      whatsappDelivery: true,
+      radarAnalytics: true,
+      onlinePos: true,
+      accounting: true,
+      multiBranch: true,
+      whiteLabel: true,
+      sporpuanFeatures: 'Tam Kapsamlı Sporpuan, İtibar & Doğrulama Portalı',
+      supportLevel: 'Özel Müşteri Başarı Yöneticisi + Yerinde Kurulum',
+    },
+  },
+
+  // Legacy mappings for backwards compatibility
+  Başlangıç: {
+    id: 'baslangic',
+    name: 'Başlangıç Kulübü',
+    level: 1,
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+    dotColor: 'bg-slate-400',
+    maxStudents: 100,
+    monthlyPrice: 1190,
+    priceFormatted: '1.190 ₺ / ay',
+    maxTrainers: '2 Antrenör & 1 Yönetici',
+    description: 'Tek şubeli, büyümekte olan butik spor okulları ve atölyeler için ideal.',
+    highlight: '100 Sporcu • Tek Şube • Hızlı Yoklama',
+    ctaText: '14 GÜN ÜCRETSİZ BAŞLA',
+    features: [
+      '100 Aktif Sporcuya Kadar',
+      'Mobil Uyumlu Hızlı Yoklama',
+      'Temel Veli Bildirimleri (SMS & Mail)',
+      'Dijital Sporcu Karnesi (Yılda 2 Dönem)',
+      'Standart Sporpuan Entegrasyonu',
+      '2 Antrenör & 1 Yönetici Hesabı',
+      'E-posta ile Teknik Destek',
+    ],
+    allowedModules: ['100 Aktif Sporcu Yönetimi', 'Hızlı Yoklama', 'Antrenman Takvimi'],
+    restrictedFeatures: ['Sanal POS & Aidat', 'Çoklu Şube', 'Gelişmiş Muhasebe'],
+    restrictedModules: ['Çoklu Şube', 'Ön Muhasebe', 'Sanal POS & Aidat'],
+    limits: {
+      maxStudents: 100,
+      maxTrainers: 2,
+      maxManagers: 1,
+      maxBranches: 'Temel Branş',
+      maxFacilities: 1,
+      reportCards: 'Yılda 2 Dönem',
+      whatsappDelivery: false,
+      radarAnalytics: false,
+      onlinePos: false,
+      accounting: false,
+      multiBranch: false,
+      whiteLabel: false,
+      sporpuanFeatures: 'Standart Sporpuan',
+      supportLevel: 'E-posta ile Teknik Destek',
+    },
+  },
+  Profesyonel: {
+    id: 'profesyonel',
+    name: 'Kulüp & Akademi',
+    level: 2,
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-400',
+    dotColor: 'bg-blue-600',
+    tagText: 'EN ÇOK TERCİH EDİLEN',
+    tagColor: 'bg-blue-600 text-white',
+    maxStudents: 350,
+    monthlyPrice: 2290,
+    priceFormatted: '2.290 ₺ / ay',
+    maxTrainers: 'Sınırsız Antrenör & Branş',
+    description: 'Devamlılığı ödüllendirmek, kurumsal veli iletişimi ve çoklu branş yönetimi isteyenler için.',
+    highlight: '350 Sporcu • WhatsApp Karne • Sanal POS',
+    ctaText: 'HEMEN DENEYİN',
+    features: [
+      '350 Aktif Sporcuya Kadar',
+      'Sınırsız Dijital Sporcu Karnesi Oluşturma',
+      'Velilere Otomatik WhatsApp Karnesi Gönderimi',
+      'Performans Radar Grafikleri ve Gelişim Analitiği',
+      'Otomatik Aidat Takibi & Sanal POS Entegrasyonu',
+      'Sınırsız Antrenör & Branş Hesabı',
+      '7/24 Öncelikli Canlı Destek & Kulüp Eğitimi',
+    ],
+    allowedModules: ['Tüm Başlangıç Kulübü Özellikleri', '350 Aktif Sporcu', 'Sanal POS & Aidat', 'WhatsApp Karne'],
+    restrictedFeatures: ['Sporpuan Modülü', 'Çoklu Şube', 'Ön Muhasebe'],
+    restrictedModules: ['Sporpuan İtibar & Doğrulama', 'Çoklu Şube & Tesis Yönetimi', 'Ön Muhasebe & Kasa'],
+    limits: {
+      maxStudents: 350,
+      maxTrainers: 'Sınırsız',
+      maxManagers: 'Sınırsız',
+      maxBranches: 'Sınırsız Branş',
+      maxFacilities: 1,
+      reportCards: 'Sınırsız',
+      whatsappDelivery: true,
+      radarAnalytics: true,
+      onlinePos: true,
+      accounting: false,
+      multiBranch: false,
+      whiteLabel: false,
+      sporpuanFeatures: 'Dahil Değil (Pro Paket)',
+      supportLevel: '7/24 Öncelikli Canlı Destek',
+    },
+  },
+  Premium: {
+    id: 'premium',
+    name: 'Kulüp & Akademi',
+    level: 2,
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-400',
+    dotColor: 'bg-blue-600',
+    maxStudents: 350,
+    monthlyPrice: 2290,
+    priceFormatted: '2.290 ₺ / ay',
+    maxTrainers: 'Sınırsız Antrenör & Branş',
+    description: 'Devamlılığı ödüllendirmek, kurumsal veli iletişimi ve çoklu branş yönetimi isteyenler için.',
+    highlight: '350 Sporcu • WhatsApp Karne • Sanal POS',
+    ctaText: 'HEMEN DENEYİN',
+    features: [
+      '350 Aktif Sporcuya Kadar',
+      'Sınırsız Dijital Sporcu Karnesi Oluşturma',
+      'Velilere Otomatik WhatsApp Karnesi Gönderimi',
+      'Performans Radar Grafikleri ve Gelişim Analitiği',
+      'Otomatik Aidat Takibi & Sanal POS Entegrasyonu',
+      'Sınırsız Antrenör & Branş Hesabı',
+      '7/24 Öncelikli Canlı Destek & Kulüp Eğitimi',
+    ],
+    allowedModules: ['Tüm Başlangıç Kulübü Özellikleri', '350 Aktif Sporcu', 'Sanal POS & Aidat'],
+    restrictedFeatures: ['Sporpuan Modülü', 'Çoklu Şube', 'Ön Muhasebe'],
+    restrictedModules: ['Sporpuan İtibar & Doğrulama', 'Çoklu Şube & Tesis Yönetimi', 'Ön Muhasebe & Kasa'],
+    limits: {
+      maxStudents: 350,
+      maxTrainers: 'Sınırsız',
+      maxManagers: 'Sınırsız',
+      maxBranches: 'Sınırsız Branş',
+      maxFacilities: 1,
+      reportCards: 'Sınırsız',
+      whatsappDelivery: true,
+      radarAnalytics: true,
+      onlinePos: true,
+      accounting: false,
+      multiBranch: false,
+      whiteLabel: false,
+      sporpuanFeatures: 'Dahil Değil (Pro Paket)',
+      supportLevel: '7/24 Öncelikli Destek',
+    },
+  },
+  Kurumsal: {
+    id: 'kurumsal',
+    name: 'Pro Akademi & Çoklu Şube',
+    level: 3,
+    badgeClass: 'bg-indigo-100 text-indigo-900 border-indigo-400',
+    dotColor: 'bg-indigo-600',
+    maxStudents: 'Sınırsız',
+    monthlyPrice: 3990,
+    priceFormatted: '3.990 ₺ / ay',
+    maxTrainers: 'Sınırsız Antrenör & Şube',
+    description: 'Birden fazla tesisi, yüzlerce sporcusu, Sporpuan modülü ve özel marka kimliği olan büyük kulüpler için.',
+    highlight: 'Sınırsız Sporcu & Şube • Tam Finans • Sporpuan Modülü',
+    ctaText: 'KURUMSAL GÖRÜŞME AYARLA',
+    features: [
+      'Sınırsız Sporcu & Sınırsız Şube / Tesis',
+      'Sporpuan İtibar, Sporcu Değerlendirme & Doğrulama Portalı',
+      'Kendi Alan Adınız ve Özel Kulüp Mobil Uygulaması (White-Label)',
+      'Kulübe Özel Sporpuan Ödül Havuzu ve Sponsor Entegrasyonu',
+      'Özel Formlar, Turnuva ve Kamp Yönetimi',
+      'Gelişmiş Finans, Kasa ve Muhasebe Entegrasyonu',
+      'Özel Müşteri Başarı Yöneticisi',
+      'Yerinde Kurulum ve Veri Taşıma Desteği',
+    ],
+    allowedModules: ['Sınırsız Sporcu & Çoklu Şube / Tesis', 'Sporpuan Modülü', 'Ön Muhasebe & Kasa', 'White-Label'],
+    restrictedFeatures: [],
+    restrictedModules: [],
+    limits: {
+      maxStudents: 'Sınırsız',
+      maxTrainers: 'Sınırsız',
+      maxManagers: 'Sınırsız',
+      maxBranches: 'Sınırsız Branş',
+      maxFacilities: 'Sınırsız',
+      reportCards: 'Sınırsız',
+      whatsappDelivery: true,
+      radarAnalytics: true,
+      onlinePos: true,
+      accounting: true,
+      multiBranch: true,
+      whiteLabel: true,
+      sporpuanFeatures: 'Tam Kapsamlı Sporpuan & Özel Ödül Havuzu',
+      supportLevel: 'Özel Müşteri Başarı Yöneticisi',
+    },
   },
 };
 
@@ -176,99 +419,147 @@ export interface PageRestrictionRule {
 }
 
 export const PAGE_RESTRICTIONS: Partial<Record<NavPage, PageRestrictionRule>> = {
-  // Profesyonel (Level 2) Requirements
-  egitmenler: {
-    minPlan: 'Profesyonel',
-    minLevel: 2,
-    featureTitle: 'Eğitmen & Antrenör Yönetimi',
-    description: 'Eğitmenlerin randevuları, branşları, iletişimleri ve seans atamalarını yönetmek için Profesyonel veya üstü paket gereklidir.',
-  },
-  'mesaj-yonetimi': {
-    minPlan: 'Profesyonel',
-    minLevel: 2,
-    featureTitle: 'SMS & E-Posta Gönderim Modülü',
-    description: 'Kulüp üyelerine ve velilere toplu SMS ve e-posta bildirimleri göndermek için Profesyonel paket gereklidir.',
-  },
-  subeler: {
-    minPlan: 'Profesyonel',
-    minLevel: 2,
-    featureTitle: 'Şube & Tesis Yönetimi',
-    description: 'Birden fazla tesis ve şube tanımlamak için Profesyonel paket gereklidir.',
-  },
+  // Level 2 (Kulüp & Akademi) Requirements:
+  // - 350 Sporcu, Sınırsız Antrenör/Branş
+  // - Otomatik Aidat Takibi & Sanal POS
+  // - Sınırsız Dijital Sporcu Karnesi & WhatsApp Gönderimi & Radar Grafikleri
   'odeme-plani': {
-    minPlan: 'Profesyonel',
+    minPlan: 'Kulüp & Akademi',
     minLevel: 2,
-    featureTitle: 'Aidat & Ödeme Planı Yönetimi',
-    description: 'Sporcuların aylık aidat taksitleri ve ödeme planlarını takip etmek için Profesyonel paket gereklidir.',
+    featureTitle: 'Otomatik Aidat Takibi & Sanal POS Entegrasyonu',
+    description: 'Sporcuların aylık aidat taksitleri, online sanal POS ödemeleri ve taksit takibi Kulüp & Akademi veya Pro Akademi paketi gerektirir.',
   },
   'odeme-plani-kontrol': {
-    minPlan: 'Profesyonel',
+    minPlan: 'Kulüp & Akademi',
     minLevel: 2,
-    featureTitle: 'Ödeme Planı Kontrolü & Tahsilat',
-    description: 'Ödeme gecikmeleri ve tahsilat kontrolleri için Profesyonel paket gereklidir.',
+    featureTitle: 'Ödeme Planı Kontrolü & Tahsilat Raporu',
+    description: 'Ödeme gecikmelerinin takibi, banka/kart POS tahsilat raporlaması için Kulüp & Akademi paketi gereklidir.',
   },
-
-  // Premium (Level 3) Requirements
   gruplar: {
-    minPlan: 'Premium',
-    minLevel: 3,
-    featureTitle: 'Grup & Takım Yönetimi',
-    description: 'Antrenman grupları, yaş kategorileri ve takım listelerini organize etmek için Premium paket gereklidir.',
+    minPlan: 'Kulüp & Akademi',
+    minLevel: 2,
+    featureTitle: 'Grup, Seviye & Takım Yönetimi',
+    description: 'Sporcuları branşlara, yaş kategorilerine ve yarışmacı takımlara ayırıp organize etmek için Kulüp & Akademi paketi gereklidir.',
   },
-  'on-muhasebe': {
-    minPlan: 'Premium',
-    minLevel: 3,
-    featureTitle: 'Ön Muhasebe & Finans Yönetimi',
-    description: 'Kasa, gelir-gider raporları ve finansal analizleri takip etmek için Premium paket gereklidir.',
-  },
-  'gelir-gider-kategori': {
-    minPlan: 'Premium',
-    minLevel: 3,
-    featureTitle: 'Gelir/Gider Kategori Yönetimi',
-    description: 'Finansal kategori ağacını düzenlemek için Premium paket gereklidir.',
-  },
-  'gelir-gider-yonetimi': {
-    minPlan: 'Premium',
-    minLevel: 3,
-    featureTitle: 'Gelir & Gider Hareketleri',
-    description: 'Finansal nakit akışını ve fatura hareketlerini kaydetmek için Premium paket gereklidir.',
+  'anket-yonetimi': {
+    minPlan: 'Kulüp & Akademi',
+    minLevel: 2,
+    featureTitle: 'Veli & Sporcu Memnuniyet Anketleri',
+    description: 'Kulüp içi memnuniyet ölçümleri, antrenör değerlendirme anketleri için Kulüp & Akademi paketi gereklidir.',
   },
 
-  // Kurumsal (Level 4) Requirements
+  // Level 3 (Pro Akademi & Çoklu Şube) Requirements:
+  // - Sınırsız Sporcu & Sınırsız Şube / Tesis
+  // - Gelişmiş Finans, Kasa ve Muhasebe Entegrasyonu
+  // - Sporpuan İtibar, Sporcu Değerlendirme, Rozet Doğrulama & Analitik Raporlar
+  // - Branş Bazlı Eğitim Planlama & Taktik Şablonları
+  // - Kendi Alan Adınız ve Özel Mobil Uygulama (White-Label)
+  // - Özel Formlar, Turnuva ve Kamp Yönetimi
+  'sporpuan-sporcu-degerlendirme': {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Sporpuan Sporcu Yetkinlik & Değerlendirme Motoru',
+    description: 'Karneden bağımsız periyodik sporcu yetkinlik puanlaması, alışkanlık ve hazır şablonlu değerlendirme motoru Pro Akademi & Çoklu Şube paketi gerektirir.',
+  },
   'sporpuan-degerlendirmeler': {
-    minPlan: 'Kurumsal',
-    minLevel: 4,
-    featureTitle: 'Sporpuan İtibar & Değerlendirme Sistemi',
-    description: 'Sporcuların performans puanlaması ve veli itibar değerlendirmelerini açmak için Kurumsal paket gereklidir.',
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Sporpuan İtibar Değerlendirmeleri (Pro)',
+    description: 'Kulüp itibar puanlaması, veli ve antrenör değerlendirme panelleri Pro Akademi & Çoklu Şube paketi gerektirir.',
   },
   'sporpuan-dogrulamalar': {
-    minPlan: 'Kurumsal',
-    minLevel: 4,
-    featureTitle: 'Sporpuan Doğrulama Portalı',
-    description: 'Sporpuan sertifika ve başarı doğrulamaları Kurumsal paket yetkisindedir.',
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Sporpuan Rozet & Sertifika Doğrulama Portalı (Pro)',
+    description: 'Sporcu gelişim sertifikaları, check-in ve rozet doğrulamaları Pro Akademi & Çoklu Şube paketi yetkisindedir.',
   },
   'sporpuan-raporlar': {
-    minPlan: 'Kurumsal',
-    minLevel: 4,
-    featureTitle: 'Sporpuan Analiz & Federasyon Raporları',
-    description: 'Gelişmiş itibar analitikleri ve resmi federasyon raporları Kurumsal paket kapsamındadır.',
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Sporpuan Gelişim Analitiği & Radar Grafikleri Raporu (Pro)',
+    description: 'Sporcuların fiziksel ve teknik gelişim radar grafikleri, analitik raporları Pro Akademi & Çoklu Şube paketi kapsamındadır.',
+  },
+  subeler: {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Çoklu Şube & Tesis Yönetimi',
+    description: 'Birden fazla tesis ve şube tanımlamak, tesisler arası koordinasyon sağlamak için Pro Akademi & Çoklu Şube paketi gereklidir. (Başlangıç ve Kulüp paketleri tek şube ile sınırlıdır).',
+  },
+  'sube-ozet': {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Şube Özet & Karşılaştırmalı Finans Paneli',
+    description: 'Tüm şubelerin gelir, gider, sporcu ve eğitmen verilerini konsolide veya tesis bazlı filtreleyip karşılaştırmak için Pro Akademi & Çoklu Şube paketi gereklidir.',
+  },
+  'on-muhasebe': {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Gelişmiş Finans, Kasa ve Muhasebe Entegrasyonu',
+    description: 'Kulübün çift taraflı muhasebe kayıtları, kasa hareketleri, banka entegrasyonu ve finansal bilanço analizleri Pro Akademi & Çoklu Şube paketi gerektirir.',
+  },
+  'gelir-gider-kategori': {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Gelir/Gider Kategori & Hesap Planı Ağacı',
+    description: 'Finansal maliyet merkezlerini ve muhasebe kategori ağacını düzenlemek için Pro Akademi & Çoklu Şube paketi gereklidir.',
+  },
+  'gelir-gider-yonetimi': {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Kasa, Fatura & Gelir-Gider Nakit Akış Yönetimi',
+    description: 'Fatura hareketleri, kulüp masrafları ve nakit akışını kaydetmek için Pro Akademi & Çoklu Şube paketi gereklidir.',
+  },
+  'egitim-planlama': {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Branş Bazlı Eğitim Planlama & Taktik Şablonları',
+    description: 'Futbol, Basketbol ve Voleybol için yaş kategorilerine göre spiral antrenman şablonları, interaktif taktik saha tahtası ve 12 haftalık müfredat planlama Pro Akademi & Çoklu Şube paketi gerektirir.',
+  },
+  'kullanici-sozlesmeleri': {
+    minPlan: 'Pro Akademi & Çoklu Şube',
+    minLevel: 3,
+    featureTitle: 'Kulüp Sözleşmeleri & Veli KVKK Form Yönetimi',
+    description: 'Kulüp özel sözleşme şablonları, dijital KVKK onay formları ve veli imza takipleri Pro Akademi & Çoklu Şube paketi gerektirir.',
   },
 };
 
-export const ACTIVE_PLAN_STORAGE_KEY = 'sportsfly_active_plan_v2';
+export const ACTIVE_PLAN_STORAGE_KEY = 'sportsfly_active_plan_v3';
+
+/**
+ * Normalizes any plan name or legacy alias to one of the 3 canonical packages
+ */
+export function normalizePlanName(plan?: string | null): PackagePlanType {
+  if (!plan) return 'Kulüp & Akademi';
+  const p = plan.trim();
+  if (p === 'Başlangıç Kulübü' || p === 'Başlangıç') {
+    return 'Başlangıç Kulübü';
+  }
+  if (p === 'Kulüp & Akademi' || p === 'Profesyonel' || p === 'Premium') {
+    return 'Kulüp & Akademi';
+  }
+  if (p === 'Pro Akademi & Çoklu Şube' || p === 'Kurumsal') {
+    return 'Pro Akademi & Çoklu Şube';
+  }
+  return 'Kulüp & Akademi';
+}
 
 /**
  * Get current active session plan
  */
 export function getActiveSessionPlan(): PackagePlanType {
-  if (typeof window === 'undefined') return 'Premium';
+  if (typeof window === 'undefined') return 'Kulüp & Akademi';
   try {
     const stored = localStorage.getItem(ACTIVE_PLAN_STORAGE_KEY);
-    if (stored && ['Başlangıç', 'Profesyonel', 'Premium', 'Kurumsal'].includes(stored)) {
-      return stored as PackagePlanType;
+    if (stored) {
+      return normalizePlanName(stored);
+    }
+    // Fallback to legacy storage key if exists
+    const legacyStored = localStorage.getItem('sportsfly_active_plan_v2');
+    if (legacyStored) {
+      return normalizePlanName(legacyStored);
     }
   } catch (e) {}
-  return 'Premium';
+  return 'Kulüp & Akademi';
 }
 
 /**
@@ -276,25 +567,62 @@ export function getActiveSessionPlan(): PackagePlanType {
  */
 export function setActiveSessionPlan(plan: PackagePlanType) {
   if (typeof window === 'undefined') return;
+  const canonical = normalizePlanName(plan);
   try {
-    localStorage.setItem(ACTIVE_PLAN_STORAGE_KEY, plan);
+    localStorage.setItem(ACTIVE_PLAN_STORAGE_KEY, canonical);
+    localStorage.setItem('sportsfly_active_plan_v2', canonical); // keep sync
     window.dispatchEvent(
-      new CustomEvent('sportsfly_plan_updated', { detail: { plan } })
+      new CustomEvent('sportsfly_plan_updated', { detail: { plan: canonical } })
     );
     window.dispatchEvent(
-      new CustomEvent('sportsfly_plan_changed', { detail: { plan } })
+      new CustomEvent('sportsfly_plan_changed', { detail: { plan: canonical } })
     );
   } catch (e) {}
 }
 
 /**
- * Check if a page is allowed for a given package type
+ * Helper to determine if current session user or passed role has Super Admin privileges
  */
-export function isPageAllowedForPlan(page: NavPage, plan: PackagePlanType): boolean {
+export function isSuperAdminUser(role?: string): boolean {
+  if (role) {
+    const r = role.toLowerCase();
+    return r.includes('süper') || r.includes('super');
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('sportsfly_user_profile_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.role) {
+          const r = parsed.role.toLowerCase();
+          return r.includes('süper') || r.includes('super');
+        }
+      }
+    } catch (e) {}
+  }
+  return true; // Default profile role in SportsFly is 'Süper Admin'
+}
+
+/**
+ * Check if a page is allowed for a given package type and user role
+ * NOTE: Süper Admin has unrestricted access to Sporpuan and all modules
+ */
+export function isPageAllowedForPlan(
+  page: NavPage,
+  plan: PackagePlanType,
+  userRole?: string
+): boolean {
+  const isSuper = isSuperAdminUser(userRole);
+
+  // If user is explicitly in Super Admin mode and not testing a lower package:
+  if (isSuper && (!plan || plan === 'Pro Akademi & Çoklu Şube')) {
+    return true;
+  }
+
   const restriction = PAGE_RESTRICTIONS[page];
   if (!restriction) return true; // No restriction defined, open to all
 
-  const currentLevel = PACKAGE_DETAILS[plan]?.level || 3;
+  const currentLevel = PACKAGE_DETAILS[plan]?.level || 2;
   return currentLevel >= restriction.minLevel;
 }
 
@@ -303,13 +631,20 @@ export function isPageAllowedForPlan(page: NavPage, plan: PackagePlanType): bool
  */
 export function getPageRestrictionInfo(
   page: NavPage,
-  plan?: PackagePlanType
+  plan?: PackagePlanType,
+  userRole?: string
 ): PageRestrictionRule | null {
+  const isSuper = isSuperAdminUser(userRole);
+
+  if (isSuper && (!plan || plan === 'Pro Akademi & Çoklu Şube')) {
+    return null;
+  }
+
   const restriction = PAGE_RESTRICTIONS[page];
   if (!restriction) return null;
 
   if (plan) {
-    const currentLevel = PACKAGE_DETAILS[plan]?.level || 3;
+    const currentLevel = PACKAGE_DETAILS[plan]?.level || 2;
     if (currentLevel < restriction.minLevel) {
       return restriction;
     }

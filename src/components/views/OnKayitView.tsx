@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   UserPlus,
   Link as LinkIcon,
@@ -18,7 +18,6 @@ import {
   QrCode,
   DollarSign,
   MessageSquare,
-  Sparkles,
   AlertTriangle,
   ChevronRight,
   ChevronDown,
@@ -34,16 +33,29 @@ import {
   Award,
   FileText,
 } from 'lucide-react';
-import { OnKayitItem, OnKayitDurumu } from '../../types';
-import { INITIAL_ON_KAYITLAR } from '../../data/mockData';
+import { SportsFlyIcon } from '../SportsFlyLogo';
+import { OnKayitItem, OnKayitDurumu, SporcuItem } from '../../types';
+import { INITIAL_ON_KAYITLAR, INITIAL_SPORCULAR } from '../../data/mockData';
 import { LegalDocPreviewModal } from '../modals/LegalDocPreviewModal';
 
 export const OnKayitView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'liste' | 'yeni-kayit'>('liste');
-  const [records, setRecords] = useState<OnKayitItem[]>(INITIAL_ON_KAYITLAR);
+  const [records, setRecords] = useState<OnKayitItem[]>(() => {
+    const saved = localStorage.getItem('sportsfly_on_kayitlar');
+    return saved ? JSON.parse(saved) : INITIAL_ON_KAYITLAR;
+  });
+
+  // Save records to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('sportsfly_on_kayitlar', JSON.stringify(records));
+  }, [records]);
+
   const [statusFilter, setStatusFilter] = useState<string>('Tümü');
   const [searchQuery, setSearchQuery] = useState('');
   const [branchFilter, setBranchFilter] = useState('Tümü');
+  const [subeFilter, setSubeFilter] = useState('Tümü');
+  const [cinsiyetFilter, setCinsiyetFilter] = useState('Tümü');
+  const [ulasmaTuruFilter, setUlasmaTuruFilter] = useState('Tümü');
 
   // Modal states
   const [selectedRecord, setSelectedRecord] = useState<OnKayitItem | null>(null);
@@ -139,6 +151,9 @@ export const OnKayitView: React.FC = () => {
     return records.filter((r) => {
       const matchesStatus = statusFilter === 'Tümü' || r.kayitDurumu === statusFilter;
       const matchesBranch = branchFilter === 'Tümü' || r.brans === branchFilter;
+      const matchesSube = subeFilter === 'Tümü' || r.sube === subeFilter;
+      const matchesCinsiyet = cinsiyetFilter === 'Tümü' || r.cinsiyet === cinsiyetFilter;
+      const matchesUlasma = ulasmaTuruFilter === 'Tümü' || r.ulasmaTuru === ulasmaTuruFilter;
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -147,9 +162,9 @@ export const OnKayitView: React.FC = () => {
         r.onKayitNo.toLowerCase().includes(q) ||
         r.veliTelefon.includes(q) ||
         r.tcKimlikNo.includes(q);
-      return matchesStatus && matchesBranch && matchesSearch;
+      return matchesStatus && matchesBranch && matchesSube && matchesCinsiyet && matchesUlasma && matchesSearch;
     });
-  }, [records, statusFilter, branchFilter, searchQuery]);
+  }, [records, statusFilter, branchFilter, subeFilter, cinsiyetFilter, ulasmaTuruFilter, searchQuery]);
 
   // Status counts for badge tabs
   const statusCounts = useMemo(() => {
@@ -210,21 +225,67 @@ export const OnKayitView: React.FC = () => {
     triggerNotification(`"${newRecord.sporcuAdSoyad}" için ${newRecord.onKayitNo} numaralı ön kayıt başarıyla oluşturuldu!`);
   };
 
+  // Convert Pre-registration to real Athlete (Autonomously mapping profile fields)
+  const convertToSporcu = (item: OnKayitItem) => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const now = new Date();
+    const formattedDate = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+
+    // Clean branch location label
+    const cleanedFacility = item.sube.replace(' Şube', '').replace(' Şubesi', '');
+
+    const newSporcu: SporcuItem = {
+      id: `s-ok-${item.id}`,
+      name: item.sporcuAdSoyad,
+      email: item.veliEposta || `${item.sporcuAdSoyad.toLowerCase().replace(/\s+/g, '')}@sportsfly-student.com`,
+      phone: item.veliTelefon || item.telefon || '+90 530 000 00 00',
+      branch: item.brans,
+      teamGroup: 'Aday Grubu',
+      code,
+      date: formattedDate,
+      facility: cleanedFacility,
+      isActive: true,
+      avatarUrl: item.cinsiyet === 'Erkek'
+        ? 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      birthDate: item.dogumTarihi ? item.dogumTarihi.split('-').reverse().join('.') : '15.05.2012'
+    };
+
+    const savedSporcular = localStorage.getItem('sportsfly_sporcular');
+    let currentSporcular: SporcuItem[] = savedSporcular ? JSON.parse(savedSporcular) : INITIAL_SPORCULAR;
+
+    if (!currentSporcular.some(s => s.name === newSporcu.name && s.phone === newSporcu.phone)) {
+      currentSporcular = [newSporcu, ...currentSporcular];
+      localStorage.setItem('sportsfly_sporcular', JSON.stringify(currentSporcular));
+      
+      // Dispatch events for immediate reactivity
+      window.dispatchEvent(new Event('sportsfly_sporcular_updated'));
+      triggerNotification(`"${newSporcu.name}" isimli sporcu otomatik olarak ana listeye aktarıldı!`);
+    } else {
+      triggerNotification(`"${newSporcu.name}" zaten sporcu listesinde bulunuyor.`);
+    }
+  };
+
   // Quick change status
   const handleQuickStatusChange = (id: string, newStatus: OnKayitDurumu) => {
     setRecords((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              kayitDurumu: newStatus,
-              sonGuncellemeTarihi:
-                new Date().toLocaleDateString('tr-TR') +
-                ' ' +
-                new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-            }
-          : r
-      )
+      prev.map((r) => {
+        if (r.id === id) {
+          const updatedRecord = {
+            ...r,
+            kayitDurumu: newStatus,
+            sonGuncellemeTarihi:
+              new Date().toLocaleDateString('tr-TR') +
+              ' ' +
+              new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+          };
+          if (newStatus === 'Kayıt Oldu') {
+            convertToSporcu(updatedRecord);
+          }
+          return updatedRecord;
+        }
+        return r;
+      })
     );
     triggerNotification(`Durum "${newStatus}" olarak güncellendi.`);
   };
@@ -315,7 +376,7 @@ export const OnKayitView: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* TOAST NOTIFICATION */}
       {notification && (
         <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in fade-in slide-in-from-top-4 duration-200">
@@ -342,9 +403,6 @@ export const OnKayitView: React.FC = () => {
                 {records.length} Başvuru
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Potansiyel sporcular, veli görüşmeleri, sözleşme takibi ve online başvuru linki
-            </p>
           </div>
         </div>
 
@@ -389,7 +447,7 @@ export const OnKayitView: React.FC = () => {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 sm:p-5 text-white shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-300" />
+            <SportsFlyIcon className="w-5 h-5 text-amber-300" />
             <h3 className="font-bold text-sm sm:text-base">Velilere Doğrudan Ön Kayıt Linki Gönderin</h3>
           </div>
           <p className="text-xs text-blue-100 max-w-2xl">
@@ -447,41 +505,95 @@ export const OnKayitView: React.FC = () => {
             ))}
           </div>
 
-          {/* Search & Secondary Filter Bar */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Sporcu, veli adı, T.C. veya telefon ara..."
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-slate-50/50"
-              />
+          {/* Search & Secondary Filter Bar with all requested filters */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              {/* Search Box */}
+              <div className="relative md:col-span-4">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Sporcu, veli adı, T.C. veya telefon ara..."
+                  className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-slate-50/50"
+                />
+              </div>
+
+              {/* Branch Filter */}
+              <div className="md:col-span-2">
+                <select
+                  value={branchFilter}
+                  onChange={(e) => setBranchFilter(e.target.value)}
+                  className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 font-medium outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Tümü">Tüm Branşlar</option>
+                  <option value="Basketbol">Basketbol</option>
+                  <option value="Voleybol">Voleybol</option>
+                  <option value="Yüzme">Yüzme</option>
+                  <option value="Futbol">Futbol</option>
+                  <option value="Jimnastik">Jimnastik</option>
+                </select>
+              </div>
+
+              {/* Sube Filter */}
+              <div className="md:col-span-2">
+                <select
+                  value={subeFilter}
+                  onChange={(e) => setSubeFilter(e.target.value)}
+                  className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 font-medium outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Tümü">Tüm Şubeler</option>
+                  <option value="Kadıköy Merkez Şube">Kadıköy Merkez</option>
+                  <option value="Ataşehir Batı Ataşehir Şubesi">Ataşehir Batı</option>
+                  <option value="Kartal Sahil Tesisleri">Kartal Sahil</option>
+                  <option value="Beşiktaş Spor Kompleksi">Beşiktaş</option>
+                </select>
+              </div>
+
+              {/* Cinsiyet Filter */}
+              <div className="md:col-span-2">
+                <select
+                  value={cinsiyetFilter}
+                  onChange={(e) => setCinsiyetFilter(e.target.value)}
+                  className="w-full px-2.5 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 font-medium outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Tümü">Tüm Cinsiyetler</option>
+                  <option value="Erkek">Erkek</option>
+                  <option value="Kız">Kız</option>
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="md:col-span-2 flex justify-end gap-2">
+                <button
+                  onClick={handleExportCSV}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 bg-white transition-colors cursor-pointer"
+                  title="Excel / CSV Olarak İndir"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Excel İndir</span>
+                </button>
+              </div>
             </div>
-
-            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-              <select
-                value={branchFilter}
-                onChange={(e) => setBranchFilter(e.target.value)}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 font-medium outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="Tümü">Tüm Branşlar</option>
-                <option value="Basketbol">Basketbol</option>
-                <option value="Voleybol">Voleybol</option>
-                <option value="Yüzme">Yüzme</option>
-                <option value="Futbol">Futbol</option>
-                <option value="Jimnastik">Jimnastik</option>
-              </select>
-
-              <button
-                onClick={handleExportCSV}
-                className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 bg-white transition-colors cursor-pointer"
-                title="Excel / CSV Olarak İndir"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Excel / CSV İndir</span>
-              </button>
+            
+            {/* Tertiary Filter Line */}
+            <div className="flex flex-wrap items-center gap-2.5 text-xs pt-2 border-t border-slate-100">
+              <span className="text-slate-400 font-semibold">Ulaşma Kanalı:</span>
+              {['Tümü', 'Referans / Tavsiye', 'Sosyal Medya', 'Google / Arama', 'Diğer'].map((source) => (
+                <button
+                  key={source}
+                  type="button"
+                  onClick={() => setUlasmaTuruFilter(source)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                    ulasmaTuruFilter === source
+                      ? 'bg-slate-900 border-slate-900 text-white'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {source}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -2162,12 +2274,26 @@ export const OnKayitView: React.FC = () => {
                 </select>
               </div>
 
-              <button
-                onClick={() => setSelectedRecord(null)}
-                className="px-5 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
-              >
-                Kapat
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedRecord.kayitDurumu !== 'Kayıt Oldu' && (
+                  <button
+                    onClick={() => {
+                      handleQuickStatusChange(selectedRecord.id, 'Kayıt Oldu');
+                      setSelectedRecord({ ...selectedRecord, kayitDurumu: 'Kayıt Oldu' });
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Kaydı Onayla &amp; Sporcu Yap</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedRecord(null)}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Kapat
+                </button>
+              </div>
             </div>
           </div>
         </div>
