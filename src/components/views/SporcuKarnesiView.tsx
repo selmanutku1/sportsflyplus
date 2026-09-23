@@ -693,7 +693,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-extrabold text-slate-900 text-sm md:text-base flex items-center gap-1.5">
-                            SporPuan & Karne Dinamik Dengesi
+                            Sporpuan & Karne Dinamik Dengesi
                           </h3>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                             Canlı Senkronize
@@ -708,7 +708,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                     {/* Stats & Quick Action */}
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className="bg-white/90 border border-amber-200 px-3.5 py-2 rounded-xl text-center shadow-2xs">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Toplam SporPuan</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Toplam Sporpuan</span>
                         <span className="text-base font-black text-amber-600">
                           {sporpuanImpact.totalSP} SP
                         </span>
@@ -1736,7 +1736,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
           onSuccess={() => {
             setSporpuanRefreshKey(k => k + 1);
             setKarneler(getStoredKarneler());
-            showToast(`✓ ${selectedKarne.adSoyad} için SporPuan başarıyla verildi ve karnesine yansıtıldı!`);
+            showToast(`✓ ${selectedKarne.adSoyad} için Sporpuan başarıyla verildi ve karnesine yansıtıldı!`);
           }}
           initialAthleteId={selectedKarne.sporcuId}
           initialBranch={selectedKarne.brans}

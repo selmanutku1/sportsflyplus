@@ -1210,7 +1210,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                   </div>
 
                   <div className="text-right">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam SporPuan</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Toplam Sporpuan</div>
                     <div className="text-lg font-black text-amber-600 flex items-center justify-end gap-1">
                       <Zap className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
                       <span>{totalSporPuan} SP</span>
@@ -1393,7 +1393,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                   { id: 'davranissal', label: 'Davranış & Periyot', icon: ShieldCheck, avg: currentEdit.davranissal.kriterler?.ortalama || 8 },
                   { id: 'rozetler', label: `Rozetler (${currentEdit.davranissal.kazanimlar?.length || 0})`, icon: Award },
                   { id: 'olcumler', label: 'Fiziki Ölçüm & Not', icon: Info },
-                  { id: 'sporpuan', label: 'SporPuan (SP)', icon: Zap },
+                  { id: 'sporpuan', label: 'Sporpuan (SP)', icon: Zap },
                 ].map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -2107,7 +2107,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                             <Zap className="w-6 h-6 fill-amber-300 text-amber-100" />
                           </div>
                           <div>
-                            <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Mevcut SporPuan</div>
+                            <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Mevcut Sporpuan</div>
                             <div className="text-2xl font-black text-slate-800">{totalSporPuan} <span className="text-xs font-semibold text-slate-500">SP</span></div>
                             <p className="text-[10px] text-amber-600 mt-0.5">Kazanılan toplam ödül puanı</p>
                           </div>
@@ -2143,7 +2143,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                               <Plus className="w-4 h-4 text-blue-600" />
-                              Yeni SporPuan (SP) Girişi
+                              Yeni Sporpuan (SP) Girişi
                             </h3>
                             <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-bold">Koç Yetkisi</span>
                           </div>
@@ -2238,7 +2238,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                           <div className="flex items-center justify-between">
                             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                               <BookOpen className="w-4 h-4 text-blue-600" />
-                              SporPuan Sistemi Tablosu
+                              Sporpuan Sistemi Tablosu
                             </h3>
                             <span className="text-[10px] text-slate-400">{sporpuanRules.length} Kural Akışı</span>
                           </div>
@@ -2444,7 +2444,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                   <div>
                     <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
                       <Sliders className="w-5 h-5 text-emerald-600" />
-                      SporPuan Kazanç Hesaplayıcı &amp; Ödül Simülatörü
+                      Sporpuan Kazanç Hesaplayıcı &amp; Ödül Simülatörü
                     </h2>
                     <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
                       Sporcuların yaş gruplarına ve aylık antrenman sayılarına göre kazanacakları puanları simüle edin, hedefledikleri ödüllere ulaşma durumlarını anlık olarak izleyin.

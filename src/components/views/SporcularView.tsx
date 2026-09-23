@@ -810,7 +810,7 @@ export const SporcularView: React.FC<SporcularViewProps> = ({ onNavigate }) => {
                               setQuickPointSporcu(sporcu);
                             }}
                             className="min-h-[32px] px-2.5 py-1 text-amber-950 dark:text-amber-300 bg-amber-500/15 dark:bg-amber-950/60 hover:bg-amber-500/25 dark:hover:bg-amber-900/60 rounded-lg transition-colors inline-flex items-center gap-1 font-bold text-xs border border-amber-300/80 dark:border-amber-700/80 cursor-pointer shadow-2xs active:scale-95"
-                            title="Sporcuya Hızlı Puan Ver (SporPuan)"
+                            title="Sporcuya Hızlı Puan Ver (Sporpuan)"
                           >
                             <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-600 shrink-0" />
                             <span>Hızlı Puan</span>

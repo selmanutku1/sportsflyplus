@@ -203,7 +203,7 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
             <span>Entegrasyonlar Sayfasına Geri Dön</span>
           </button>
           <div className="text-xs text-slate-400 font-semibold">
-            {activeSubModule === 'sporpuan' && 'SporPuan Modülü'}
+            {activeSubModule === 'sporpuan' && 'Sporpuan Modülü'}
             {activeSubModule === 'turnuva' && 'Turnuva & Lig Yönetimi'}
             {activeSubModule === 'envanter' && 'Envanter & Malzeme Takibi'}
           </div>

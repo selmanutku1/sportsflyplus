@@ -3,7 +3,7 @@ import { EntegrasyonItem } from '../types';
 export const INITIAL_INTEGRATIONS: EntegrasyonItem[] = [
   {
     id: 'int-sporpuan',
-    name: 'SporPuan İtibar & Değerlendirme',
+    name: 'Sporpuan İtibar & Değerlendirme',
     category: 'Kulüp & Spor Modülleri',
     description: 'Sporcu teknik, taktik, devam ve fair-play puanlama altyapısı. Dijital rozetler ve federasyon onaylı karne entegrasyonu.',
     logoUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=200&auto=format&fit=crop&q=80',
@@ -126,15 +126,31 @@ export const INITIAL_INTEGRATIONS: EntegrasyonItem[] = [
   },
 ];
 
-const INTEGRATIONS_STORAGE_KEY = 'sportsfly_integrations_list_v1';
+const INTEGRATIONS_STORAGE_KEY = 'sportsfly_integrations_list_v2';
 
 export function getStoredIntegrations(): EntegrasyonItem[] {
   try {
-    const raw = localStorage.getItem(INTEGRATIONS_STORAGE_KEY);
+    // Check both v2 and legacy storage keys
+    const raw = localStorage.getItem(INTEGRATIONS_STORAGE_KEY) || localStorage.getItem('sportsfly_integrations_list_v1');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        // Sanitize any legacy cached items so that 'SporPuan' is always transformed to 'Sporpuan'
+        const sanitized: EntegrasyonItem[] = parsed.map((item: EntegrasyonItem) => {
+          if (item.id === 'int-sporpuan') {
+            return {
+              ...item,
+              name: 'Sporpuan İtibar & Değerlendirme',
+              description: 'Sporcu teknik, taktik, devam ve fair-play puanlama altyapısı. Dijital rozetler ve federasyon onaylı karne entegrasyonu.',
+            };
+          }
+          return {
+            ...item,
+            name: item.name ? item.name.replace(/SporPuan/g, 'Sporpuan').replace(/Spor Puan/g, 'Sporpuan') : item.name,
+            description: item.description ? item.description.replace(/SporPuan/g, 'Sporpuan').replace(/Spor Puan/g, 'Sporpuan') : item.description,
+          };
+        });
+        return sanitized;
       }
     }
   } catch (e) {

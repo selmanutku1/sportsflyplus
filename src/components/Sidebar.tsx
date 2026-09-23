@@ -118,8 +118,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'odeme-plani',
   ].includes(currentPage);
 
-  const [isBusinessesOpen, setIsBusinessesOpen] = useState(true);
-  const [isOnMuhasebeOpen, setIsOnMuhasebeOpen] = useState(true);
+  const [isBusinessesOpen, setIsBusinessesOpen] = useState(false);
+  const [isOnMuhasebeOpen, setIsOnMuhasebeOpen] = useState(false);
 
   const handleNavClick = (page: NavPage) => {
     onSelectPage(page);

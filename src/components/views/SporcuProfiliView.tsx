@@ -802,7 +802,7 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
           <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-xl p-3 border border-amber-200/80">
             <span className="text-[11px] font-bold text-amber-800 flex items-center gap-1">
               <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
-              <span>SporPuan (SP)</span>
+              <span>Sporpuan (SP)</span>
             </span>
             <p className="text-sm font-black text-amber-950 mt-0.5">
               {athleteTotalPoints} SP
@@ -1056,7 +1056,7 @@ export const SporcuProfiliView: React.FC<SporcuProfiliViewProps> = ({
                       <Zap className="w-4 h-4 fill-amber-500" />
                     </div>
                     <h3 className="text-base font-bold text-slate-900">
-                      Son Puan & Gelişim Etkinlikleri (SporPuan)
+                      Son Puan & Gelişim Etkinlikleri (Sporpuan)
                     </h3>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">

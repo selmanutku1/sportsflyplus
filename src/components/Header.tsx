@@ -934,7 +934,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {[
                       { id: 'all', label: 'Tümü', count: notifications.length },
                       { id: 'payment', label: '💳 Ödeme', count: notifications.filter((n) => n.category === 'payment').length },
-                      { id: 'sporpuan', label: '⭐ SporPuan', count: notifications.filter((n) => n.category === 'sporpuan').length },
+                      { id: 'sporpuan', label: '⭐ Sporpuan', count: notifications.filter((n) => n.category === 'sporpuan').length },
                       { id: 'training', label: '📋 Yoklama', count: notifications.filter((n) => n.category === 'training').length },
                       { id: 'message', label: '💬 Mesaj', count: notifications.filter((n) => n.category === 'message' || n.category === 'support').length },
                       { id: 'unread', label: 'Okunmamış', count: unreadCount },
@@ -1001,7 +1001,7 @@ export const Header: React.FC<HeaderProps> = ({
                             case 'payment':
                               return { text: 'Ödeme', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' };
                             case 'sporpuan':
-                              return { text: 'SporPuan', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800' };
+                              return { text: 'Sporpuan', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800' };
                             case 'training':
                               return { text: 'Yoklama', cls: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800' };
                             case 'support':
@@ -1155,7 +1155,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <button
                         onClick={handleSimulateSporPuan}
                         className="text-[10px] text-amber-600 dark:text-amber-400 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
-                        title="Örnek SporPuan kazanım bildirimi"
+                        title="Örnek Sporpuan kazanım bildirimi"
                       >
                         <Zap className="w-2.5 h-2.5 fill-current" />
                         <span>+Puan</span>

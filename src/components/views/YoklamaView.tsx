@@ -273,7 +273,7 @@ export const YoklamaView: React.FC = () => {
               </div>
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300 block">
-                  Otomatik SporPuan
+                  Otomatik Sporpuan
                 </span>
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                   {presentCount > 0 ? `+${presentCount * 75} SP (Hazır)` : 'Yoklama bekleniyor'}
@@ -424,7 +424,7 @@ export const YoklamaView: React.FC = () => {
               {selectedGroup?.name} için yoklama işlendi.
               {automationSummary && automationSummary.awardedCount > 0 && (
                 <span className="block mt-1 font-semibold text-amber-300">
-                  ⚡ Katılan sporculara toplam +{automationSummary.totalPointsGiven} SporPuan (Katılım &amp; Haftalık Tam Devam) otomatik olarak tanımlandı ve veli uygulamalarına iletildi!
+                  ⚡ Katılan sporculara toplam +{automationSummary.totalPointsGiven} Sporpuan (Katılım &amp; Haftalık Tam Devam) otomatik olarak tanımlandı ve veli uygulamalarına iletildi!
                 </span>
               )}
             </p>

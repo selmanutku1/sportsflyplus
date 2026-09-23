@@ -68,15 +68,15 @@ export const ALL_PLATFORM_MODULES: {
   { id: 'anket-yonetimi', name: 'Veli & Sporcu Anketleri', category: 'Sportif Operasyon', defaultDescription: 'Kulüp ve antrenör memnuniyet ölçümleri' },
 
   // 4. Modüller & Entegrasyonlar
-  { id: 'entegrasyonlar', name: 'Entegrasyonlar & Modül Portalı', category: 'Entegrasyonlar', defaultDescription: 'SporPuan, Turnuva, Envanter, Sanal POS, SMS ve takvim entegrasyonlarının merkezi yönetimi' },
+  { id: 'entegrasyonlar', name: 'Entegrasyonlar & Modül Portalı', category: 'Entegrasyonlar', defaultDescription: 'Sporpuan, Turnuva, Envanter, Sanal POS, SMS ve takvim entegrasyonlarının merkezi yönetimi' },
   { id: 'turnuva-yonetimi', name: 'Turnuva & Lig Yönetimi', category: 'Modüller', defaultDescription: 'Fikstür, maç takvimi, puan tablosu ve kupa/madalya takibi' },
   { id: 'envanter-yonetimi', name: 'Envanter & Malzeme Yönetimi', category: 'Modüller', defaultDescription: 'Kulüp malzeme stokları, zimmet takibi, durum kontrolü ve kritik stok uyarıları' },
 
-  // 5. SporPuan İtibar Portalı
-  { id: 'sporpuan-sporcu-degerlendirme', name: 'Sporcu Değerlendirme & Yetkinlik', category: 'SporPuan İtibar Portalı', defaultDescription: 'Teknik, taktik ve disiplin puanları ile SporPuan verme' },
-  { id: 'sporpuan-degerlendirmeler', name: 'Değerlendirme Geçmişi', category: 'SporPuan İtibar Portalı', defaultDescription: 'Geçmiş değerlendirme seansları ve sporcu puan dökümü' },
-  { id: 'sporpuan-dogrulamalar', name: 'SporPuan Doğrulama & Onay', category: 'SporPuan İtibar Portalı', defaultDescription: 'Federasyon ve kulüp yetkilisi onay mekanizması' },
-  { id: 'sporpuan-raporlar', name: 'SporPuan Gelişim Analitiği', category: 'SporPuan İtibar Portalı', defaultDescription: 'Takım ve sporcu bazlı itibar gelişim raporları' },
+  // 5. Sporpuan İtibar Portalı
+  { id: 'sporpuan-sporcu-degerlendirme', name: 'Sporcu Değerlendirme & Yetkinlik', category: 'Sporpuan İtibar Portalı', defaultDescription: 'Teknik, taktik ve disiplin puanları ile Sporpuan verme' },
+  { id: 'sporpuan-degerlendirmeler', name: 'Değerlendirme Geçmişi', category: 'Sporpuan İtibar Portalı', defaultDescription: 'Geçmiş değerlendirme seansları ve sporcu puan dökümü' },
+  { id: 'sporpuan-dogrulamalar', name: 'Sporpuan Doğrulama & Onay', category: 'Sporpuan İtibar Portalı', defaultDescription: 'Federasyon ve kulüp yetkilisi onay mekanizması' },
+  { id: 'sporpuan-raporlar', name: 'Sporpuan Gelişim Analitiği', category: 'Sporpuan İtibar Portalı', defaultDescription: 'Takım ve sporcu bazlı itibar gelişim raporları' },
 
   // 5. Finans & Ön Muhasebe
   { id: 'on-muhasebe', name: 'Ön Muhasebe & Kasa Özeti', category: 'Finans & Ön Muhasebe', defaultDescription: 'Kasa bakiyesi, banka hareketleri ve anlık nakit akışı' },
@@ -220,8 +220,8 @@ export function getDefaultRoleDefinitions(): Record<UserRoleKey, UserRoleDefinit
       badge: 'Coach / Antrenör',
       badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300',
       iconBg: 'from-emerald-600 to-teal-700',
-      shortDesc: 'Mobil hızlı yoklama, taktik planlama, sporcu karne notları ve SporPuan verme.',
-      fullDesc: 'Yalnızca kendisine atanmış antrenman gruplarının yoklamasını alır, seans planlarını yürütür, sporcu performans notlarını ve SporPuan değerlendirmelerini girer.',
+      shortDesc: 'Mobil hızlı yoklama, taktik planlama, sporcu karne notları ve Sporpuan verme.',
+      fullDesc: 'Yalnızca kendisine atanmış antrenman gruplarının yoklamasını alır, seans planlarını yürütür, sporcu performans notlarını ve Sporpuan değerlendirmelerini girer.',
       dataScope: 'Yalnızca Atandığı Branş ve Gruplar',
       isSuperAdminExclusive: false,
       kvkkCompliant: true,
@@ -235,7 +235,7 @@ export function getDefaultRoleDefinitions(): Record<UserRoleKey, UserRoleDefinit
       badgeColor: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300',
       iconBg: 'from-amber-600 to-orange-700',
       shortDesc: 'Çocuğun gelişim karnesi, antrenman devam takibi ve online kredi kartı aidat ödeme.',
-      fullDesc: 'Yalnızca kendi kayıtlı çocuklarının antrenman takvimini, devamsızlık durumunu, dijital karnesini, kazanılan SporPuanları ve aidat taksitlerini görüntüler. Sanal POS ile ödeme yapar.',
+      fullDesc: 'Yalnızca kendi kayıtlı çocuklarının antrenman takvimini, devamsızlık durumunu, dijital karnesini, kazanılan Sporpuanları ve aidat taksitlerini görüntüler. Sanal POS ile ödeme yapar.',
       dataScope: 'Yalnızca Kendi Kayıtlı Çocukları (KVKK İzolasyonu)',
       isSuperAdminExclusive: false,
       kvkkCompliant: true,
@@ -248,8 +248,8 @@ export function getDefaultRoleDefinitions(): Record<UserRoleKey, UserRoleDefinit
       badge: 'Sporcu Portalı',
       badgeColor: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/60 dark:text-sky-300',
       iconBg: 'from-sky-500 to-indigo-600',
-      shortDesc: 'Kişisel karne, SporPuan rozetleri, takvim ve antrenman başarı serileri.',
-      fullDesc: 'Kendi sporcu kartını, karne gelişim grafiklerini, SporPuan liderlik seviyesini ve antrenman programını takip eder.',
+      shortDesc: 'Kişisel karne, Sporpuan rozetleri, takvim ve antrenman başarı serileri.',
+      fullDesc: 'Kendi sporcu kartını, karne gelişim grafiklerini, Sporpuan liderlik seviyesini ve antrenman programını takip eder.',
       dataScope: 'Yalnızca Kendi Sporcu Profili',
       isSuperAdminExclusive: false,
       kvkkCompliant: true,

@@ -227,7 +227,7 @@ export const PointEarnedPushToast: React.FC<PointEarnedPushToastProps> = ({
               onClick={handleGoToEvaluation}
               className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700 transition-all cursor-pointer"
             >
-              <span>SporPuan Detayı</span>
+              <span>Sporpuan Detayı</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>

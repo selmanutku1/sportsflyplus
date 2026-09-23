@@ -1948,7 +1948,7 @@ export const EgitmenlerView: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-center">
-                      <span className="text-xs text-slate-400 font-bold block">Toplam Verilen SporPuan</span>
+                      <span className="text-xs text-slate-400 font-bold block">Toplam Verilen Sporpuan</span>
                       <span className="text-2xl font-black text-amber-500 mt-1 block">+1,450 SP</span>
                       <span className="text-[10px] text-slate-400">Sporculara dağıtılan motivasyon ödülü</span>
                     </div>
@@ -1983,7 +1983,7 @@ export const EgitmenlerView: React.FC = () => {
 
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-bold text-slate-900 dark:text-white">Bireysel Motivasyon &amp; SporPuan</span>
+                          <span className="font-bold text-slate-900 dark:text-white">Bireysel Motivasyon &amp; Sporpuan</span>
                           <span className="text-slate-400 text-[10px]">04.09.2024</span>
                         </div>
                         <p className="text-slate-600 dark:text-slate-300">

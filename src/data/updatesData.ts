@@ -27,7 +27,7 @@ export const SYSTEM_UPDATES: SystemUpdateItem[] = [
     id: 'upd-001',
     version: 'v2.8.5',
     date: '21 Eylül 2026',
-    title: 'SporPuan Kulüp İtibar, Doğrulama & Raporlama Merkezi',
+    title: 'Sporpuan Kulüp İtibar, Doğrulama & Raporlama Merkezi',
     summary: 'Sporcularınızın davranış ve gelişim puanlarını tek merkezden doğrulayın, kulüp genel itibar raporları üretin.',
     targetRole: 'yonetici',
     targetRoleLabel: 'Yöneticilere Özel',
@@ -36,11 +36,11 @@ export const SYSTEM_UPDATES: SystemUpdateItem[] = [
     isNew: true,
     actionPage: 'sporpuan-dogrulamalar',
     actionLabel: 'Doğrulama Masasını Aç',
-    roleHighlight: 'Kulüp itibarınızı artıracak SporPuan doğrulama ve analiz araçları aktif.',
+    roleHighlight: 'Kulüp itibarınızı artıracak Sporpuan doğrulama ve analiz araçları aktif.',
     details: [
       'Antrenörler tarafından verilen puanların yönetici onayı ve itiraz denetimi.',
       'Şubeler arası karşılaştırmalı sporcu disiplin ve katılım analitiği.',
-      'Tek tıkla PDF veya Excel formatında SporPuan karne ihracı.',
+      'Tek tıkla PDF veya Excel formatında Sporpuan karne ihracı.',
     ],
   },
   {
@@ -191,7 +191,7 @@ export const SYSTEM_UPDATES: SystemUpdateItem[] = [
     version: 'v2.8.5',
     date: '21 Eylül 2026',
     title: 'SportsFly 2.8: Koyu/Açık Tema & Gelişmiş Bildirim Motoru',
-    summary: 'Gözü yormayan modern Koyu Tema, anlık SporPuan push bildirimleri ve ultra hızlı mobil arayüz.',
+    summary: 'Gözü yormayan modern Koyu Tema, anlık Sporpuan push bildirimleri ve ultra hızlı mobil arayüz.',
     targetRole: 'all',
     targetRoleLabel: 'Genel Sistem Güncellemesi',
     category: 'improvement',
@@ -267,7 +267,7 @@ export function getRoleBannerText(role?: string): {
     case 'yonetici':
       return {
         title: 'Yöneticilere Özel Yeni Özellikler Yayında!',
-        description: 'SporPuan Kulüp Doğrulama Masası, çoklu şube konsolide finans raporları ve otomatik aidat takibi devreye alındı.',
+        description: 'Sporpuan Kulüp Doğrulama Masası, çoklu şube konsolide finans raporları ve otomatik aidat takibi devreye alındı.',
         badge: 'Yönetici Güncellemesi v2.8.5',
         highlightUpdate: primaryUpdate,
       };
@@ -288,7 +288,7 @@ export function getRoleBannerText(role?: string): {
     case 'sporcu':
       return {
         title: 'Sporcular İçin Yeni Rozetler & Gelişim Karnesi!',
-        description: 'SporPuan seviye rozetleri, kişisel başarı puanları ve antrenman performans grafikleri profilinize eklendi.',
+        description: 'Sporpuan seviye rozetleri, kişisel başarı puanları ve antrenman performans grafikleri profilinize eklendi.',
         badge: 'Sporcu Güncellemesi v2.8.5',
         highlightUpdate: primaryUpdate,
       };
