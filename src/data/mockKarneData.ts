@@ -106,18 +106,18 @@ export interface SporcuKarne {
 export const INITIAL_KARNELER: SporcuKarne[] = [
   {
     id: 'k1',
-    sporcuId: 's1',
+    sporcuId: 's-3',
     adSoyad: 'Kaan Yıldırım',
     brans: 'Basketbol',
-    grup: 'U14 Anadolu Efes Altyapı',
-    yasGubu: 'U14',
-    tarih: '2023-11-20',
+    grup: 'Genç Takım (U16)',
+    yasGubu: 'U16',
+    tarih: '2024-02-15',
     antrenor: 'Selman Utku',
     boy: 172,
     kilo: 64,
     veliAdSoyad: 'Murat Yıldırım',
-    veliTelefon: '+90 532 456 78 90',
-    veliEposta: 'murat.yildirim@gmail.com',
+    veliTelefon: '+90 535 600 77 33',
+    veliEposta: 'kaanyildirim@spor.org',
     veliYakinlik: 'Baba',
     teknik: {
       topKontrolu: 8,
@@ -174,22 +174,22 @@ export const INITIAL_KARNELER: SporcuKarne[] = [
       ],
       surecTakibi: [
         {
-          donem: '1. Dönem (Eylül)',
-          tarih: '2023-09-30',
+          donem: '1. Dönem (Güz)',
+          tarih: '2023-11-30',
           durum: 'Gelişiyor',
           odakKonusu: 'Dinleme ve Odaklanma',
           gozlem: 'Antrenman molalarında zaman zaman dikkat dağınıklığı gözlemlendi; koç yönlendirmeleriyle hızlı toparlandı.'
         },
         {
-          donem: '2. Dönem (Ekim)',
-          tarih: '2023-10-31',
+          donem: '2. Dönem (Kış)',
+          tarih: '2024-01-15',
           durum: 'Hedefe Ulaştı',
           odakKonusu: 'Duygu Kontrolü & Maç Stresi',
           gozlem: 'Maç içi gergin anlarda sakin kalıp enerjisini taktiksel disipline aktarmayı başardı.'
         },
         {
-          donem: '3. Dönem (Kasım)',
-          tarih: '2023-11-20',
+          donem: '3. Dönem (Bahar)',
+          tarih: '2024-02-15',
           durum: 'Örnek Davranış',
           odakKonusu: 'Saha İçi Liderlik ve Rol Modellik',
           gozlem: 'Centilmenliği, çalışma azmi ve takım arkadaşlarına yapıcı geri bildirimleriyle örnek sporcu seviyesine ulaştı.'
@@ -221,33 +221,334 @@ export const INITIAL_KARNELER: SporcuKarne[] = [
   },
   {
     id: 'k2',
-    sporcuId: 's2',
-    adSoyad: 'Emirhan Örnek',
+    sporcuId: 's-1',
+    adSoyad: 'Selman Utku',
     brans: 'Basketbol',
-    grup: 'U14 Anadolu Efes Altyapı',
+    grup: 'U14 Erkek Gelişim A',
     yasGubu: 'U14',
-    tarih: '2023-11-20',
-    antrenor: 'Selman Utku',
+    tarih: '2024-02-10',
+    antrenor: 'Ali Özcan',
     boy: 168,
     kilo: 58,
-    veliAdSoyad: 'Aysel Örnek',
-    veliTelefon: '+90 533 987 65 43',
-    veliEposta: 'aysel.ornek@gmail.com',
+    veliAdSoyad: 'Marmara Utku',
+    veliTelefon: '+90 538 597 92 22',
+    veliEposta: 'selmanutkumarmara@gmail.com',
+    veliYakinlik: 'Baba',
+    teknik: {
+      topKontrolu: 9,
+      pasBasarisi: 9,
+      sut: 8,
+      topSurme: 9,
+      savunma: 8,
+      ortalama: 8.6
+    },
+    fiziksel: {
+      hiz: 9,
+      dayaniklilik: 8,
+      guc: 7,
+      ceviklik: 9,
+      ortalama: 8.25
+    },
+    taktiksel: {
+      oyunZekasi: 9,
+      pozisyonAlma: 9,
+      kararVerme: 9,
+      ortalama: 9.0
+    },
+    zihinsel: {
+      disiplin: 9,
+      ozguven: 9,
+      takimUyumu: 9,
+      liderlik: 9,
+      ortalama: 9.0
+    },
+    katilimYuzdesi: 96,
+    antrenmanSayisi: 28,
+    davranissal: {
+      kriterler: {
+        fairPlay: 9,
+        sorumlulukEkipman: 9,
+        saygiIletisim: 9,
+        yonergeyeUyum: 9,
+        duyguKontrolu: 9,
+        ortalama: 9.0
+      },
+      kazanimlar: [
+        {
+          baslik: 'Takım Kaptanlığı & Rol Model',
+          aciklama: 'Saha içi ve saha dışında takım arkadaşlarına liderlik ve örnek duruş sergiliyor.'
+        },
+        {
+          baslik: 'Yüksek Antrenman Disiplini',
+          aciklama: 'Tüm idmanlara eksiksiz katılım ve tam odaklanma.'
+        }
+      ],
+      surecTakibi: [
+        {
+          donem: '1. Dönem',
+          tarih: '2023-10-31',
+          durum: 'Hedefe Ulaştı',
+          odakKonusu: 'Saha İçi Liderlik',
+          gozlem: 'Takımın hücum organizasyonunu ve savunma sertliğini koordine etti.'
+        },
+        {
+          donem: '2. Dönem',
+          tarih: '2024-02-10',
+          durum: 'Örnek Davranış',
+          odakKonusu: 'Centilmenlik ve İletişim',
+          gozlem: 'Hakem ve koç kararlarına saygılı örnek sporcu profili.'
+        }
+      ],
+      bagimlilikVeAliskanlik: {
+        ekranDengesi: {
+          puan: 9.0,
+          seviye: 'Dengeli & Bilinçli',
+          aciklama: 'Dijital ekran süresinde bilinçli ve düzenli sporcu disiplini.'
+        },
+        zararliAliskanlik: {
+          puan: 10,
+          seviye: 'Bilinçli (Örnek)',
+          aciklama: 'Beslenme ve sağlıklı hidrasyon alışkanlıklarında örnek sporcu.'
+        },
+        uykuVeDinlenme: {
+          puan: 9.0,
+          seviye: 'Düzenli (8+ Saat)',
+          aciklama: 'Erken uyku ve kaliteli toparlanma süreci.'
+        },
+        genelFarkindalik: 'Örnek & Bilinçli',
+        egitmenGorus: 'Selman her yönden akademi altyapımızın örnek sporcusudur.'
+      },
+      genelDegerlendirme: 'Selman, saha içi teknik becerisi ve üstün karakter özellikleriyle örnek bir liderdir.'
+    },
+    antrenorNotu: 'Selman sahadaki oyun kurucu vizyonu ve arkadaşlarına verdiği güvenle takımın temel direği konumundadır.',
+    gelisimAlanlari: ['Orta Mesafe Şut İstikrarı']
+  },
+  {
+    id: 'k3',
+    sporcuId: 's-2',
+    adSoyad: 'Zeynep Kaya',
+    brans: 'Voleybol',
+    grup: 'Midi Kız Takımı A',
+    yasGubu: 'U13',
+    tarih: '2024-02-12',
+    antrenor: 'Pınar Çakmakçı',
+    boy: 165,
+    kilo: 52,
+    veliAdSoyad: 'Ayşe Kaya',
+    veliTelefon: '+90 533 450 12 88',
+    veliEposta: 'zeynep.kaya@gmail.com',
     veliYakinlik: 'Anne',
     teknik: {
       topKontrolu: 9,
       pasBasarisi: 9,
+      sut: 8,
+      topSurme: 8,
+      savunma: 9,
+      ortalama: 8.6
+    },
+    fiziksel: {
+      hiz: 8,
+      dayaniklilik: 8,
+      guc: 7,
+      ceviklik: 9,
+      ortalama: 8.0
+    },
+    taktiksel: {
+      oyunZekasi: 9,
+      pozisyonAlma: 9,
+      kararVerme: 8,
+      ortalama: 8.66
+    },
+    zihinsel: {
+      disiplin: 9,
+      ozguven: 8,
+      takimUyumu: 10,
+      liderlik: 8,
+      ortalama: 8.75
+    },
+    katilimYuzdesi: 92,
+    antrenmanSayisi: 26,
+    davranissal: {
+      kriterler: {
+        fairPlay: 9,
+        sorumlulukEkipman: 9,
+        saygiIletisim: 9,
+        yonergeyeUyum: 9,
+        duyguKontrolu: 9,
+        ortalama: 9.0
+      },
+      kazanimlar: [
+        {
+          baslik: 'Takım Ruhu & Pasör Vizyonu',
+          aciklama: 'Hücum setlerinde arkadaşlarına en uygun topları aktarıp moral veriyor.'
+        },
+        {
+          baslik: 'Savunma Fedakarlığı',
+          aciklama: 'Manşet ve plonjonda yüksek gayret ve cesaret.'
+        }
+      ],
+      surecTakibi: [
+        {
+          donem: '1. Dönem',
+          tarih: '2023-11-20',
+          durum: 'Hedefe Ulaştı',
+          odakKonusu: 'Servis ve Manşet İstikrarı',
+          gozlem: 'Temel tekniklerde hızlı ivme yakaladı.'
+        },
+        {
+          donem: '2. Dönem',
+          tarih: '2024-02-12',
+          durum: 'Örnek Davranış',
+          odakKonusu: 'Saha İçi Yardımlaşma',
+          gozlem: 'Takım arkadaşlarını her sayıda motive ediyor.'
+        }
+      ],
+      bagimlilikVeAliskanlik: {
+        ekranDengesi: {
+          puan: 8.5,
+          seviye: 'Dengeli & Bilinçli',
+          aciklama: 'Sosyal medya süresinde sağlıklı ve dengeli yaklaşım.'
+        },
+        zararliAliskanlik: {
+          puan: 10,
+          seviye: 'Bilinçli (Örnek)',
+          aciklama: 'Sağlıklı beslenme ve sporcu alışkanlıklarına sadık.'
+        },
+        uykuVeDinlenme: {
+          puan: 9.0,
+          seviye: 'Düzenli (8+ Saat)',
+          aciklama: 'Düzenli dinlenme ve okul-spor dengesi.'
+        },
+        genelFarkindalik: 'Örnek & Bilinçli',
+        egitmenGorus: 'Zeynep hem okulunda hem de voleybol branşında parmakla gösterilen bir sporcudur.'
+      },
+      genelDegerlendirme: 'Zeynep yüksek tekniği, pas kalitesi ve takım arkadaşlarıyla kurduğu pozitif bağla geleceği parlak bir sporcudur.'
+    },
+    antrenorNotu: 'Zeynep pasörlük pozisyonunda kritik pas dağılımlarıyla takımı çok iyi yönetiyor. Sıçrama kuvvetine devam edeceğiz.',
+    gelisimAlanlari: ['Blok Zamanlaması']
+  },
+  {
+    id: 'k4',
+    sporcuId: 's-4',
+    adSoyad: 'Melis Aksoy',
+    brans: 'Jimnastik',
+    grup: 'Temel Jimnastik',
+    yasGubu: 'U10',
+    tarih: '2024-02-05',
+    antrenor: 'Selin Aydın',
+    boy: 135,
+    kilo: 30,
+    veliAdSoyad: 'Emel Aksoy',
+    veliTelefon: '+90 538 900 88 44',
+    veliEposta: 'melisaksoy@gmail.com',
+    veliYakinlik: 'Anne',
+    teknik: {
+      topKontrolu: 8,
+      pasBasarisi: 8,
       sut: 7,
-      topSurme: 9,
-      savunma: 7,
-      ortalama: 8.2
+      topSurme: 8,
+      savunma: 8,
+      ortalama: 7.8
     },
     fiziksel: {
       hiz: 9,
-      dayaniklilik: 7,
-      guc: 5,
+      dayaniklilik: 8,
+      guc: 8,
+      ceviklik: 10,
+      ortalama: 8.75
+    },
+    taktiksel: {
+      oyunZekasi: 8,
+      pozisyonAlma: 8,
+      kararVerme: 8,
+      ortalama: 8.0
+    },
+    zihinsel: {
+      disiplin: 9,
+      ozguven: 9,
+      takimUyumu: 9,
+      liderlik: 8,
+      ortalama: 8.75
+    },
+    katilimYuzdesi: 94,
+    antrenmanSayisi: 22,
+    davranissal: {
+      kriterler: {
+        fairPlay: 9,
+        sorumlulukEkipman: 9,
+        saygiIletisim: 9,
+        yonergeyeUyum: 9,
+        duyguKontrolu: 8,
+        ortalama: 8.8
+      },
+      kazanimlar: [
+        {
+          baslik: 'Esneklik ve Denge Üstünlüğü',
+          aciklama: 'Denge aleti ve yer hareketlerinde yaş grubunun üzerinde başarı.'
+        }
+      ],
+      surecTakibi: [
+        {
+          donem: '1. Dönem',
+          tarih: '2024-02-05',
+          durum: 'Hedefe Ulaştı',
+          odakKonusu: 'Denge & Odaklanma',
+          gozlem: 'Koreografi hareketlerini başarıyla sergiledi.'
+        }
+      ],
+      bagimlilikVeAliskanlik: {
+        ekranDengesi: {
+          puan: 9.0,
+          seviye: 'Dengeli & Bilinçli',
+          aciklama: 'Ekran süresi aile kontrolünde çok dengeli.'
+        },
+        zararliAliskanlik: {
+          puan: 10,
+          seviye: 'Bilinçli (Örnek)',
+          aciklama: 'Şekerli gıdalar yerine meyve ve doğal beslenme.'
+        },
+        uykuVeDinlenme: {
+          puan: 9.5,
+          seviye: 'Düzenli (8+ Saat)',
+          aciklama: 'Günde 9 saatten fazla düzenli uyku.'
+        },
+        genelFarkindalik: 'Örnek & Bilinçli',
+        egitmenGorus: 'Melis yüksek motivasyonu ve esnekliğiyle öne çıkıyor.'
+      },
+      genelDegerlendirme: 'Melis jimnastik branşında çok yetenekli ve antrenman neşesi yüksek bir sporcudur.'
+    },
+    antrenorNotu: 'Melis yer serisinde akrobatik hareketleri çok temiz çıkarıyor. Kol kuvveti gelişimine devam.',
+    gelisimAlanlari: ['Kol Kuvveti']
+  },
+  {
+    id: 'k5',
+    sporcuId: 's-5',
+    adSoyad: 'Defne Şahin',
+    brans: 'Yüzme',
+    grup: 'Yıldız Yüzme Grubu',
+    yasGubu: 'U11',
+    tarih: '2024-02-01',
+    antrenor: 'Burak Demir',
+    boy: 148,
+    kilo: 39,
+    veliAdSoyad: 'Canan Şahin',
+    veliTelefon: '+90 542 780 99 22',
+    veliEposta: 'defnesahin@gmail.com',
+    veliYakinlik: 'Anne',
+    teknik: {
+      topKontrolu: 9,
+      pasBasarisi: 8,
+      sut: 8,
+      topSurme: 9,
+      savunma: 8,
+      ortalama: 8.4
+    },
+    fiziksel: {
+      hiz: 9,
+      dayaniklilik: 9,
+      guc: 8,
       ceviklik: 9,
-      ortalama: 7.5
+      ortalama: 8.75
     },
     taktiksel: {
       oyunZekasi: 9,
@@ -256,183 +557,61 @@ export const INITIAL_KARNELER: SporcuKarne[] = [
       ortalama: 8.66
     },
     zihinsel: {
-      disiplin: 8,
+      disiplin: 9,
       ozguven: 9,
-      takimUyumu: 8,
-      liderlik: 9,
-      ortalama: 8.5
+      takimUyumu: 9,
+      liderlik: 8,
+      ortalama: 8.75
     },
-    katilimYuzdesi: 88,
-    antrenmanSayisi: 21,
+    katilimYuzdesi: 96,
+    antrenmanSayisi: 30,
     davranissal: {
       kriterler: {
-        fairPlay: 8,
+        fairPlay: 9,
         sorumlulukEkipman: 9,
         saygiIletisim: 9,
         yonergeyeUyum: 9,
-        duyguKontrolu: 8,
-        ortalama: 8.6
+        duyguKontrolu: 9,
+        ortalama: 9.0
       },
       kazanimlar: [
         {
-          baslik: 'Zaman Yönetimi & Dakiklik',
-          aciklama: 'Antrenmanlara 15 dakika önce gelerek ısınma rutinini eksiksiz tamamlar.'
-        },
-        {
-          baslik: 'Koç Yönergelerine Yüksek Uyum',
-          aciklama: 'Mola esnasında verilen stratejik direktifleri sahada anında uygular.'
+          baslik: 'Serbest & Sırtüstü Temposu',
+          aciklama: '50m ve 100m serbest stilde sürelerini sürekli geliştiriyor.'
         }
       ],
       surecTakibi: [
         {
-          donem: '1. Dönem (Eylül)',
-          tarih: '2023-09-30',
-          durum: 'Hedefe Ulaştı',
-          odakKonusu: 'Sorumluluk Bilinci & Hazırlık',
-          gozlem: 'Antrenman disiplini ve malzeme düzeni konusunda baştan sona eksiksiz tutum.'
-        },
-        {
-          donem: '2. Dönem (Ekim)',
-          tarih: '2023-10-31',
-          durum: 'Hedefe Ulaştı',
-          odakKonusu: 'Yapıcı İletişim',
-          gozlem: 'Oyun kurucu olarak takım arkadaşlarıyla pozitif iletişim kurarak hücum temposunu yönetti.'
-        },
-        {
-          donem: '3. Dönem (Kasım)',
-          tarih: '2023-11-20',
+          donem: '1. Dönem',
+          tarih: '2024-02-01',
           durum: 'Örnek Davranış',
-          odakKonusu: 'Hata Karşısında Dayanıklılık',
-          gozlem: 'Top kayıpları sonrasında demoralize olmadan anında savunmaya dönerek sorumluluk aldı.'
+          odakKonusu: 'Nefes Kontrolü & Dönüşler',
+          gozlem: 'Havuz içi dönüş tekniğinde sıfır hata seviyesine geldi.'
         }
       ],
       bagimlilikVeAliskanlik: {
         ekranDengesi: {
-          puan: 7.5,
+          puan: 9.0,
           seviye: 'Dengeli & Bilinçli',
-          aciklama: 'Sosyal medya ve mobil oyun süresinde veli desteğiyle sağlıklı bir denge oturttu.'
+          aciklama: 'Yüzme idmanları öncesi dinlenmesine tam özen gösteriyor.'
         },
         zararliAliskanlik: {
           puan: 10,
           seviye: 'Bilinçli (Örnek)',
-          aciklama: 'Zararlı alışkanlıklara karşı tam farkındalık; beslenmesinde paketli abur cuburları azalttı.'
+          aciklama: 'Temiz ve dengeli sporcu beslenmesi.'
         },
         uykuVeDinlenme: {
-          puan: 8.0,
+          puan: 9.0,
           seviye: 'Düzenli (8+ Saat)',
-          aciklama: 'Hafta içi uyku saatleri çok düzenli, hafta sonları dinlenme süreleri korunuyor.'
-        },
-        genelFarkindalik: 'Dengeli',
-        egitmenGorus: 'Emirhan hem beslenme hem de dijital alışkanlıklarında sporcu disiplinine özen gösteriyor.'
-      },
-      genelDegerlendirme: 'Emirhan disiplinli yapısıyla antrenmanların kalitesini artıran, saygılı ve gelişime açık profesyonel bir tutum sergilemektedir.'
-    },
-    antrenorNotu: 'Emirhan oyun kurucu pozisyonunda takımın beyni. Çok hızlı ve çevik ancak fiziksel olarak rakiplerine karşı dezavantajlı duruma düşebiliyor. Kondisyon ve kuvvet çalışmalarına odaklanacağız.',
-    gelisimAlanlari: ['Kuvvet', 'Şut İstikrarı']
-  },
-  {
-    id: 'k3',
-    sporcuId: 's11',
-    adSoyad: 'Semih Utku',
-    brans: 'Futbol',
-    grup: 'Ayazağa Hafta Sonu',
-    yasGubu: 'U16',
-    tarih: '2023-11-25',
-    antrenor: 'Selman Utku',
-    boy: 173,
-    kilo: 68,
-    veliAdSoyad: 'Hakan Utku',
-    veliTelefon: '+90 542 321 88 99',
-    veliEposta: 'hakan.utku@gmail.com',
-    veliYakinlik: 'Baba',
-    teknik: {
-      topKontrolu: 8,
-      pasBasarisi: 7,
-      sut: 8,
-      topSurme: 9,
-      savunma: 6,
-      ortalama: 7.6
-    },
-    fiziksel: {
-      hiz: 10,
-      dayaniklilik: 9,
-      guc: 7,
-      ceviklik: 9,
-      ortalama: 8.75
-    },
-    taktiksel: {
-      oyunZekasi: 7,
-      pozisyonAlma: 9,
-      kararVerme: 6,
-      ortalama: 7.33
-    },
-    zihinsel: {
-      disiplin: 8,
-      ozguven: 9,
-      takimUyumu: 8,
-      liderlik: 7,
-      ortalama: 8.0
-    },
-    katilimYuzdesi: 98,
-    antrenmanSayisi: 32,
-    davranissal: {
-      kriterler: {
-        fairPlay: 8,
-        sorumlulukEkipman: 8,
-        saygiIletisim: 8,
-        yonergeyeUyum: 8,
-        duyguKontrolu: 7,
-        ortalama: 7.8
-      },
-      kazanimlar: [
-        {
-          baslik: 'Yüksek Mücadele Ruhu',
-          aciklama: 'Zorlu maç şartlarında bile pes etmeyen, takımı ateşleyen mücadeleci yapı.'
-        },
-        {
-          baslik: 'Özveri & Çalışkanlık',
-          aciklama: 'Ekstra idman talepleri ve kendini geliştirme hevesi üst düzeyde.'
-        }
-      ],
-      surecTakibi: [
-        {
-          donem: '1. Dönem (Ekim)',
-          tarih: '2023-10-31',
-          durum: 'Gelişiyor',
-          odakKonusu: 'Öfke Kontrolü & Hakem Kararları',
-          gozlem: 'İkili mücadeleler sonrası verilen aleyhte kararlarda itiraz eğilimi azaltıldı.'
-        },
-        {
-          donem: '2. Dönem (Kasım)',
-          tarih: '2023-11-25',
-          durum: 'Hedefe Ulaştı',
-          odakKonusu: 'Centilmenlik & Rakibe Saygı',
-          gozlem: 'Ters durumlarda oyuna konsantre kalıp profesyonel bir duruş sergilemeye başladı.'
-        }
-      ],
-      bagimlilikVeAliskanlik: {
-        ekranDengesi: {
-          puan: 8.0,
-          seviye: 'Dengeli & Bilinçli',
-          aciklama: 'Futbol analiz videoları haricinde oyun ve sosyal medya süresini planlı tutuyor.'
-        },
-        zararliAliskanlik: {
-          puan: 10,
-          seviye: 'Bilinçli (Örnek)',
-          aciklama: 'Enerji içeceklerinden kesinlikle uzak duruyor, doğal hidrasyona özen gösteriyor.'
-        },
-        uykuVeDinlenme: {
-          puan: 8.5,
-          seviye: 'Düzenli (8+ Saat)',
-          aciklama: 'Maç öncesi dinlenme günlerinde erken uyuma disiplinine sadık kalıyor.'
+          aciklama: 'Sabah havuz antrenmanlarına dinç ve enerjik geliyor.'
         },
         genelFarkindalik: 'Örnek & Bilinçli',
-        egitmenGorus: 'Semih yüksek fiziksel performansını zararlı maddelerden uzak kalarak ve dinlenmesine sadık kalarak destekliyor.'
+        egitmenGorus: 'Defne çalışma ahlakıyla yüzme branşının gurur kaynağıdır.'
       },
-      genelDegerlendirme: 'Semih yüksek kazanma arzusunu centilmenlik ve takım dayanışmasıyla harmanladıkça hem saha içinde hem de dışında gerçek bir sporcu olgunluğu kazanıyor.'
+      genelDegerlendirme: 'Defne kulaç kalitesi, su tutuşu ve yüksek aerobik kapasitesiyle çok başarılı bir yüzücüdür.'
     },
-    antrenorNotu: 'Semih çok hızlı ve patlayıcı gücü yüksek. Ancak son paslardaki karar verme mekanizmasını geliştirmesi gerekiyor. Kanatta oynadığı zaman takımın en önemli hücum silahı.',
-    gelisimAlanlari: ['Karar Verme', 'Son Paslar']
+    antrenorNotu: 'Defne serbest stilde kulaç frekansını çok iyi koruyor. Kelebek stili nefes çalışması yapacağız.',
+    gelisimAlanlari: ['Kelebek Tekniği']
   }
 ];
 
@@ -453,6 +632,18 @@ export function getStoredKarneler(): SporcuKarne[] {
             k.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.aciklama = k.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.aciklama
               .replace(/temiz sporcu kimliği/gi, 'sağlıklı sporcu disiplini')
               .replace(/temiz spor/gi, 'sağlıklı yaşam');
+          }
+          // Fix legacy sporcuId mappings
+          if (k.sporcuId === 's1' || k.adSoyad === 'Kaan Yıldırım') {
+            k.sporcuId = 's-3';
+          } else if (k.sporcuId === 's2' || k.adSoyad === 'Selman Utku') {
+            k.sporcuId = 's-1';
+          } else if (k.sporcuId === 's3' || k.adSoyad === 'Zeynep Kaya') {
+            k.sporcuId = 's-2';
+          } else if (k.sporcuId === 's4' || k.adSoyad === 'Melis Aksoy') {
+            k.sporcuId = 's-4';
+          } else if (k.sporcuId === 's5' || k.adSoyad === 'Defne Şahin') {
+            k.sporcuId = 's-5';
           }
           // Ensure parent info exists
           if (!k.veliTelefon) {

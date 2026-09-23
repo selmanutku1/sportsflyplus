@@ -1,4 +1,4 @@
-import { KulupEvrakItem, KulupGaleriItem, KulupEvrakKategori, KulupGaleriKategori } from '../types';
+import { KulupEvrakItem, KulupGaleriItem, KulupEvrakKategori, KulupGaleriKategori, MedyaKlasorItem } from '../types';
 
 export const PRESET_AVATARS = [
   {
@@ -40,6 +40,74 @@ export const PRESET_AVATARS = [
     id: 'avatar-8',
     label: 'Takım Kaptanı',
     url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80',
+  },
+];
+
+export const INITIAL_MEDYA_KLASORLER: MedyaKlasorItem[] = [
+  {
+    id: 'folder-1',
+    name: '2025-2026 Sezonu Antrenmanları',
+    description: 'A Takım ve Gelişim Grubu haftalık taktik, şut ve kondisyon antrenman kayıtları.',
+    category: 'Antrenman',
+    club: 'DigiMondi',
+    branch: 'Basketbol',
+    color: 'blue',
+    itemCount: 4,
+    totalSize: '24.8 MB',
+    createdAt: '01.09.2024',
+    coverImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'folder-2',
+    name: 'Turnuvalar & Şampiyonluklar',
+    description: 'İl Şampiyonası, bölge ligi müsabakaları, kupa törenleri ve madalya seremonileri.',
+    category: 'Kupa & Madalya',
+    club: 'DigiMondi',
+    branch: 'Basketbol',
+    color: 'amber',
+    itemCount: 2,
+    totalSize: '18.4 MB',
+    createdAt: '15.06.2024',
+    coverImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'folder-3',
+    name: 'Yaz & Kış Gelişim Kampları',
+    description: 'Antalya yaz kampı, Kartepe kondisyon kampı ve takım içi sosyal etkinlikler.',
+    category: 'Kamp & Etkinlik',
+    club: 'aicosports',
+    branch: 'Voleybol',
+    color: 'emerald',
+    itemCount: 2,
+    totalSize: '16.2 MB',
+    createdAt: '10.07.2024',
+    coverImage: 'https://images.unsplash.com/photo-1526676037777-05a232554f77?w=600&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'folder-4',
+    name: 'Sporcu Portre & Lisans Fotoğrafları',
+    description: 'TBF / TVF resmi lisans işlemleri, oyuncu kimlik kartları ve medya günleri.',
+    category: 'Portre & Lisans',
+    club: 'Saraçgym',
+    branch: 'Basketbol',
+    color: 'indigo',
+    itemCount: 3,
+    totalSize: '12.6 MB',
+    createdAt: '20.08.2024',
+    coverImage: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'folder-5',
+    name: 'Tesis, Salon & Ekipman Fotoğrafları',
+    description: 'Kapalı spor salonu, yarı olimpik havuz, fitness salonu ve yenilenen ekipmanlar.',
+    category: 'Tesis & Ekipman',
+    club: 'DigiMondi',
+    branch: 'Genel',
+    color: 'purple',
+    itemCount: 2,
+    totalSize: '14.1 MB',
+    createdAt: '05.08.2024',
+    coverImage: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=80',
   },
 ];
 
@@ -211,6 +279,12 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Yeni sezon hazırlıklarında pas temposu ve hücum geçişleri çalışıldı.',
     taggedAthletes: ['Selman Utku', 'Dhhbn'],
     uploaderName: 'Ali Özcan',
+    folderId: 'folder-1',
+    folderName: '2025-2026 Sezonu Antrenmanları',
+    fileSize: '3.4 MB',
+    mediaType: 'image',
+    branch: 'Basketbol',
+    isKvkkApproved: true,
   },
   {
     id: 'gal-2',
@@ -222,6 +296,12 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Final karşılaşmasını 74-68 kazanarak il şampiyonluğu kupasını kaldırdık.',
     taggedAthletes: ['Selman Utku'],
     uploaderName: 'Kulüp Medya',
+    folderId: 'folder-2',
+    folderName: 'Turnuvalar & Şampiyonluklar',
+    fileSize: '4.8 MB',
+    mediaType: 'image',
+    branch: 'Basketbol',
+    isKvkkApproved: true,
   },
   {
     id: 'gal-3',
@@ -233,6 +313,12 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Yoğun tempoda geçen bire bir forvet ve oyun kurucu antrenmanı.',
     taggedAthletes: ['Selman Utku'],
     uploaderName: 'Ali Özcan',
+    folderId: 'folder-1',
+    folderName: '2025-2026 Sezonu Antrenmanları',
+    fileSize: '2.9 MB',
+    mediaType: 'image',
+    branch: 'Basketbol',
+    isKvkkApproved: true,
   },
   {
     id: 'gal-4',
@@ -244,6 +330,12 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Sezon öncesi hazırlık maçında yüksek savunma disiplini sergilendi.',
     taggedAthletes: ['Kaan Yıldırım'],
     uploaderName: 'Saraçgym Antrenör Ekibi',
+    folderId: 'folder-2',
+    folderName: 'Turnuvalar & Şampiyonluklar',
+    fileSize: '3.6 MB',
+    mediaType: 'image',
+    branch: 'Basketbol',
+    isKvkkApproved: true,
   },
   {
     id: 'gal-5',
@@ -255,6 +347,12 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Çeviklik merdiveni ve reaksiyon çalışmalarıyla hız gelişimi sağlandı.',
     taggedAthletes: ['Kaan Yıldırım'],
     uploaderName: 'Kondisyoner Cem',
+    folderId: 'folder-1',
+    folderName: '2025-2026 Sezonu Antrenmanları',
+    fileSize: '3.1 MB',
+    mediaType: 'image',
+    branch: 'Basketbol',
+    isKvkkApproved: true,
   },
   {
     id: 'gal-6',
@@ -266,6 +364,12 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Antalya yaz kampında teknik ve sosyal etkinlikler bir arada yürütüldü.',
     taggedAthletes: ['Melis Aksoy'],
     uploaderName: 'aicosports Ekibi',
+    folderId: 'folder-3',
+    folderName: 'Yaz & Kış Gelişim Kampları',
+    fileSize: '4.2 MB',
+    mediaType: 'image',
+    branch: 'Voleybol',
+    isKvkkApproved: true,
   },
   {
     id: 'gal-7',
@@ -277,6 +381,12 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Çekişmeli geçen 5 setlik voleybol maçında yarı finale yükseldik.',
     taggedAthletes: ['Melis Aksoy'],
     uploaderName: 'Antrenör Nilgün',
+    folderId: 'folder-3',
+    folderName: 'Yaz & Kış Gelişim Kampları',
+    fileSize: '3.9 MB',
+    mediaType: 'image',
+    branch: 'Voleybol',
+    isKvkkApproved: true,
   },
   {
     id: 'gal-8',
@@ -288,11 +398,18 @@ export const INITIAL_KULUP_GALERI: KulupGaleriItem[] = [
     description: 'Sporcularımız turnuva boyunca gösterdikleri centilmenlikle takdir topladı.',
     taggedAthletes: ['Kaan Yıldırım'],
     uploaderName: 'Saraçgym Medya',
+    folderId: 'folder-2',
+    folderName: 'Turnuvalar & Şampiyonluklar',
+    fileSize: '5.1 MB',
+    mediaType: 'image',
+    branch: 'Basketbol',
+    isKvkkApproved: true,
   },
 ];
 
 const EVRAKLAR_STORAGE_KEY = 'sportsfly_kulup_evraklari_v1';
 const GALERI_STORAGE_KEY = 'sportsfly_kulup_galeri_v1';
+const MEDYA_KLASORLER_STORAGE_KEY = 'sportsfly_medya_klasorler_v1';
 
 export function getStoredKulupEvraklari(): KulupEvrakItem[] {
   try {
@@ -317,6 +434,29 @@ export function saveStoredKulupEvraklari(items: KulupEvrakItem[]): void {
   }
 }
 
+export function getStoredMedyaKlasorler(): MedyaKlasorItem[] {
+  try {
+    const raw = localStorage.getItem(MEDYA_KLASORLER_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Medya klasörleri yüklenirken hata:', e);
+  }
+  return INITIAL_MEDYA_KLASORLER;
+}
+
+export function saveStoredMedyaKlasorler(items: MedyaKlasorItem[]): void {
+  try {
+    localStorage.setItem(MEDYA_KLASORLER_STORAGE_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.error('Medya klasörleri kaydedilirken hata:', e);
+  }
+}
+
 export function getStoredKulupGaleri(): KulupGaleriItem[] {
   try {
     const raw = localStorage.getItem(GALERI_STORAGE_KEY);
@@ -326,6 +466,11 @@ export function getStoredKulupGaleri(): KulupGaleriItem[] {
         return parsed.map((item) => ({
           ...item,
           taggedAthletes: Array.isArray(item.taggedAthletes) ? item.taggedAthletes : [],
+          folderId: item.folderId || 'folder-1',
+          folderName: item.folderName || '2025-2026 Sezonu Antrenmanları',
+          fileSize: item.fileSize || '3.2 MB',
+          mediaType: item.mediaType || 'image',
+          isKvkkApproved: item.isKvkkApproved ?? true,
         }));
       }
     }

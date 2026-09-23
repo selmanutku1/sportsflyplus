@@ -35,7 +35,116 @@ export type NavPage =
   | 'egitim-planlama'
   | 'destek'
   | 'kulup-evraklari'
-  | 'kulup-galerisi';
+  | 'kulup-galerisi'
+  | 'turnuva-yonetimi'
+  | 'envanter-yonetimi'
+  | 'entegrasyonlar';
+
+export interface EntegrasyonItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  logoUrl?: string;
+  iconName?: string;
+  badge?: string;
+  isRecommended?: boolean;
+  isActive: boolean;
+  isInternalModule?: boolean;
+  targetPage?: string;
+  apiKey?: string;
+  connectedAt?: string;
+  supportUrl?: string;
+}
+
+export type EnvanterKategori =
+  | 'Toplar'
+  | 'Formalar & Yelekler'
+  | 'Antrenman Ekipmanları'
+  | 'Sağlık & Medikal'
+  | 'Tesis & Saha Donanımı'
+  | 'Elektronik & Ölçüm'
+  | 'Diğer';
+
+export type EnvanterDurum =
+  | 'Yeni / Mükemmel'
+  | 'İyi Durumda'
+  | 'Yıpranmış / Kontrol'
+  | 'Bakımda / Tamirde'
+  | 'Hurda / Kullanım Dışı';
+
+export interface EnvanterItem {
+  id: string;
+  code: string;
+  name: string;
+  category: EnvanterKategori;
+  club: string;
+  branch: string;
+  totalQuantity: number;
+  inUseQuantity: number;
+  inStorageQuantity: number;
+  minQuantityAlert: number;
+  unit: 'Adet' | 'Çift' | 'Set' | 'Koli' | 'Paket';
+  condition: EnvanterDurum;
+  location: string;
+  assignedTo?: string;
+  assignedDate?: string;
+  lastCheckDate: string;
+  lastCheckedBy: string;
+  unitPrice?: number;
+  notes?: string;
+  photoUrl?: string;
+}
+
+export interface TurnuvaTakimItem {
+  id: string;
+  name: string;
+  club: string;
+  logoUrl?: string;
+  coachName?: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  points: number;
+}
+
+export interface TurnuvaMacItem {
+  id: string;
+  turnuvaId: string;
+  round: string; // e.g. '1. Hafta', 'Çeyrek Final', 'Yarı Final', 'Final'
+  date: string;
+  time: string;
+  venue: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore?: number;
+  awayScore?: number;
+  status: 'Oynanacak' | 'Canlı' | 'Bitti' | 'Ertelendi';
+  mvp?: string;
+  referee?: string;
+}
+
+export interface TurnuvaItem {
+  id: string;
+  name: string;
+  organizerClub: string;
+  branch: string;
+  ageCategory: string;
+  season: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  status: 'Kayıt Açık' | 'Devam Ediyor' | 'Tamamlandı' | 'Planlandı';
+  format: 'Lig Usulü' | 'Grup + Eleme' | 'Tek Maç Eleme';
+  teamsCount: number;
+  description?: string;
+  bannerUrl?: string;
+  teams: TurnuvaTakimItem[];
+  matches: TurnuvaMacItem[];
+}
 
 export interface DashboardPackage {
   id: string;
@@ -132,7 +241,25 @@ export type KulupGaleriKategori =
   | 'Maç & Turnuva'
   | 'Kupa & Madalya'
   | 'Kamp & Etkinlik'
+  | 'Tesis & Ekipman'
+  | 'Portre & Lisans'
+  | 'Sosyal Medya & Basın'
   | 'Genel';
+
+export interface MedyaKlasorItem {
+  id: string;
+  name: string;
+  description?: string;
+  category: KulupGaleriKategori;
+  club: string;
+  branch?: string;
+  color?: string; // 'blue' | 'emerald' | 'amber' | 'purple' | 'rose' | 'indigo' | 'sky'
+  itemCount?: number;
+  totalSize?: string;
+  createdAt?: string;
+  coverImage?: string;
+  iconName?: string;
+}
 
 export interface KulupGaleriItem {
   id: string;
@@ -144,6 +271,13 @@ export interface KulupGaleriItem {
   description?: string;
   taggedAthletes?: string[];
   uploaderName?: string;
+  folderId?: string;
+  folderName?: string;
+  fileSize?: string;
+  mediaType?: 'image' | 'video' | 'document';
+  videoUrl?: string;
+  branch?: string;
+  isKvkkApproved?: boolean;
 }
 
 export interface EgitmenItem {
@@ -154,6 +288,7 @@ export interface EgitmenItem {
   phone: string;
   facility: string;
   branch?: string; // Eğitmen Kategorisi / Branş (Futbol, Basketbol, vb.)
+  title?: string; // e.g. "UEFA B Lisanslı Başantrenör"
   gender?: string;
   city?: string;
   address?: string;
@@ -161,6 +296,27 @@ export interface EgitmenItem {
   mailEnabled?: boolean;
   smsEnabled?: boolean;
   avatarUrl?: string;
+  status?: 'Aktif' | 'İzinli' | 'Ayrıldı';
+  experienceYears?: number;
+  rating?: number;
+  reviewCount?: number;
+  activeGroupsCount?: number;
+  activeAthletesCount?: number;
+  weeklyHours?: number;
+  licenseLevel?: string;
+  bio?: string;
+  specialties?: string[];
+  assignedGroups?: string[];
+  joinDate?: string;
+  hourlyRate?: number;
+  monthlySalary?: number;
+  documents?: {
+    id: string;
+    name: string;
+    type: string;
+    date: string;
+    size: string;
+  }[];
   appointments?: {
     id: string;
     title: string;
@@ -257,6 +413,8 @@ export interface AntrenmanItem {
   id: string;
   title: string;
   branch: string;
+  groupName?: string;
+  sube?: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -427,6 +585,8 @@ export interface OnKayitItem {
   tcKimlikNo: string;
   dogumTarihi: string;
   telefon?: string;
+  il?: string;
+  ilce?: string;
   adres: string;
   boy?: string;
   kilo?: string;

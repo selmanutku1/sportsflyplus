@@ -21,9 +21,13 @@ import { EgitimPlanlamaView } from './components/views/EgitimPlanlamaView';
 import { KulupSozlesmeleriView } from './components/views/KulupSozlesmeleriView';
 import { KulupEvraklariView } from './components/views/sporcu/KulupEvraklariView';
 import { KulupGalerisiView } from './components/views/sporcu/KulupGalerisiView';
+import { TurnuvaYonetimiView } from './components/views/moduller/TurnuvaYonetimiView';
+import { EnvanterYonetimiView } from './components/views/moduller/EnvanterYonetimiView';
+import { EntegrasyonlarView } from './components/views/EntegrasyonlarView';
 import { INITIAL_SPORCULAR } from './data/mockData';
 import { PaketlerView } from './components/views/PaketlerView';
 import { OnKayitView } from './components/views/OnKayitView';
+import { YetkilendirmelerView } from './components/views/YetkilendirmelerView';
 import { SubelerView } from './components/views/SubelerView';
 import { SubeOzetView } from './components/views/SubeOzetView';
 import { DestekView } from './components/views/DestekView';
@@ -115,10 +119,15 @@ export default function App() {
   });
 
   React.useEffect(() => {
+    let prevWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
+      const currentWidth = window.innerWidth;
+      if (prevWidth < 1024 && currentWidth >= 1024) {
         setIsSidebarOpen(true);
+      } else if (prevWidth >= 1024 && currentWidth < 1024) {
+        setIsSidebarOpen(false);
       }
+      prevWidth = currentWidth;
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -196,6 +205,8 @@ export default function App() {
         return <SporpuanRaporlarView />;
       case 'kullanici-sozlesmeleri':
         return <KulupSozlesmeleriView />;
+      case 'yetkilendirmeler':
+        return <YetkilendirmelerView />;
       case 'kulup-evraklari':
         return (
           <KulupEvraklariView
@@ -210,6 +221,12 @@ export default function App() {
             onNavigate={handlePageSelect}
           />
         );
+      case 'turnuva-yonetimi':
+        return <TurnuvaYonetimiView />;
+      case 'envanter-yonetimi':
+        return <EnvanterYonetimiView />;
+      case 'entegrasyonlar':
+        return <EntegrasyonlarView onNavigate={handlePageSelect} />;
       case 'paketler':
       case 'paket-yonetimi':
         return <PaketlerView />;
@@ -232,11 +249,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0b1320] text-slate-800 dark:text-slate-100 flex flex-col antialiased relative transition-colors duration-200">
+    <div className="h-screen h-[100dvh] bg-slate-50 dark:bg-[#0b1320] text-slate-800 dark:text-slate-100 flex flex-col antialiased relative transition-colors duration-200 overflow-hidden">
       {/* Mobile/Desktop Instant Point Award Push Notification Toast */}
       <PointEarnedPushToast onNavigate={handlePageSelect} />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden h-full">
         {/* Sidebar */}
         <Sidebar
           currentPage={currentPage}
@@ -247,8 +264,8 @@ export default function App() {
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          {/* Header */}
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+          {/* Header - Permanently pinned at the top on both web & mobile */}
           <Header
             currentPage={currentPage}
             onToggleSidebar={toggleSidebar}
@@ -257,8 +274,8 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          {/* Body Content */}
-          <main className="flex-1 p-3.5 sm:p-4 lg:p-6 w-full">
+          {/* Body Content - Dedicated scrollable viewport */}
+          <main className="flex-1 p-3.5 sm:p-4 lg:p-6 w-full overflow-y-auto overflow-x-hidden">
             {renderActiveView()}
           </main>
         </div>

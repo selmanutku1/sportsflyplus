@@ -5,7 +5,6 @@ import {
   Bell,
   CheckCircle2,
   ChevronRight,
-  Sparkles,
   ExternalLink,
   Volume2,
 } from 'lucide-react';

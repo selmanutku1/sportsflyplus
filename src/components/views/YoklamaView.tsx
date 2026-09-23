@@ -9,10 +9,15 @@ import {
   MinusCircle,
   Save,
   Check,
-  ChevronDown
+  ChevronDown,
+  Zap,
+  Bot,
+  Sparkles,
+  ShieldCheck
 } from 'lucide-react';
 import { GrupItem } from '../../types';
 import { INITIAL_GRUPLAR } from '../../data/mockMuhasebeData';
+import { processAttendanceAutomation } from '../../utils/sporpuanAutomation';
 
 // Types for local state
 type AttendanceStatus = 'present' | 'absent' | 'excused' | null;
@@ -29,6 +34,10 @@ export const YoklamaView: React.FC = () => {
   const [attendanceState, setAttendanceState] = useState<Record<string, AttendanceStatus>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [automationSummary, setAutomationSummary] = useState<{
+    awardedCount: number;
+    totalPointsGiven: number;
+  } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Groups list
@@ -45,6 +54,7 @@ export const YoklamaView: React.FC = () => {
       initialState[m.id] = null; // default untouched
     });
     setAttendanceState(initialState);
+    setAutomationSummary(null);
   };
 
   const handleStatusChange = (memberId: string, status: AttendanceStatus) => {
@@ -64,13 +74,31 @@ export const YoklamaView: React.FC = () => {
   };
 
   const handleSave = () => {
+    if (!selectedGroup || !selectedGroup.members) return;
     setIsSaving(true);
-    // Simulate API call
+
+    // 1. Process automated SporPuan awarding (Antrenmana Katılım + Haftalık Tam Devam + Katılım Serisi)
+    const attendancePayload = selectedGroup.members.map((m) => ({
+      memberId: m.id,
+      memberName: m.name,
+      status: attendanceState[m.id] || null,
+    }));
+
+    const autoRes = processAttendanceAutomation(
+      attendancePayload,
+      selectedGroup.name,
+      attendanceDate
+    );
+
     setTimeout(() => {
       setIsSaving(false);
+      setAutomationSummary({
+        awardedCount: autoRes.awardedCount,
+        totalPointsGiven: autoRes.totalPointsGiven,
+      });
       setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-    }, 800);
+      setTimeout(() => setShowSuccessToast(false), 4500);
+    }, 600);
   };
 
   const getFilteredMembers = () => {
@@ -221,23 +249,36 @@ export const YoklamaView: React.FC = () => {
             </div>
           </div>
           
-          {/* Stats Bar */}
-          <div className="flex items-center grid-cols-4 divide-x divide-slate-100 border-b border-slate-100 bg-white text-center">
-            <div className="flex-1 py-3 px-2">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mevcut</div>
-              <div className="text-lg font-bold text-slate-800">{totalMembers}</div>
+          {/* Stats Bar with Automated SporPuan Summary */}
+          <div className="flex flex-wrap items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 border-b border-slate-100 bg-white text-center">
+            <div className="flex-1 min-w-[70px] py-3 px-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Mevcut</div>
+              <div className="text-base sm:text-lg font-bold text-slate-800">{totalMembers}</div>
             </div>
-            <div className="flex-1 py-3 px-2">
-              <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-1">Katıldı</div>
-              <div className="text-lg font-bold text-emerald-600">{presentCount}</div>
+            <div className="flex-1 min-w-[70px] py-3 px-2">
+              <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Katıldı</div>
+              <div className="text-base sm:text-lg font-bold text-emerald-600">{presentCount}</div>
             </div>
-            <div className="flex-1 py-3 px-2">
-              <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1">Gelmedi</div>
-              <div className="text-lg font-bold text-rose-600">{absentCount}</div>
+            <div className="flex-1 min-w-[70px] py-3 px-2">
+              <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Gelmedi</div>
+              <div className="text-base sm:text-lg font-bold text-rose-600">{absentCount}</div>
             </div>
-            <div className="flex-1 py-3 px-2">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Bekleyen</div>
-              <div className="text-lg font-bold text-slate-600">{unmarkedCount}</div>
+            <div className="flex-1 min-w-[70px] py-3 px-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Bekleyen</div>
+              <div className="text-base sm:text-lg font-bold text-slate-600">{unmarkedCount}</div>
+            </div>
+            <div className="w-full sm:w-auto px-4 py-2.5 sm:py-3 bg-amber-50/60 dark:bg-amber-950/20 text-left flex items-center justify-between sm:justify-start gap-2.5 border-t sm:border-t-0 border-amber-100">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
+                <Bot className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300 block">
+                  Otomatik SporPuan
+                </span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  {presentCount > 0 ? `+${presentCount * 75} SP (Hazır)` : 'Yoklama bekleniyor'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -250,17 +291,17 @@ export const YoklamaView: React.FC = () => {
                 return (
                   <div 
                     key={member.id} 
-                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border transition-all ${
-                      status === 'present' ? 'bg-emerald-50/50 border-emerald-200' :
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl border transition-all ${
+                      status === 'present' ? 'bg-emerald-50/50 border-emerald-200 ring-1 ring-emerald-400/20' :
                       status === 'absent' ? 'bg-rose-50/50 border-rose-200' :
                       status === 'excused' ? 'bg-amber-50/50 border-amber-200' :
                       'bg-white border-slate-200 hover:border-blue-300 hover:shadow-xs'
                     }`}
                   >
-                    {/* Member Info */}
-                    <div className="flex items-center gap-4 min-w-0">
+                    {/* Member Info & Automation Badge */}
+                    <div className="flex items-center gap-3.5 min-w-0">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-xs ${
-                        status === 'present' ? 'bg-emerald-100 text-emerald-700' :
+                        status === 'present' ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-500/30' :
                         status === 'absent' ? 'bg-rose-100 text-rose-700' :
                         status === 'excused' ? 'bg-amber-100 text-amber-700' :
                         'bg-slate-100 text-slate-600'
@@ -268,10 +309,21 @@ export const YoklamaView: React.FC = () => {
                         {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                       <div className="truncate">
-                        <h3 className="font-bold text-slate-800 text-sm truncate">{member.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-800 text-sm truncate">{member.name}</h3>
+                          {status === 'present' && (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold shrink-0 animate-in fade-in">
+                              <Zap className="w-2.5 h-2.5 fill-emerald-700" />
+                              <span>+75 SP Otomatik</span>
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5 text-xs">
-                          <span className="text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-mono">#{member.code}</span>
+                          <span className="text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-mono text-[11px]">#{member.code}</span>
                           <span className="text-slate-400 truncate">{member.phone}</span>
+                          <span className="text-[11px] text-emerald-600 font-semibold hidden md:inline">
+                            • Haftalık Devam: %100
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -286,7 +338,7 @@ export const YoklamaView: React.FC = () => {
                             ? 'bg-emerald-600 text-white shadow-xs'
                             : 'text-slate-600 dark:text-slate-400 hover:text-emerald-700 hover:bg-white/60 dark:hover:bg-slate-700/60'
                         }`}
-                        title="Geldi Olarak İşaretle"
+                        title="Geldi Olarak İşaretle (Otomatik +25 SP Katılım & +50 SP Tam Devam)"
                       >
                         <CheckCircle className={`w-3.5 h-3.5 ${status === 'present' ? 'text-white' : 'text-emerald-600'}`} />
                         <span>Geldi</span>
@@ -355,16 +407,26 @@ export const YoklamaView: React.FC = () => {
         </div>
       )}
 
-      {/* Success Toast Notification */}
+      {/* Success Toast Notification with Automated SporPuan Highlights */}
       {showSuccessToast && (
-        <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 z-50">
-          <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">
-            <Check className="w-5 h-5 text-emerald-400" />
+        <div className="fixed bottom-6 right-6 max-w-md bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-slate-700/80 flex items-start gap-3.5 animate-in fade-in slide-in-from-bottom-5 z-50">
+          <div className="w-9 h-9 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="w-5 h-5" />
           </div>
-          <div>
-            <h4 className="font-bold text-sm">Yoklama Kaydedildi</h4>
-            <p className="text-xs text-slate-300 mt-0.5">
-              {selectedGroup?.name} için {attendanceDate} tarihli yoklama başarıyla kaydedildi.
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-sm text-white flex items-center gap-2">
+              <span>Yoklama Kaydedildi</span>
+              <span className="text-[10px] bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md font-bold">
+                Otomasyon Başarılı
+              </span>
+            </h4>
+            <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+              {selectedGroup?.name} için yoklama işlendi.
+              {automationSummary && automationSummary.awardedCount > 0 && (
+                <span className="block mt-1 font-semibold text-amber-300">
+                  ⚡ Katılan sporculara toplam +{automationSummary.totalPointsGiven} SporPuan (Katılım &amp; Haftalık Tam Devam) otomatik olarak tanımlandı ve veli uygulamalarına iletildi!
+                </span>
+              )}
             </p>
           </div>
         </div>

@@ -39,6 +39,7 @@ import {
   cleanPhoneForSms,
   formatTemplate
 } from '../../data/karneBildirimData';
+import { getAthletePhotoUrl, getAthleteInitials } from '../../utils/athletePhotoResolver';
 
 interface VeliKarneGonderimModalProps {
   isOpen: boolean;
@@ -311,10 +312,28 @@ export const VeliKarneGonderimModal: React.FC<VeliKarneGonderimModalProps> = ({
         
         {/* Header */}
         <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 text-white flex items-center justify-between gap-4 border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/30 text-blue-400 border border-blue-500/40 flex items-center justify-center shrink-0">
-              <Send className="w-5 h-5" />
-            </div>
+          <div className="flex items-center gap-3.5 min-w-0">
+            {(() => {
+              const photo = getAthletePhotoUrl(selectedKarne);
+              const initials = getAthleteInitials(selectedKarne.adSoyad);
+              return (
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white border border-blue-400/30 flex items-center justify-center shrink-0 overflow-hidden shadow-xs font-black text-xs">
+                  {photo ? (
+                    <img 
+                      src={photo} 
+                      alt={selectedKarne.adSoyad}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span>{initials}</span>
+                  )}
+                </div>
+              );
+            })()}
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-bold text-white tracking-tight truncate">

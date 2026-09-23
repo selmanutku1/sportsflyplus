@@ -24,6 +24,8 @@ import {
   BarChart3,
   Calendar,
   Check,
+  List,
+  LayoutGrid,
 } from 'lucide-react';
 import { SportsFlyIcon } from '../SportsFlyLogo';
 import { NavPage } from '../../types';
@@ -36,6 +38,7 @@ import {
   getActiveSubeId,
   setActiveSubeId,
 } from '../../data/subeData';
+import { TURKEY_CITIES, getDistrictsForCity } from '../../data/turkeyCitiesData';
 
 interface SubelerViewProps {
   onNavigate?: (page: NavPage) => void;
@@ -66,6 +69,7 @@ const AVAILABLE_OZELLIKLER = [
 export const SubelerView: React.FC<SubelerViewProps> = ({ onNavigate }) => {
   const [subeler, setSubeler] = useState<Sube[]>(() => getStoredSubeler());
   const [selectedBranchId, setSelectedBranchId] = useState<string>(() => getActiveSubeId());
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -110,7 +114,7 @@ export const SubelerView: React.FC<SubelerViewProps> = ({ onNavigate }) => {
     setFormName('');
     setFormCode(`SB-${subeler.length + 1}`.padStart(6, '0'));
     setFormCity('İstanbul');
-    setFormDistrict('');
+    setFormDistrict('Kadıköy');
     setFormAddress('');
     setFormPhone('+90 216 ');
     setFormEmail('info@kulup.com');
@@ -386,7 +390,7 @@ export const SubelerView: React.FC<SubelerViewProps> = ({ onNavigate }) => {
           ))}
         </div>
 
-        {/* Toolbar: Search and Filters */}
+        {/* Toolbar: Search, Filters, and View Mode Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
           {/* Search Box */}
           <div className="relative flex-1 sm:max-w-xs">
@@ -400,209 +404,450 @@ export const SubelerView: React.FC<SubelerViewProps> = ({ onNavigate }) => {
             />
           </div>
 
-          {/* City and Status Filter Selects */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <select
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-            >
-              <option value="all">Tüm Şehirler</option>
-              {uniqueCities.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
+          {/* Right Controls: City, Status Filters and View Mode Switcher */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+            <div className="flex items-center gap-2">
+              <select
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <option value="all">Tüm Şehirler</option>
+                {uniqueCities.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-            >
-              <option value="all">Tüm Durumlar</option>
-              <option value="Aktif">Aktif</option>
-              <option value="Pasif">Pasif</option>
-              <option value="Tadilatta">Tadilatta</option>
-            </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <option value="all">Tüm Durumlar</option>
+                <option value="Aktif">Aktif</option>
+                <option value="Pasif">Pasif</option>
+                <option value="Tadilatta">Tadilatta</option>
+              </select>
+            </div>
+
+            {/* View Mode Toggle: Liste (Default) vs Kartlar */}
+            <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200/80 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  viewMode === 'list'
+                    ? 'bg-white text-blue-600 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Şubeleri Liste Görünümünde Göster"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Liste</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-blue-600 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Şubeleri Kart Görünümünde Göster"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Kartlar</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Branches Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          {filteredSubeler.length > 0 ? (
-            filteredSubeler.map((sube) => {
-              const occPercent = Math.round((sube.sporcuSayisi / (sube.kapasite || 1)) * 100);
+        {/* LIST VIEW (Öncelikli / Varsayılan Görünüm) */}
+        {viewMode === 'list' && (
+          <div className="pt-2">
+            {filteredSubeler.length > 0 ? (
+              <div className="overflow-x-auto rounded-xl border border-slate-200/90 shadow-2xs">
+                <table className="w-full text-left text-xs divide-y divide-slate-100">
+                  <thead className="bg-slate-50/80 text-slate-700 font-bold text-[11px] uppercase tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Şube &amp; Kod</th>
+                      <th className="py-3 px-4">Tesis &amp; Konum</th>
+                      <th className="py-3 px-4">Yönetim &amp; Kadro</th>
+                      <th className="py-3 px-4">Doluluk (Sporcu / Kapasite)</th>
+                      <th className="py-3 px-4">Branşlar</th>
+                      <th className="py-3 px-4 text-center">Durum</th>
+                      <th className="py-3 px-4 text-right">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {filteredSubeler.map((sube) => {
+                      const occPercent = Math.round((sube.sporcuSayisi / (sube.kapasite || 1)) * 100);
+                      const isSelected = selectedBranchId === sube.id;
 
-              return (
-                <div
-                  key={sube.id}
-                  className="bg-white rounded-xl border border-slate-200/90 hover:border-blue-300 p-4 sm:p-5 transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between group"
-                >
-                  <div className="space-y-3.5">
-                    {/* Card Header: Title & Badges */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                            {sube.kod}
-                          </span>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                              sube.durum === 'Aktif'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : sube.durum === 'Tadilatta'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-slate-100 text-slate-500 border border-slate-200'
-                            }`}
-                          >
-                            {sube.durum}
-                          </span>
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
-                            {sube.tesisTipi}
-                          </span>
+                      return (
+                        <tr
+                          key={sube.id}
+                          className={`hover:bg-slate-50/80 transition-colors ${
+                            isSelected ? 'bg-blue-50/30' : ''
+                          }`}
+                        >
+                          {/* Şube Adı & Kod */}
+                          <td className="py-3 px-4 align-middle">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold shrink-0 border border-blue-100">
+                                <Building2 className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-extrabold text-slate-900 hover:text-blue-600 transition-colors text-sm">
+                                    {sube.ad}
+                                  </span>
+                                  {isSelected && (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-600 text-white">
+                                      Aktif
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                    {sube.kod}
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">
+                                    {sube.telefon}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Tesis & Konum */}
+                          <td className="py-3 px-4 align-middle">
+                            <div>
+                              <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70 mb-0.5">
+                                {sube.tesisTipi}
+                              </span>
+                              <p className="text-[11px] text-slate-600 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span>{sube.ilce}, {sube.sehir}</span>
+                              </p>
+                            </div>
+                          </td>
+
+                          {/* Yönetim & Kadro */}
+                          <td className="py-3 px-4 align-middle">
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                                <User className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span>{sube.sorumluYonetici}</span>
+                              </p>
+                              <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                                <GraduationCap className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span>{sube.sorumluAntrenor} ({sube.antrenorSayisi} Eğitmen)</span>
+                              </p>
+                            </div>
+                          </td>
+
+                          {/* Sporcu & Kapasite (Doluluk) */}
+                          <td className="py-3 px-4 align-middle min-w-[160px]">
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-bold text-slate-900">
+                                  {sube.sporcuSayisi} / {sube.kapasite}
+                                </span>
+                                <span className="font-extrabold text-slate-700">
+                                  %{occPercent}
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    occPercent >= 90
+                                      ? 'bg-rose-500'
+                                      : occPercent >= 70
+                                      ? 'bg-amber-500'
+                                      : 'bg-emerald-500'
+                                  }`}
+                                  style={{ width: `${Math.min(100, occPercent)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Branşlar */}
+                          <td className="py-3 px-4 align-middle max-w-[180px]">
+                            <div className="flex flex-wrap gap-1">
+                              {sube.branslar.slice(0, 3).map((brans) => (
+                                <span
+                                  key={brans}
+                                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700"
+                                >
+                                  {brans}
+                                </span>
+                              ))}
+                              {sube.branslar.length > 3 && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
+                                  +{sube.branslar.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Durum */}
+                          <td className="py-3 px-4 align-middle text-center">
+                            <span
+                              className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                                sube.durum === 'Aktif'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : sube.durum === 'Tadilatta'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-slate-100 text-slate-500 border border-slate-200'
+                              }`}
+                            >
+                              {sube.durum}
+                            </span>
+                          </td>
+
+                          {/* İşlemler */}
+                          <td className="py-3 px-4 align-middle text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleToggleStatus(sube.id)}
+                                className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold px-2 py-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                title={sube.durum === 'Aktif' ? 'Pasife Al' : 'Aktifleştir'}
+                              >
+                                {sube.durum === 'Aktif' ? 'Pasif' : 'Aktif'}
+                              </button>
+
+                              {onNavigate && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setActiveSubeId(sube.id);
+                                      onNavigate('sube-ozet');
+                                    }}
+                                    className="p-1.5 text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
+                                    title="Şube Özeti &amp; Metrikleri"
+                                  >
+                                    <BarChart3 className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setActiveSubeId(sube.id);
+                                      onNavigate('sporcular');
+                                    }}
+                                    className="p-1.5 text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                                    title="Şube Sporcularını Görüntüle"
+                                  >
+                                    <Users className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+
+                              <button
+                                onClick={() => handleOpenEdit(sube)}
+                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                title="Şube Bilgilerini Düzenle"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <Building2 className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-slate-600">Aranan kriterde şube bulunamadı.</p>
+                <p className="text-xs text-slate-400 mt-0.5">Filtreleri sıfırlayabilir veya yeni bir şube ekleyebilirsiniz.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* GRID / KART GÖRÜNÜMÜ */}
+        {viewMode === 'grid' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            {filteredSubeler.length > 0 ? (
+              filteredSubeler.map((sube) => {
+                const occPercent = Math.round((sube.sporcuSayisi / (sube.kapasite || 1)) * 100);
+
+                return (
+                  <div
+                    key={sube.id}
+                    className="bg-white rounded-xl border border-slate-200/90 hover:border-blue-300 p-4 sm:p-5 transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between group"
+                  >
+                    <div className="space-y-3.5">
+                      {/* Card Header: Title & Badges */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                              {sube.kod}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                sube.durum === 'Aktif'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : sube.durum === 'Tadilatta'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-slate-100 text-slate-500 border border-slate-200'
+                              }`}
+                            >
+                              {sube.durum}
+                            </span>
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
+                              {sube.tesisTipi}
+                            </span>
+                          </div>
+
+                          <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors pt-1">
+                            {sube.ad}
+                          </h3>
+                          <p className="text-xs text-slate-500 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>
+                              {sube.ilce}, {sube.sehir} • {sube.adres}
+                            </span>
+                          </p>
                         </div>
 
-                        <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors pt-1">
-                          {sube.ad}
-                        </h3>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span>
-                            {sube.ilce}, {sube.sehir} • {sube.adres}
+                        <button
+                          onClick={() => handleOpenEdit(sube)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                          title="Şube Bilgilerini Düzenle"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Capacity Progress Bar */}
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-700 flex items-center gap-1">
+                            <Activity className="w-3.5 h-3.5 text-blue-600" />
+                            Kapasite Doluluk Oranı
                           </span>
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => handleOpenEdit(sube)}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer shrink-0"
-                        title="Şube Bilgilerini Düzenle"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Capacity Progress Bar */}
-                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-700 flex items-center gap-1">
-                          <Activity className="w-3.5 h-3.5 text-blue-600" />
-                          Kapasite Doluluk Oranı
-                        </span>
-                        <span className="font-bold text-slate-900">
-                          {sube.sporcuSayisi} / {sube.kapasite} Sporcu (%{occPercent})
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            occPercent >= 90
-                              ? 'bg-rose-500'
-                              : occPercent >= 70
-                              ? 'bg-amber-500'
-                              : 'bg-emerald-500'
-                          }`}
-                          style={{ width: `${Math.min(100, occPercent)}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Contact & Leaders Row */}
-                    <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">
-                          Sorumlu Yönetici
-                        </span>
-                        <p className="font-semibold text-slate-800 flex items-center gap-1 truncate">
-                          <User className="w-3 h-3 text-slate-400 shrink-0" />
-                          {sube.sorumluYonetici}
-                        </p>
-                      </div>
-
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">
-                          Sorumlu Baş Antrenör
-                        </span>
-                        <p className="font-semibold text-slate-800 flex items-center gap-1 truncate">
-                          <GraduationCap className="w-3 h-3 text-slate-400 shrink-0" />
-                          {sube.sorumluAntrenor} ({sube.antrenorSayisi} Eğitmen)
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Sports Branches Pills */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold block">
-                        Aktif Branşlar
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {sube.branslar.map((brans) => (
-                          <span
-                            key={brans}
-                            className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700"
-                          >
-                            {brans}
+                          <span className="font-bold text-slate-900">
+                            {sube.sporcuSayisi} / {sube.kapasite} Sporcu (%{occPercent})
                           </span>
-                        ))}
+                        </div>
+                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              occPercent >= 90
+                                ? 'bg-rose-500'
+                                : occPercent >= 70
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${Math.min(100, occPercent)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Contact & Leaders Row */}
+                      <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                            Sorumlu Yönetici
+                          </span>
+                          <p className="font-semibold text-slate-800 flex items-center gap-1 truncate">
+                            <User className="w-3 h-3 text-slate-400 shrink-0" />
+                            {sube.sorumluYonetici}
+                          </p>
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                            Sorumlu Baş Antrenör
+                          </span>
+                          <p className="font-semibold text-slate-800 flex items-center gap-1 truncate">
+                            <GraduationCap className="w-3 h-3 text-slate-400 shrink-0" />
+                            {sube.sorumluAntrenor} ({sube.antrenorSayisi} Eğitmen)
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Sports Branches Pills */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                          Aktif Branşlar
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {sube.branslar.map((brans) => (
+                            <span
+                              key={brans}
+                              className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700"
+                            >
+                              {brans}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Footer Actions */}
+                    <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        <span>{sube.telefon}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleStatus(sube.id)}
+                          className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold px-2.5 py-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                        >
+                          {sube.durum === 'Aktif' ? 'Pasife Al' : 'Aktifleştir'}
+                        </button>
+
+                        {onNavigate && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setActiveSubeId(sube.id);
+                                onNavigate('sube-ozet');
+                              }}
+                              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Şube Özeti, Finans ve Sporcu Metrikleri"
+                            >
+                              <BarChart3 className="w-3.5 h-3.5" />
+                              <span>Özet</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setActiveSubeId(sube.id);
+                                onNavigate('sporcular');
+                              }}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>Sporcular</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
-
-                  {/* Card Footer Actions */}
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                      <Phone className="w-3 h-3 text-slate-400" />
-                      <span>{sube.telefon}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggleStatus(sube.id)}
-                        className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold px-2.5 py-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                      >
-                        {sube.durum === 'Aktif' ? 'Pasife Al' : 'Aktifleştir'}
-                      </button>
-
-                      {onNavigate && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setActiveSubeId(sube.id);
-                              onNavigate('sube-ozet');
-                            }}
-                            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                            title="Şube Özeti, Finans ve Sporcu Metrikleri"
-                          >
-                            <BarChart3 className="w-3.5 h-3.5" />
-                            <span>Özet</span>
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              setActiveSubeId(sube.id);
-                              onNavigate('sporcular');
-                            }}
-                            className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>Sporcular</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              <Building2 className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-slate-600">Aranan kriterde şube bulunamadı.</p>
-              <p className="text-xs text-slate-400 mt-0.5">Filtreleri sıfırlayabilir veya yeni bir şube ekleyebilirsiniz.</p>
-            </div>
-          )}
-        </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <Building2 className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-slate-600">Aranan kriterde şube bulunamadı.</p>
+                <p className="text-xs text-slate-400 mt-0.5">Filtreleri sıfırlayabilir veya yeni bir şube ekleyebilirsiniz.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Add / Edit Branch Modal */}
@@ -671,24 +916,38 @@ export const SubelerView: React.FC<SubelerViewProps> = ({ onNavigate }) => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-700">İl</label>
-                  <input
-                    type="text"
+                  <label className="font-semibold text-slate-700">İl (Şehir)</label>
+                  <select
                     value={formCity}
-                    onChange={(e) => setFormCity(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden"
-                  />
+                    onChange={(e) => {
+                      const newCity = e.target.value;
+                      setFormCity(newCity);
+                      const dists = getDistrictsForCity(newCity);
+                      setFormDistrict(dists[0] || 'Merkez');
+                    }}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden bg-white cursor-pointer text-slate-800"
+                  >
+                    {TURKEY_CITIES.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-700">İlçe</label>
-                  <input
-                    type="text"
-                    placeholder="Kadıköy, Beşiktaş..."
+                  <select
                     value={formDistrict}
                     onChange={(e) => setFormDistrict(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden"
-                  />
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden bg-white cursor-pointer text-slate-800"
+                  >
+                    {getDistrictsForCity(formCity).map((dist) => (
+                      <option key={dist} value={dist}>
+                        {dist}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">

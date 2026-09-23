@@ -28,6 +28,7 @@ export const translations = {
     'sidebar.attendance': 'Yoklama Yönetimi',
     'sidebar.trainingPlanning': 'Eğitim Planlama',
     'sidebar.finance': 'Ön Muhasebe',
+    'sidebar.integrations': 'Entegrasyonlar',
     'sidebar.sporpuan': 'Sporpuan',
     'sidebar.clubSettings': 'Kulüp Ayarları',
     'sidebar.superAdmin': 'Süper Admin',

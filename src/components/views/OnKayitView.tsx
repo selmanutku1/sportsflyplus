@@ -32,11 +32,13 @@ import {
   Activity,
   Award,
   FileText,
+  MapPin,
 } from 'lucide-react';
 import { SportsFlyIcon } from '../SportsFlyLogo';
 import { OnKayitItem, OnKayitDurumu, SporcuItem } from '../../types';
 import { INITIAL_ON_KAYITLAR, INITIAL_SPORCULAR } from '../../data/mockData';
 import { LegalDocPreviewModal } from '../modals/LegalDocPreviewModal';
+import { TURKEY_CITIES, getDistrictsForCity } from '../../data/turkeyCitiesData';
 
 export const OnKayitView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'liste' | 'yeni-kayit'>('liste');
@@ -102,6 +104,8 @@ export const OnKayitView: React.FC = () => {
     tcKimlikNo: '',
     dogumTarihi: '2015-01-01',
     telefon: '',
+    il: 'İstanbul',
+    ilce: 'Kadıköy',
     adres: '',
     boy: '',
     kilo: '',
@@ -312,6 +316,9 @@ export const OnKayitView: React.FC = () => {
       'Cinsiyet',
       'T.C. Kimlik',
       'Doğum Tarihi',
+      'İl',
+      'İlçe',
+      'Adres',
       'Veli Adı',
       'Veli Telefon',
       'Veli E-posta',
@@ -332,6 +339,9 @@ export const OnKayitView: React.FC = () => {
       r.cinsiyet,
       r.tcKimlikNo,
       r.dogumTarihi,
+      `"${r.il || ''}"`,
+      `"${r.ilce || ''}"`,
+      `"${(r.adres || '').replace(/"/g, '""')}"`,
       `"${r.veliAdSoyad}"`,
       `"${r.veliTelefon}"`,
       `"${r.veliEposta}"`,
@@ -649,6 +659,12 @@ export const OnKayitView: React.FC = () => {
                           <div className="text-[11px] text-slate-500">
                             {item.dogumTarihi} • TC: {item.tcKimlikNo ? `${item.tcKimlikNo.slice(0, 3)}****` : 'Belirtilmedi'}
                           </div>
+                          {(item.il || item.ilce) && (
+                            <div className="text-[10px] text-blue-600 font-medium flex items-center gap-0.5 mt-0.5">
+                              <MapPin className="w-2.5 h-2.5 shrink-0 text-blue-500" />
+                              <span>{[item.ilce, item.il].filter(Boolean).join(' / ')}</span>
+                            </div>
+                          )}
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="font-semibold text-slate-800">{item.veliAdSoyad}</div>
@@ -762,6 +778,10 @@ export const OnKayitView: React.FC = () => {
                       <div>
                         <span className="text-slate-400 block text-[10px]">Branş:</span>
                         <span className="font-semibold text-blue-600">{item.brans}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">İl / İlçe:</span>
+                        <span className="font-semibold text-slate-800">{[item.ilce, item.il].filter(Boolean).join(' / ') || 'Belirtilmedi'}</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px]">Veli:</span>
@@ -1035,13 +1055,57 @@ export const OnKayitView: React.FC = () => {
                     />
                   </div>
 
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                      <span>İl (Şehir) *</span>
+                    </label>
+                    <select
+                      value={formData.il || 'İstanbul'}
+                      onChange={(e) => {
+                        const newCity = e.target.value;
+                        const districts = getDistrictsForCity(newCity);
+                        setFormData({
+                          ...formData,
+                          il: newCity,
+                          ilce: districts[0] || 'Merkez',
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium text-slate-800"
+                    >
+                      {TURKEY_CITIES.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                      <span>İlçe *</span>
+                    </label>
+                    <select
+                      value={formData.ilce || getDistrictsForCity(formData.il || 'İstanbul')[0] || ''}
+                      onChange={(e) => setFormData({ ...formData, ilce: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium text-slate-800"
+                    >
+                      {getDistrictsForCity(formData.il || 'İstanbul').map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="sm:col-span-4">
-                    <label className="block font-semibold text-slate-700 mb-1">İkamet Adresi</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Açık İkamet Adresi</label>
                     <textarea
                       rows={2}
                       value={formData.adres || ''}
                       onChange={(e) => setFormData({ ...formData, adres: e.target.value })}
-                      placeholder="Mahalle, Cadde, Sokak, İlçe / İl..."
+                      placeholder="Mahalle, Cadde, Sokak, Bina No, Daire..."
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                   </div>
@@ -1954,15 +2018,30 @@ export const OnKayitView: React.FC = () => {
                 </div>
 
                 <div className="p-3 bg-white rounded-xl border border-slate-200">
-                  <span className="font-bold text-blue-600 block mb-1">2. Sporcu ve Veli İletişimi</span>
+                  <span className="font-bold text-blue-600 block mb-1">2. Sporcu &amp; İkamet Bilgileri</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-slate-600 text-[11px] mt-1.5">
+                    <div>Ad Soyad: <strong className="text-slate-800">Sporcu Adı</strong></div>
+                    <div>Cinsiyet / D.Tarihi: <strong className="text-slate-800">Erkek / 2015</strong></div>
+                    <div className="flex items-center gap-1 text-blue-700 font-semibold">
+                      <MapPin className="w-3 h-3 text-blue-600" />
+                      <span>İl / İlçe: <strong>İstanbul / Kadıköy</strong></span>
+                    </div>
+                  </div>
+                  <p className="text-slate-400 text-[10px] mt-1.5">
+                    * 81 İl ve bağlı İlçe dinamik olarak seçilip açık adres kaydedilir.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <span className="font-bold text-blue-600 block mb-1">3. Veli &amp; Acil Durum İletişimi</span>
                   <p className="text-slate-500 text-[11px]">
-                    Sporcu Adı, Veli Telefonu, Acil Durum Kişisi ve Sağlık Bilgileri bu ekrandan güvenli olarak doldurulur.
+                    Veli Adı, Telefon, E-posta, Acil Durum Aranacak Kişi, Sağlık ve Alerji bilgileri bu adımdan güvenli olarak alınır.
                   </p>
                 </div>
 
                 <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-blue-600 block">3. KVKK ve Yasal Onaylar</span>
+                    <span className="font-bold text-blue-600 block">4. KVKK ve Yasal Onaylar</span>
                     <span className="text-[10px] text-slate-500 font-medium">İletişim: 0216 850 1907</span>
                   </div>
                   <p className="text-slate-500 text-[11px]">
@@ -2084,9 +2163,10 @@ export const OnKayitView: React.FC = () => {
                   <div><span className="text-slate-400 block text-[10px]">T.C. Kimlik:</span> <span>{selectedRecord.tcKimlikNo || 'Belirtilmedi'}</span></div>
                   <div><span className="text-slate-400 block text-[10px]">Doğum Tarihi:</span> <span>{selectedRecord.dogumTarihi}</span></div>
                   <div><span className="text-slate-400 block text-[10px]">Telefon:</span> <span>{selectedRecord.telefon || 'Belirtilmedi'}</span></div>
-                  <div><span className="text-slate-400 block text-[10px]">Boy:</span> <span>{selectedRecord.boy ? `${selectedRecord.boy} cm` : '-'}</span></div>
-                  <div><span className="text-slate-400 block text-[10px]">Kilo:</span> <span>{selectedRecord.kilo ? `${selectedRecord.kilo} kg` : '-'}</span></div>
-                  <div className="col-span-2 sm:col-span-4"><span className="text-slate-400 block text-[10px]">Adres:</span> <span>{selectedRecord.adres || 'Belirtilmedi'}</span></div>
+                  <div><span className="text-slate-400 block text-[10px]">İl (Şehir):</span> <strong>{selectedRecord.il || 'Belirtilmedi'}</strong></div>
+                  <div><span className="text-slate-400 block text-[10px]">İlçe:</span> <strong>{selectedRecord.ilce || 'Belirtilmedi'}</strong></div>
+                  <div><span className="text-slate-400 block text-[10px]">Boy / Kilo:</span> <span>{selectedRecord.boy ? `${selectedRecord.boy} cm` : '-'} / {selectedRecord.kilo ? `${selectedRecord.kilo} kg` : '-'}</span></div>
+                  <div className="col-span-2 sm:col-span-4"><span className="text-slate-400 block text-[10px]">Açık Adres:</span> <span>{selectedRecord.adres || 'Belirtilmedi'}</span></div>
                 </div>
               </div>
 

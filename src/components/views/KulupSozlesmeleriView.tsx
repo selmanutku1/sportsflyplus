@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { KulupSozlesmesi } from '../../types';
 import { INITIAL_YONETICILER } from '../../data/mockData';
+import { TURKEY_CITIES, getDistrictsForCity } from '../../data/turkeyCitiesData';
 
 // Initial pre-populated club contracts for immediate interactivity
 const INITIAL_SOZLESMELER: KulupSozlesmesi[] = [
@@ -109,24 +110,6 @@ const INITIAL_SOZLESMELER: KulupSozlesmesi[] = [
   },
 ];
 
-// Turkey city and district lists for accurate selection
-const SEHIR_ILCELER: Record<string, string[]> = {
-  'İstanbul': ['Kadıköy', 'Beşiktaş', 'Üsküdar', 'Şişli', 'Maltepe', 'Ataşehir', 'Sarıyer', 'Bakırköy', 'Beylikdüzü', 'Pendik', 'Ümraniye', 'Fatih', 'Kartal', 'Zeytinburnu'],
-  'Ankara': ['Çankaya', 'Yenimahalle', 'Keçiören', 'Etimesgut', 'Mamak', 'Gölbaşı', 'Sincan', 'Altındağ'],
-  'İzmir': ['Karşıyaka', 'Bornova', 'Konak', 'Bayraklı', 'Buca', 'Çiğli', 'Urla', 'Çeşme', 'Gaziemir', 'Balçova'],
-  'Bursa': ['Nilüfer', 'Osmangazi', 'Yıldırım', 'Mudanya', 'Gemlik', 'İnegöl'],
-  'Antalya': ['Muratpaşa', 'Konyaaltı', 'Kepez', 'Alanya', 'Manavgat', 'Kemer'],
-  'Adana': ['Seyhan', 'Çukurova', 'Yüreğir', 'Sarıçam'],
-  'Kocaeli': ['İzmit', 'Gebze', 'Darıca', 'Gölcük', 'Kartepe', 'Başiskele'],
-  'Eskişehir': ['Tepebaşı', 'Odunpazarı'],
-  'Gaziantep': ['Şahinbey', 'Şehitkamil'],
-  'Konya': ['Selçuklu', 'Meram', 'Karatay'],
-  'Mersin': ['Yenişehir', 'Mezitli', 'Akdeniz', 'Toroslar'],
-  'Trabzon': ['Ortahisar', 'Akçaabat', 'Yomra'],
-  'Samsun': ['Atakum', 'İlkadım', 'Canik'],
-  'Kayseri': ['Melikgazi', 'Kocasinan', 'Talas'],
-};
-
 const FIRMA_TIPLERI = [
   'Bireysel Müşteri',
   'Kurumsal Müşteri / Kulüp',
@@ -164,9 +147,7 @@ export const KulupSozlesmeleriView: React.FC = () => {
   });
 
   // Dynamic district options based on selected city
-  const availableDistricts = formData.il && SEHIR_ILCELER[formData.il]
-    ? SEHIR_ILCELER[formData.il]
-    : ['Merkez', '1. Bölge', '2. Bölge'];
+  const availableDistricts = formData.il ? getDistrictsForCity(formData.il) : [];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => {
@@ -605,7 +586,7 @@ export const KulupSozlesmeleriView: React.FC = () => {
                       className="w-full h-11 px-3.5 pr-9 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer"
                     >
                       <option value="">Seçiniz</option>
-                      {Object.keys(SEHIR_ILCELER).map((sehir) => (
+                      {TURKEY_CITIES.map((sehir) => (
                         <option key={sehir} value={sehir}>
                           {sehir}
                         </option>

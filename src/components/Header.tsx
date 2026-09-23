@@ -23,13 +23,18 @@ import {
   Gift,
   ClipboardCheck,
   AlertCircle,
-  Sparkles,
   Info,
   Zap,
   ArrowRight,
   X,
+  Package,
+  Crown,
+  Trash2,
+  CheckCheck,
+  Sparkles,
 } from 'lucide-react';
-import { NavPage } from '../types';
+import { SportsFlyIcon } from './SportsFlyLogo';
+import { NavPage, PackagePlanType } from '../types';
 import {
   UserProfileData,
   getStoredUserProfile,
@@ -41,12 +46,19 @@ import {
   setActiveSubeId,
 } from '../data/subeData';
 import {
+  CANONICAL_PACKAGES,
+  PACKAGE_DETAILS,
+  getActiveSessionPlan,
+  setActiveSessionPlan,
+} from '../data/packagePermissions';
+import {
   getStoredNotifications,
   saveStoredNotifications,
   SportsFlyNotification,
   addSporPuanNotification
 } from '../data/notifications';
 import { ProfileSettingsModal } from './modals/ProfileSettingsModal';
+import { UpdatesModal } from './modals/UpdatesModal';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useTheme, ThemeMode } from '../contexts/ThemeContext';
 
@@ -71,6 +83,14 @@ export const Header: React.FC<HeaderProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showPlanMenu, setShowPlanMenu] = useState(false);
+  const [isUpdatesModalOpen, setIsUpdatesModalOpen] = useState(false);
+  const [notifCategoryFilter, setNotifCategoryFilter] = useState<'all' | 'unread' | 'sporpuan' | 'payment' | 'message' | 'training' | 'system'>('all');
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Active Package Plan State
+  const [activePlan, setActivePlan] = useState<PackagePlanType>(() => getActiveSessionPlan());
+  const planMenuRef = useRef<HTMLDivElement>(null);
 
   // Multi-Branch Switcher State
   const [subeler, setSubeler] = useState<Sube[]>(() => getStoredSubeler());
@@ -89,9 +109,19 @@ export const Header: React.FC<HeaderProps> = ({
 
   const unreadCount = notifications.filter((n) => n.isUnread).length;
 
-  // React to profile changes to load appropriate notification sets
+  // React to profile changes to load appropriate notification sets & listen for event updates
   useEffect(() => {
     setNotifications(getStoredNotifications(userProfile.role));
+  }, [userProfile.role]);
+
+  useEffect(() => {
+    const handleNotifsUpdate = () => {
+      setNotifications(getStoredNotifications(userProfile.role));
+    };
+    window.addEventListener('sportsfly_notifications_updated', handleNotifsUpdate);
+    return () => {
+      window.removeEventListener('sportsfly_notifications_updated', handleNotifsUpdate);
+    };
   }, [userProfile.role]);
 
   const handleMarkAllAsRead = () => {
@@ -107,6 +137,30 @@ export const Header: React.FC<HeaderProps> = ({
     setNotifications(updated);
     saveStoredNotifications(userProfile.role, updated);
   };
+
+  const handleDeleteNotification = (id: string) => {
+    const updated = notifications.filter((n) => n.id !== id);
+    setNotifications(updated);
+    saveStoredNotifications(userProfile.role, updated);
+  };
+
+  const handleClearAllNotifications = () => {
+    setNotifications([]);
+    saveStoredNotifications(userProfile.role, []);
+  };
+
+  // Close desktop dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        if (window.innerWidth >= 640) {
+          setShowNotifications(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSimulateNotification = () => {
     const categories: ('system' | 'support' | 'payment' | 'message' | 'birthday' | 'training')[] = [
@@ -305,6 +359,21 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, []);
 
+  // Sync active plan when changed from other components
+  useEffect(() => {
+    const handlePlanUpdate = (e: any) => {
+      if (e.detail?.plan) {
+        setActivePlan(e.detail.plan);
+      }
+    };
+    window.addEventListener('sportsfly_plan_updated', handlePlanUpdate);
+    window.addEventListener('sportsfly_plan_changed', handlePlanUpdate);
+    return () => {
+      window.removeEventListener('sportsfly_plan_updated', handlePlanUpdate);
+      window.removeEventListener('sportsfly_plan_changed', handlePlanUpdate);
+    };
+  }, []);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -316,6 +385,9 @@ export const Header: React.FC<HeaderProps> = ({
       }
       if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
         setShowThemeMenu(false);
+      }
+      if (planMenuRef.current && !planMenuRef.current.contains(event.target as Node)) {
+        setShowPlanMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -346,7 +418,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'sporsepeti-user':
         return 'SportsFly > Kullanıcılar';
       case 'yetkilendirmeler':
-        return 'SportsFly > Yetkilendirmeler';
+        return 'SportsFly > Ayarlar > Yetkilendirmeler & Roller';
       case 'sporcular':
         return 'SportsFly > Sporcular';
       case 'egitmenler':
@@ -411,23 +483,23 @@ export const Header: React.FC<HeaderProps> = ({
   const [rootCrumb, ...childCrumbs] = breadcrumbText.split(' > ');
 
   return (
-    <header className="bg-white dark:bg-[#111c2e] border-b border-slate-200/90 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors duration-200">
-      <div className="flex items-center justify-between px-4 lg:px-6 h-16">
+    <header className="bg-white dark:bg-[#111c2e] border-b border-slate-200/90 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors duration-200 shrink-0">
+      <div className="flex items-center justify-between px-2.5 sm:px-4 lg:px-6 h-16 gap-2">
         {/* Left Side: Single Icon (Menu Toggle) & Breadcrumbs (SportsFly > Sayfa) */}
-        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-          {/* Menu Toggle Button */}
+        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 shrink-0">
+          {/* Menu Toggle Button - Always prominently visible on mobile and desktop */}
           <button
             id="header-sidebar-toggle-btn"
             onClick={onToggleSidebar}
-            className="w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-slate-700"
-            title="Menüyü Daralt/Genişlet"
-            aria-label="Menüyü Aç/Kapat"
+            className="w-10 h-10 rounded-xl text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500/40 flex items-center justify-center shrink-0 border border-slate-200/90 dark:border-slate-700 cursor-pointer shadow-2xs"
+            title="Menüyü Aç / Kapat"
+            aria-label="Menüyü Aç / Kapat"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
           </button>
 
-          {/* Breadcrumb: SportsFly > Anasayfa */}
-          <nav className="hidden sm:flex items-center text-xs sm:text-sm font-medium truncate select-none">
+          {/* Breadcrumb: Desktop */}
+          <nav className="hidden md:flex items-center text-xs sm:text-sm font-medium truncate select-none">
             <span
               onClick={() => onNavigate?.('anasayfa')}
               className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer shrink-0 font-semibold"
@@ -452,7 +524,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Mobile breadcrumb: SportsFly > Sayfa */}
-          <div className="sm:hidden flex items-center gap-1.5 min-w-0 select-none">
+          <div className="md:hidden flex items-center gap-1.5 min-w-0 select-none">
             <span
               onClick={() => onNavigate?.('anasayfa')}
               className="text-blue-600 dark:text-blue-400 text-xs font-bold shrink-0 cursor-pointer"
@@ -460,14 +532,14 @@ export const Header: React.FC<HeaderProps> = ({
               {rootCrumb}
             </span>
             <span className="text-slate-400 dark:text-slate-600 text-xs font-semibold shrink-0">&gt;</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[170px]">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[90px] sm:max-w-[150px]">
               {childCrumbs[childCrumbs.length - 1] || 'Anasayfa'}
             </span>
           </div>
         </div>
 
         {/* Right Side: Branch Switcher, Theme Switcher, Notifications & Profile Pill */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Multi-Branch Quick Switcher */}
           <div className="relative" ref={branchMenuRef}>
             {isSuperAdmin ? (
@@ -478,26 +550,26 @@ export const Header: React.FC<HeaderProps> = ({
                   setShowProfileMenu(false);
                   setShowThemeMenu(false);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#162238] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-bold transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#162238] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer"
                 title="Aktif Kulüp Şubesini Değiştir"
               >
-                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span className="max-w-[120px] sm:max-w-[200px] truncate">
+                <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="hidden sm:inline max-w-[100px] md:max-w-[160px] truncate">
                   {activeBranchId === 'all'
                     ? 'Tüm Şubeler'
                     : subeler.find((s) => s.id === activeBranchId)?.ad || 'Şube Seç'}
                 </span>
-                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
               </button>
             ) : (
               <div
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-slate-50 dark:bg-[#162238]/60 text-slate-600 dark:text-slate-300 text-xs font-semibold select-none"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-slate-50 dark:bg-[#162238]/60 text-slate-600 dark:text-slate-300 text-xs font-semibold select-none"
                 title="Kendi Şubeniz (Değiştirilemez)"
               >
                 <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 <span className="hidden md:inline text-slate-400 font-medium text-[11px]">Şube:</span>
-                <span className="max-w-[100px] sm:max-w-[140px] truncate font-bold text-slate-800 dark:text-slate-200">
-                  {subeler.find((s) => s.id === 'sube-kadikoy')?.ad || 'Kadıköy Merkez Şube'}
+                <span className="hidden sm:inline max-w-[80px] md:max-w-[120px] truncate font-bold text-slate-800 dark:text-slate-200">
+                  {subeler.find((s) => s.id === 'sube-kadikoy')?.ad || 'Kadıköy'}
                 </span>
               </div>
             )}
@@ -581,6 +653,114 @@ export const Header: React.FC<HeaderProps> = ({
                      className="w-full text-left text-slate-600 dark:text-slate-400 text-sm font-semibold hover:text-slate-900 dark:hover:text-slate-100"
                   >
                     Şube Listesi & Tesis Yönetimi
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Minimal Package Plan Quick Switcher in Header */}
+          <div className="relative hidden sm:block" ref={planMenuRef}>
+            <button
+              id="header-package-plan-btn"
+              onClick={() => {
+                setShowPlanMenu(!showPlanMenu);
+                setShowNotifications(false);
+                setShowProfileMenu(false);
+                setShowThemeMenu(false);
+                setShowBranchMenu(false);
+              }}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-indigo-200/90 dark:border-indigo-800/70 bg-indigo-50/70 hover:bg-indigo-100/80 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/70 text-indigo-900 dark:text-indigo-200 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+              title="Aktif Kulüp Paketi ve Hızlı Geçiş"
+            >
+              <Crown className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="hidden lg:inline max-w-[110px] truncate">
+                {activePlan === 'Pro Akademi & Çoklu Şube' ? 'Pro Akademi' : activePlan}
+              </span>
+              <span className="text-[10px] bg-indigo-200/80 dark:bg-indigo-900/80 text-indigo-900 dark:text-indigo-200 px-1.5 py-0.5 rounded-md font-extrabold shrink-0">
+                Lvl {PACKAGE_DETAILS[activePlan]?.level || 2}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-indigo-500/80 shrink-0 hidden sm:inline" />
+            </button>
+
+            {/* Plan Switcher Dropdown */}
+            {showPlanMenu && (
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-[#111c2e] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      Kulüp Üyelik Paketi
+                    </span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Hızlı Paket Geçişi
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50">
+                    Aktif: {activePlan === 'Pro Akademi & Çoklu Şube' ? 'Pro' : activePlan}
+                  </span>
+                </div>
+
+                <div className="p-2 space-y-1">
+                  {CANONICAL_PACKAGES.map((planName) => {
+                    const planInfo = PACKAGE_DETAILS[planName];
+                    const isCurrent = activePlan === planName;
+                    return (
+                      <button
+                        key={planName}
+                        onClick={() => {
+                          setActiveSessionPlan(planName);
+                          setActivePlan(planName);
+                          setShowPlanMenu(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                          isCurrent
+                            ? 'bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-100 shadow-2xs font-bold'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/70 border border-transparent text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                              isCurrent
+                                ? 'bg-indigo-600 text-white shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                            }`}
+                          >
+                            <Crown className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="truncate">
+                            <div className="text-xs font-bold truncate flex items-center gap-1.5">
+                              <span>{planName}</span>
+                              {isCurrent && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 font-extrabold">
+                                  Aktif
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                              {planInfo.priceFormatted} &bull; {planInfo.limits.maxBranches} &bull; {planInfo.maxStudents} Sporcu
+                            </div>
+                          </div>
+                        </div>
+                        {isCurrent && (
+                          <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="px-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setShowPlanMenu(false);
+                      onNavigate?.('paketler');
+                    }}
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1.5 cursor-pointer py-1"
+                  >
+                    <Package className="w-3.5 h-3.5" />
+                    <span>Tüm Paket & Limit Detayları</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -677,7 +857,7 @@ export const Header: React.FC<HeaderProps> = ({
 
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative" ref={notificationRef}>
             <button
               id="header-notification-btn"
               onClick={() => {
@@ -685,172 +865,335 @@ export const Header: React.FC<HeaderProps> = ({
                 setShowProfileMenu(false);
                 setShowThemeMenu(false);
                 setShowBranchMenu(false);
+                setShowPlanMenu(false);
               }}
-              className="relative w-10 h-10 rounded-xl text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700 transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
+              className={`relative w-10 h-10 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-2xs ${
+                showNotifications
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700'
+              }`}
               aria-label="Bildirimler"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-600 rounded-full ring-2 ring-white dark:ring-[#111c2e]"></span>
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-600 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#111c2e] animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </button>
  
-            {/* Notifications Dropdown */}
+            {/* UNIFIED COMPACT NOTIFICATIONS DROPDOWN / POPOVER */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-100 max-w-[calc(100vw-2rem)] bg-white dark:bg-[#111c2e] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                
-                {/* Header Info */}
-                <div className="flex items-center justify-between px-4 pb-2 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">Bildirimler</span>
-                    {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-full">
-                        {unreadCount} yeni
-                      </span>
-                    )}
-                  </div>
+              <>
+                {/* Mobile Backdrop */}
+                <div
+                  className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-40 sm:hidden"
+                  onClick={() => setShowNotifications(false)}
+                />
+
+                {/* Main Popover Container */}
+                <div className="fixed inset-x-3 top-14 max-w-sm sm:max-w-none mx-auto sm:mx-0 z-50 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[420px] bg-white dark:bg-[#111c2e] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700/80 flex flex-col max-h-[76vh] sm:max-h-[34rem] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                   
-                  <div className="flex items-center gap-1.5">
-                    {/* SporPuan Push Toast Test Button */}
-                    <button
-                      onClick={handleSimulateSporPuan}
-                      className="text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 hover:text-amber-900 px-2 py-1 rounded-md font-bold border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1"
-                      title="Anlık SporPuan Kazanımı ve Push Uyarısı Tetikle"
-                    >
-                      <Zap className="w-2.5 h-2.5 fill-amber-500 text-amber-600" />
-                      <span>+ Puan Push</span>
-                    </button>
-
-                    {/* Simulator Button */}
-                    <button
-                      onClick={handleSimulateNotification}
-                      className="text-[10px] bg-slate-100 dark:bg-[#162238] hover:bg-blue-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1 rounded-md font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                      title="Yeni simüle bildirim tetikle"
-                    >
-                      Test
-                    </button>
-                    
-                    <button
-                      onClick={handleMarkAllAsRead}
-                      disabled={unreadCount === 0}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline"
-                    >
-                      Tümünü oku
-                    </button>
-                  </div>
-                </div>
-
-                {/* Notifications List */}
-                <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="py-8 px-4 text-center">
-                      <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-400 dark:text-slate-500">
-                        <Check className="w-6 h-6" />
+                  {/* Compact Header */}
+                  <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-[#142033]/60">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                        <Bell className="w-3.5 h-3.5" />
                       </div>
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Harika! Hiç bildirim yok.</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Yeni güncellemeler burada gösterilecektir.</p>
+                      <span className="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-sm">
+                        Bildirimler
+                      </span>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-extrabold bg-blue-600 text-white rounded-full">
+                          {unreadCount} yeni
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    notifications.map((notif) => {
-                      // Icon mappings
-                      const renderCategoryIcon = () => {
-                        switch (notif.category) {
-                          case 'system':
-                            return <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />;
-                          case 'support':
-                            return <LifeBuoy className="w-4 h-4 text-sky-500 dark:text-sky-400" />;
-                          case 'payment':
-                            return <CreditCard className="w-4 h-4 text-amber-500 dark:text-amber-400" />;
-                          case 'message':
-                            return <MessageSquare className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
-                          case 'birthday':
-                            return <Gift className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
-                          case 'training':
-                            return <ClipboardCheck className="w-4 h-4 text-rose-500 dark:text-rose-400" />;
-                          case 'sporpuan':
-                            return <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />;
-                          default:
-                            return <Info className="w-4 h-4 text-slate-500" />;
-                        }
-                      };
 
-                      const getCategoryBg = () => {
-                        switch (notif.category) {
-                          case 'system':
-                            return 'bg-purple-50 dark:bg-purple-950/30 border-purple-100/50 dark:border-purple-900/30';
-                          case 'support':
-                            return 'bg-sky-50 dark:bg-sky-950/30 border-sky-100/50 dark:border-sky-900/30';
-                          case 'payment':
-                            return 'bg-amber-50 dark:bg-amber-950/30 border-amber-100/50 dark:border-amber-900/30';
-                          case 'message':
-                            return 'bg-blue-50 dark:bg-blue-950/30 border-blue-100/50 dark:border-blue-900/30';
-                          case 'birthday':
-                            return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100/50 dark:border-emerald-900/30';
-                          case 'training':
-                            return 'bg-rose-50 dark:bg-rose-950/30 border-rose-100/50 dark:border-rose-900/30';
-                          case 'sporpuan':
-                            return 'bg-amber-50 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/50';
-                          default:
-                            return 'bg-slate-50 dark:bg-slate-900/50 border-slate-100';
-                        }
-                      };
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        disabled={unreadCount === 0}
+                        className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer disabled:opacity-40 disabled:no-underline"
+                      >
+                        Tümünü Oku
+                      </button>
 
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md sm:hidden cursor-pointer"
+                        aria-label="Kapat"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Compact Filter Tabs with full visibility for Ödeme */}
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-slate-50/30 dark:bg-[#142033]/30 shrink-0">
+                    {[
+                      { id: 'all', label: 'Tümü', count: notifications.length },
+                      { id: 'payment', label: '💳 Ödeme', count: notifications.filter((n) => n.category === 'payment').length },
+                      { id: 'sporpuan', label: '⭐ SporPuan', count: notifications.filter((n) => n.category === 'sporpuan').length },
+                      { id: 'training', label: '📋 Yoklama', count: notifications.filter((n) => n.category === 'training').length },
+                      { id: 'message', label: '💬 Mesaj', count: notifications.filter((n) => n.category === 'message' || n.category === 'support').length },
+                      { id: 'unread', label: 'Okunmamış', count: unreadCount },
+                    ].map((tab) => {
+                      const isActive = notifCategoryFilter === tab.id;
                       return (
-                        <div
-                          key={notif.id}
-                          className={`p-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors flex items-start gap-3 relative group ${
-                            notif.isUnread ? 'bg-blue-50/20 dark:bg-blue-950/10' : ''
+                        <button
+                          key={tab.id}
+                          onClick={() => setNotifCategoryFilter(tab.id as any)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-600 text-white shadow-2xs'
+                              : 'bg-white dark:bg-[#162238] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                           }`}
                         >
-                          {/* Unread Status Marker Button */}
-                          <button
-                            onClick={() => handleToggleRead(notif.id)}
-                            className="mt-1.5 shrink-0 relative flex items-center justify-center cursor-pointer"
-                            title={notif.isUnread ? "Okundu olarak işaretle" : "Okunmadı olarak işaretle"}
+                          <span>{tab.label}</span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+                              isActive ? 'bg-white/25 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                            }`}
                           >
-                            <span
-                              className={`w-2.5 h-2.5 rounded-full border transition-all ${
-                                notif.isUnread
-                                  ? 'bg-blue-600 border-blue-600 scale-110 shadow-xs'
-                                  : 'bg-transparent border-slate-300 dark:border-slate-600 group-hover:border-slate-400'
-                              }`}
-                            />
-                          </button>
+                            {tab.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                          {/* Category Visual Icon */}
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 ${getCategoryBg()}`}>
-                            {renderCategoryIcon()}
-                          </div>
+                  {/* Scrollable Notifications List */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 p-1.5">
+                    {(() => {
+                      const list = notifications.filter((n) => {
+                        if (notifCategoryFilter === 'unread') return n.isUnread;
+                        if (notifCategoryFilter === 'sporpuan') return n.category === 'sporpuan';
+                        if (notifCategoryFilter === 'payment') return n.category === 'payment';
+                        if (notifCategoryFilter === 'message') return n.category === 'message' || n.category === 'support';
+                        if (notifCategoryFilter === 'training') return n.category === 'training';
+                        return true;
+                      });
 
-                          {/* Details */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={`text-xs font-bold leading-tight ${notif.isUnread ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-                                {notif.title}
-                              </p>
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0">
-                                {notif.time}
-                              </span>
+                      if (list.length === 0) {
+                        return (
+                          <div className="py-8 px-4 text-center">
+                            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800/60 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-400">
+                              <Bell className="w-5 h-5" />
                             </div>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                              {notif.description}
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                              {notifCategoryFilter === 'payment'
+                                ? 'Ödeme kategorisinde bildirim bulunmuyor'
+                                : notifCategoryFilter === 'unread'
+                                ? 'Tüm bildirimleri okudunuz'
+                                : 'Bildirim bulunmuyor'}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">
+                              Yeni güncellemeler burada listelenecektir.
                             </p>
                           </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+                        );
+                      }
 
-                {/* Footer Portal Information */}
-                <div className="px-4 pt-2 mt-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
-                  <span>Portal Akışı:</span>
-                  <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-[#162238] rounded text-slate-600 dark:text-slate-300 font-bold">
-                    {userProfile.role === 'Süper Admin' ? 'Yöneticilere Özel' : userProfile.role.includes('Veli') ? 'Velilere Özel' : 'Antrenörlere Özel'}
-                  </span>
-                </div>
+                      return list.map((notif) => {
+                        const getCategoryBadge = () => {
+                          switch (notif.category) {
+                            case 'payment':
+                              return { text: 'Ödeme', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' };
+                            case 'sporpuan':
+                              return { text: 'SporPuan', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800' };
+                            case 'training':
+                              return { text: 'Yoklama', cls: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800' };
+                            case 'support':
+                              return { text: 'Destek', cls: 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800' };
+                            case 'message':
+                              return { text: 'Mesaj', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800' };
+                            default:
+                              return { text: 'Sistem', cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700' };
+                          }
+                        };
 
-              </div>
+                        const getCategoryStyle = () => {
+                          switch (notif.category) {
+                            case 'sporpuan':
+                              return 'bg-amber-50 dark:bg-amber-950/40 border-amber-300/80 dark:border-amber-700/60 text-amber-600 dark:text-amber-400';
+                            case 'payment':
+                              return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400';
+                            case 'message':
+                              return 'bg-blue-50 dark:bg-blue-950/30 border-blue-200/80 dark:border-blue-800/60 text-blue-600 dark:text-blue-400';
+                            case 'support':
+                              return 'bg-sky-50 dark:bg-sky-950/30 border-sky-200/80 dark:border-sky-800/60 text-sky-600 dark:text-sky-400';
+                            case 'birthday':
+                              return 'bg-pink-50 dark:bg-pink-950/30 border-pink-200/80 dark:border-pink-800/60 text-pink-600 dark:text-pink-400';
+                            case 'training':
+                              return 'bg-rose-50 dark:bg-rose-950/30 border-rose-200/80 dark:border-rose-800/60 text-rose-600 dark:text-rose-400';
+                            default:
+                              return 'bg-purple-50 dark:bg-purple-950/30 border-purple-200/80 dark:border-purple-800/60 text-purple-600 dark:text-purple-400';
+                          }
+                        };
+
+                        const renderIcon = () => {
+                          switch (notif.category) {
+                            case 'sporpuan':
+                              return <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />;
+                            case 'payment':
+                              return <CreditCard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />;
+                            case 'message':
+                              return <MessageSquare className="w-3.5 h-3.5" />;
+                            case 'support':
+                              return <LifeBuoy className="w-3.5 h-3.5" />;
+                            case 'birthday':
+                              return <Gift className="w-3.5 h-3.5" />;
+                            case 'training':
+                              return <ClipboardCheck className="w-3.5 h-3.5" />;
+                            default:
+                              return <SportsFlyIcon className="w-3.5 h-3.5" />;
+                          }
+                        };
+
+                        const catBadge = getCategoryBadge();
+
+                        return (
+                          <div
+                            key={notif.id}
+                            onClick={() => handleToggleRead(notif.id)}
+                            className={`p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors flex items-start gap-2.5 cursor-pointer relative group ${
+                              notif.isUnread ? 'bg-blue-50/30 dark:bg-blue-950/20' : ''
+                            }`}
+                          >
+                            {/* Category Icon */}
+                            <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${getCategoryStyle()}`}>
+                              {renderIcon()}
+                            </div>
+
+                            {/* Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className={`text-[9px] font-black px-1.5 py-0.2 rounded border shrink-0 ${catBadge.cls}`}>
+                                    {catBadge.text}
+                                  </span>
+                                  <h4 className={`text-xs font-bold truncate ${notif.isUnread ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {notif.title}
+                                  </h4>
+                                </div>
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                                  {notif.time}
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2 mt-1">
+                                {notif.description}
+                              </p>
+
+                              {/* Action Link (if applicable) */}
+                              {notif.category === 'sporpuan' ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowNotifications(false);
+                                    onNavigate?.('sporcu-karnesi');
+                                  }}
+                                  className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                                >
+                                  <span>Sporcu Karnesinde Gör</span>
+                                  <ArrowRight className="w-2.5 h-2.5" />
+                                </button>
+                              ) : notif.category === 'payment' ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowNotifications(false);
+                                    onNavigate?.('odeme-plani');
+                                  }}
+                                  className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                                >
+                                  <span>Ödeme Planına Git</span>
+                                  <ArrowRight className="w-2.5 h-2.5" />
+                                </button>
+                              ) : notif.category === 'training' ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowNotifications(false);
+                                    onNavigate?.('antrenman-takvimi');
+                                  }}
+                                  className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                                >
+                                  <span>Yoklama Takvimi</span>
+                                  <ArrowRight className="w-2.5 h-2.5" />
+                                </button>
+                              ) : null}
+                            </div>
+
+                            {/* Item Actions (Unread Indicator & Delete) */}
+                            <div className="flex items-center gap-1 shrink-0 self-center">
+                              {notif.isUnread && (
+                                <span className="w-2 h-2 rounded-full bg-blue-600 block" title="Okunmamış" />
+                              )}
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteNotification(notif.id);
+                                }}
+                                className="opacity-70 sm:opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 transition-opacity cursor-pointer"
+                                title="Bildirimi Sil"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* Slim Footer */}
+                  <div className="px-3 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-[#142033]/60 flex items-center justify-between text-[11px] shrink-0">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSimulateSporPuan}
+                        className="text-[10px] text-amber-600 dark:text-amber-400 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                        title="Örnek SporPuan kazanım bildirimi"
+                      >
+                        <Zap className="w-2.5 h-2.5 fill-current" />
+                        <span>+Puan</span>
+                      </button>
+
+                      <button
+                        onClick={handleSimulateNotification}
+                        className="text-[10px] text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium cursor-pointer"
+                        title="Rastgele test bildirimi"
+                      >
+                        +Test
+                      </button>
+
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={handleClearAllNotifications}
+                          className="text-[10px] text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Tümünü temizle"
+                        >
+                          Temizle
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowNotifications(false);
+                        setIsUpdatesModalOpen(true);
+                      }}
+                      className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <SportsFlyIcon className="w-3 h-3" />
+                      <span>v2.8.5 Sürüm Notları</span>
+                    </button>
+                  </div>
+
+                </div>
+              </>
             )}
           </div>
 
@@ -864,7 +1207,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setShowThemeMenu(false);
                 setShowBranchMenu(false);
               }}
-              className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 dark:bg-[#162238] hover:bg-slate-200/80 dark:hover:bg-slate-800 rounded-full border border-slate-200/80 dark:border-slate-700 transition-all text-left cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 sm:gap-2.5 p-1 sm:px-3 sm:py-1.5 bg-slate-100 dark:bg-[#162238] hover:bg-slate-200/80 dark:hover:bg-slate-800 rounded-full border border-slate-200/80 dark:border-slate-700 transition-all text-left cursor-pointer shadow-2xs"
               title="Profil Menüsü"
             >
               {/* Profile Avatar / Badge */}
@@ -911,6 +1254,49 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     <span>İletişim: <strong className="text-slate-800 dark:text-slate-200">{userProfile.phone}</strong></span>
+                  </div>
+                </div>
+
+                {/* Minimal Active Package Switcher in Profile Menu */}
+                <div className="mx-2 my-2 p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100/90 dark:border-indigo-900/40">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <div className="flex items-center gap-1.5 text-indigo-950 dark:text-indigo-200 font-bold">
+                      <Crown className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <span className="truncate">{activePlan}</span>
+                    </div>
+                    {onNavigate && (
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onNavigate('paketler');
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                      >
+                        Paketler &gt;
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {CANONICAL_PACKAGES.map((p) => {
+                      const isCurrent = activePlan === p;
+                      const short = p === 'Başlangıç Kulübü' ? 'Başlangıç' : p === 'Kulüp & Akademi' ? 'Kulüp' : 'Pro';
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => {
+                            setActiveSessionPlan(p);
+                            setActivePlan(p);
+                          }}
+                          className={`py-1 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
+                            isCurrent
+                              ? 'bg-indigo-600 text-white shadow-2xs'
+                              : 'bg-white/90 dark:bg-[#111c2e]/90 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-800'
+                          }`}
+                        >
+                          {short}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -964,6 +1350,24 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                     <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
                       {theme === 'dark' ? '🌙 Koyu' : theme === 'light' ? '☀️ Açık' : '💻 Sistem'}
+                    </span>
+                  </button>
+
+                  {/* Sistem Güncellemeleri & Yenilikler */}
+                  <button
+                    id="btn-open-system-updates"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setIsUpdatesModalOpen(true);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-blue-50/70 dark:hover:bg-slate-800/80 rounded-xl flex items-center justify-between transition-colors cursor-pointer group"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <SportsFlyIcon className="w-4 h-4" />
+                      <span>Sistem Güncellemeleri</span>
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-extrabold font-mono">
+                      v2.8.5 Yeni
                     </span>
                   </button>
 
@@ -1029,6 +1433,13 @@ export const Header: React.FC<HeaderProps> = ({
         currentProfile={userProfile}
         onProfileUpdated={(updated) => setUserProfile(updated)}
         initialTab={profileModalTab}
+      />
+
+      {/* System Updates & Changelog Modal */}
+      <UpdatesModal
+        isOpen={isUpdatesModalOpen}
+        onClose={() => setIsUpdatesModalOpen(false)}
+        onNavigate={onNavigate}
       />
     </header>
   );

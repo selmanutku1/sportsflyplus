@@ -706,10 +706,14 @@ export const SporcularView: React.FC<SporcularViewProps> = ({ onNavigate }) => {
                   return (
                     <tr
                       key={sporcu.id}
-                      onClick={() => setSelectedId(sporcu.id)}
-                      className={`hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors cursor-pointer ${
-                        isChecked ? 'bg-blue-50/30 dark:bg-blue-950/20' : ''
+                      onClick={() => {
+                        setSelectedId(sporcu.id);
+                        setViewingProfileSporcu(sporcu);
+                      }}
+                      className={`hover:bg-blue-50/50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group ${
+                        isChecked ? 'bg-blue-50/40 dark:bg-blue-950/30' : ''
                       }`}
+                      title="Sporcu detay profilini açmak için tıklayın"
                     >
                       {/* Radio Selection */}
                       <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
@@ -729,24 +733,10 @@ export const SporcularView: React.FC<SporcularViewProps> = ({ onNavigate }) => {
                             src={sporcu.avatarUrl || 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&auto=format&fit=crop&q=80'}
                             alt={sporcu.name}
                             referrerPolicy="no-referrer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedId(sporcu.id);
-                              setViewingProfileSporcu(sporcu);
-                            }}
-                            className="w-9 h-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 cursor-pointer hover:ring-blue-500 transition-all hover:scale-105"
-                            title="Sporcu profilini açmak için tıklayın"
+                            className="w-9 h-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 group-hover:ring-blue-500 transition-all group-hover:scale-105"
                           />
                           <div>
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedId(sporcu.id);
-                                setViewingProfileSporcu(sporcu);
-                              }}
-                              className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 group transition-colors"
-                              title="Sporcu profilini açmak için tıklayın"
-                            >
+                            <div className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm flex items-center gap-1.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               <span className="group-hover:underline">{sporcu.name}</span>
                               {sporcu.isActive && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Aktif Sporcu" />
@@ -791,9 +781,12 @@ export const SporcularView: React.FC<SporcularViewProps> = ({ onNavigate }) => {
                       </td>
 
                       {/* Durum / Aktiflik Toggle */}
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={(e) => handleToggleActive(sporcu.id, e)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleActive(sporcu.id, e);
+                          }}
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
                             sporcu.isActive
                               ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 hover:bg-emerald-100'

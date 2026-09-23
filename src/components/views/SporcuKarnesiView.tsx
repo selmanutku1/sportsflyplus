@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { 
   Award, 
   Search, 
@@ -31,19 +31,26 @@ import {
   Trash2,
   Star,
   ClipboardCheck,
-  Send
+  Send,
+  Sparkles,
+  Flame,
+  Trophy
 } from 'lucide-react';
 import { SportsFlyIcon } from '../SportsFlyLogo';
 import { toCanvas } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { INITIAL_KARNELER, SporcuKarne, getStoredKarneler, saveStoredKarneler } from '../../data/mockKarneData';
-import { getStoredSporcuProfilleri } from '../../data/sporcuProfilData';
+import { SporcuProfil, getStoredSporcuProfilleri } from '../../data/sporcuProfilData';
+import { INITIAL_SPORCULAR } from '../../data/mockData';
+import { SporcuItem, NavPage } from '../../types';
+import { getAthletePhotoUrl, getAthleteInitials } from '../../utils/athletePhotoResolver';
 import { 
   KURUMSAL_ROZETLER, 
   KURUMSAL_ROZET_KATEGORILERI, 
   DavranissalRozet 
 } from '../../data/rozetData';
-import { NavPage } from '../../types';
+import { getDynamicKarne, SporPuanKarneImpact } from '../../utils/sporpuanKarneBridge';
+import { QuickPointAwardModal } from '../modals/QuickPointAwardModal';
 import { VeliKarneGonderimModal } from './VeliKarneGonderimModal';
 
 interface SporcuKarnesiViewProps {
@@ -52,23 +59,74 @@ interface SporcuKarnesiViewProps {
 
 export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate }) => {
   const [karneler, setKarneler] = useState<SporcuKarne[]>(() => getStoredKarneler());
+  const [sporcular, setSporcular] = useState<SporcuItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('sportsfly_sporcular');
+      return saved ? JSON.parse(saved) : INITIAL_SPORCULAR;
+    } catch (e) {
+      return INITIAL_SPORCULAR;
+    }
+  });
+  const [profiller, setProfiller] = useState<Record<string, SporcuProfil>>(() => {
+    return getStoredSporcuProfilleri();
+  });
   const [searchQuery, setSearchQuery] = useState('');
+  const [sporpuanRefreshKey, setSporpuanRefreshKey] = useState(0);
+  const [isQuickPointModalOpen, setIsQuickPointModalOpen] = useState(false);
   const [selectedKarneId, setSelectedKarneId] = useState<string>(() => {
     const list = getStoredKarneler();
     return list[0]?.id || INITIAL_KARNELER[0]?.id || '';
   });
 
-  // Keep state synced with localStorage
+  // Keep state synced with localStorage & SporPuan updates
   React.useEffect(() => {
+    const handleSporcularSync = () => {
+      try {
+        const saved = localStorage.getItem('sportsfly_sporcular');
+        if (saved) {
+          setSporcular(JSON.parse(saved));
+        }
+      } catch (e) {}
+    };
+
+    const handleProfillerSync = () => {
+      setProfiller(getStoredSporcuProfilleri());
+    };
+
     const handleUpdate = (e: any) => {
       if (e?.detail?.karneler) {
         setKarneler(e.detail.karneler);
       } else {
         setKarneler(getStoredKarneler());
       }
+      handleSporcularSync();
+      handleProfillerSync();
+      setSporpuanRefreshKey(k => k + 1);
     };
+
+    const handleSporPuanUpdate = () => {
+      setSporpuanRefreshKey(k => k + 1);
+      setKarneler(getStoredKarneler());
+      handleSporcularSync();
+      handleProfillerSync();
+    };
+
     window.addEventListener('sportsfly_karneler_updated', handleUpdate);
-    return () => window.removeEventListener('sportsfly_karneler_updated', handleUpdate);
+    window.addEventListener('sportsfly_sporcular_updated', handleSporcularSync);
+    window.addEventListener('sportsfly_sporcu_profilleri_updated', handleProfillerSync);
+    window.addEventListener('sportsfly_sporpuan_updated', handleSporPuanUpdate);
+    window.addEventListener('storage', () => {
+      handleSporcularSync();
+      handleProfillerSync();
+      handleUpdate(null);
+    });
+
+    return () => {
+      window.removeEventListener('sportsfly_karneler_updated', handleUpdate);
+      window.removeEventListener('sportsfly_sporcular_updated', handleSporcularSync);
+      window.removeEventListener('sportsfly_sporcu_profilleri_updated', handleProfillerSync);
+      window.removeEventListener('sportsfly_sporpuan_updated', handleSporPuanUpdate);
+    };
   }, []);
 
   const updateAndSaveKarneler = (updater: (prev: SporcuKarne[]) => SporcuKarne[]) => {
@@ -109,9 +167,18 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
   const karneRef = useRef<HTMLDivElement>(null);
 
   const selectedKarne = karneler.find(k => k.id === selectedKarneId) || karneler[0] || null;
-  const sporcuProfilleri = getStoredSporcuProfilleri();
-  const selectedSporcuProfil = selectedKarne ? sporcuProfilleri[selectedKarne.sporcuId] : null;
-  const profilePhotoUrl = selectedSporcuProfil?.kimlik?.fotoUrl;
+  const dynamicKarne = useMemo(() => {
+    if (!selectedKarne) return null;
+    return getDynamicKarne(selectedKarne);
+  }, [selectedKarne, sporpuanRefreshKey]);
+
+  const activeKarne = dynamicKarne || selectedKarne;
+  const sporpuanImpact = dynamicKarne?.sporpuanImpact;
+
+  // Resolve profile photo dynamically from athlete profiles and sportsfly_sporcular
+  const profilePhotoUrl = useMemo(() => {
+    return getAthletePhotoUrl(activeKarne, sporcular, profiller);
+  }, [activeKarne, sporcular, profiller]);
 
   const renderBadgeIcon = (iconName: string, className: string = "w-4 h-4") => {
     switch (iconName) {
@@ -342,28 +409,36 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
     }
   };
 
-  const renderProgressBar = (label: string, value: number, colorClass: string) => (
+  const renderProgressBar = (label: string, value: number, colorClass: string, bonus?: number) => (
     <div className="mb-4">
-      <div className="flex justify-between text-xs font-semibold mb-1.5">
+      <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
         <span className="text-slate-600">{label}</span>
-        <span className="text-slate-800">{value}/10</span>
+        <div className="flex items-center gap-1.5">
+          {bonus !== undefined && bonus > 0 && (
+            <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+              <Zap className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
+              +{bonus} SP
+            </span>
+          )}
+          <span className="text-slate-800 font-bold">{value}/10</span>
+        </div>
       </div>
       <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
         <div 
           className={`h-full rounded-full ${colorClass} transition-all duration-1000 ease-out`} 
-          style={{ width: `${value * 10}%` }}
+          style={{ width: `${Math.min(100, value * 10)}%` }}
         ></div>
       </div>
     </div>
   );
 
-  const genelOrtalama = selectedKarne ? (
+  const genelOrtalama = activeKarne ? (
     (
-      selectedKarne.teknik.ortalama +
-      selectedKarne.fiziksel.ortalama +
-      selectedKarne.taktiksel.ortalama +
-      selectedKarne.zihinsel.ortalama +
-      (selectedKarne.davranissal?.kriterler?.ortalama || 8)
+      activeKarne.teknik.ortalama +
+      activeKarne.fiziksel.ortalama +
+      activeKarne.taktiksel.ortalama +
+      activeKarne.zihinsel.ortalama +
+      (activeKarne.davranissal?.kriterler?.ortalama || 8)
     ) / 5
   ).toFixed(1) : '0.0';
 
@@ -400,25 +475,47 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
             </div>
 
             <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1 custom-scrollbar">
-              {filteredKarneler.map(karne => (
-                <button
-                  key={karne.id}
-                  onClick={() => handleSelectKarne(karne)}
-                  className={`w-full text-left p-3 rounded-xl transition-all border ${
-                    selectedKarne?.id === karne.id
-                      ? 'bg-blue-50 border-blue-200 shadow-sm'
-                      : 'bg-white border-transparent hover:border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="font-bold text-slate-800 text-sm">{karne.adSoyad}</div>
-                  <div className="text-xs text-slate-500 mt-1">{karne.grup}</div>
-                  <div className="text-[10px] font-semibold text-slate-400 mt-1 flex gap-2">
-                    <span>{karne.brans}</span>
-                    <span>•</span>
-                    <span>Tarih: {new Date(karne.tarih).toLocaleDateString('tr-TR')}</span>
-                  </div>
-                </button>
-              ))}
+              {filteredKarneler.map(karne => {
+                const itemPhoto = getAthletePhotoUrl(karne, sporcular, profiller);
+                const initials = getAthleteInitials(karne.adSoyad);
+                const isSelected = selectedKarne?.id === karne.id;
+                return (
+                  <button
+                    key={karne.id}
+                    onClick={() => handleSelectKarne(karne)}
+                    className={`w-full text-left p-3 rounded-xl transition-all border flex items-center gap-3 cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-50 border-blue-200 shadow-xs ring-1 ring-blue-400/30'
+                        : 'bg-white border-transparent hover:border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-xs font-black shrink-0 overflow-hidden shadow-2xs border border-slate-200/80">
+                      {itemPhoto ? (
+                        <img
+                          src={itemPhoto}
+                          alt={karne.adSoyad}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-slate-800 text-sm truncate">{karne.adSoyad}</div>
+                      <div className="text-xs text-slate-500 truncate">{karne.grup}</div>
+                      <div className="text-[10px] font-semibold text-slate-400 mt-0.5 flex gap-1.5 items-center">
+                        <span className="text-blue-600 font-bold">{karne.brans}</span>
+                        <span>•</span>
+                        <span>{new Date(karne.tarih).toLocaleDateString('tr-TR')}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
               {filteredKarneler.length === 0 && (
                 <div className="text-center py-6 text-sm text-slate-500">
                   Sonuç bulunamadı.
@@ -433,6 +530,17 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
           <div className="flex-1 min-w-0">
             {/* Toolbar */}
             <div className="flex flex-wrap items-center justify-end gap-2.5 mb-4 print:hidden">
+              {/* Quick Point Award Button directly on Karne */}
+              <button 
+                type="button"
+                onClick={() => setIsQuickPointModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black rounded-lg text-xs transition-all shadow-xs cursor-pointer active:scale-95"
+                title="Sporcuya tek tıkla saha içi hızlı puan ver ve karnesine anında yansıt"
+              >
+                <Zap className="w-4 h-4 fill-slate-950" />
+                <span>Hızlı Puan Ver</span>
+              </button>
+
               {onNavigate && (
                 <button
                   type="button"
@@ -502,34 +610,37 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
               {/* Report Header */}
               <div className="bg-slate-900 text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
                 <div className="flex items-center gap-5 relative z-10">
-                  <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-600 rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black shadow-md border-2 border-slate-700 shrink-0 overflow-hidden">
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black shadow-md border-2 border-slate-700 shrink-0 overflow-hidden text-white">
                     {profilePhotoUrl ? (
                       <img 
                         src={profilePhotoUrl} 
                         referrerPolicy="no-referrer" 
                         className="w-full h-full object-cover" 
-                        alt={selectedKarne.adSoyad} 
+                        alt={activeKarne.adSoyad}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
                       />
                     ) : (
-                      selectedKarne.adSoyad.split(' ').map(n => n[0]).join('').slice(0, 2)
+                      <span>{getAthleteInitials(activeKarne.adSoyad)}</span>
                     )}
                   </div>
                   <div>
                     <div className="text-blue-400 font-bold text-xs uppercase tracking-wider mb-1">
-                      {selectedKarne.brans} • {selectedKarne.yasGubu}
+                      {activeKarne.brans} • {activeKarne.yasGubu}
                     </div>
                     <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-1.5 tracking-tight">
-                      {selectedKarne.adSoyad}
+                      {activeKarne.adSoyad}
                     </h2>
                     <div className="flex flex-wrap gap-2 text-xs md:text-sm text-slate-300 font-medium">
-                      <span>Takım: {selectedKarne.grup}</span>
+                      <span>Takım: {activeKarne.grup}</span>
                       <span className="text-slate-500">•</span>
-                      <span>{selectedKarne.boy} cm</span>
+                      <span>{activeKarne.boy} cm</span>
                       <span className="text-slate-500">•</span>
-                      <span>{selectedKarne.kilo} kg</span>
+                      <span>{activeKarne.kilo} kg</span>
                       <span className="text-slate-500">•</span>
                       <span className="text-emerald-300">
-                        Veli: <strong className="text-white font-semibold">{selectedKarne.veliAdSoyad || 'Kayıtlı Veli'}</strong> ({selectedKarne.veliTelefon || '+90 532...'})
+                        Veli: <strong className="text-white font-semibold">{activeKarne.veliAdSoyad || 'Kayıtlı Veli'}</strong> ({activeKarne.veliTelefon || '+90 532...'})
                       </span>
                     </div>
                   </div>
@@ -539,18 +650,24 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                   <div className="bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700/60 text-left md:text-right">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Değerlendirme Tarihi</div>
                     <div className="text-sm font-bold text-white mt-0.5">
-                      {new Date(selectedKarne.tarih).toLocaleDateString('tr-TR')}
+                      {new Date(activeKarne.tarih).toLocaleDateString('tr-TR')}
                     </div>
                     <div className="text-xs text-slate-300 mt-0.5">
-                      Antrenör: <span className="font-semibold text-white">{selectedKarne.antrenor}</span>
+                      Antrenör: <span className="font-semibold text-white">{activeKarne.antrenor}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div className="bg-blue-950/60 border border-blue-800/50 px-3.5 py-1.5 rounded-xl flex items-center gap-2">
                       <span className="text-[11px] font-medium text-blue-300">Genel Karne Notu:</span>
                       <span className="text-sm font-black text-blue-400">{genelOrtalama}</span>
                       <span className="text-[10px] text-blue-300/70">/ 10</span>
+                      {sporpuanImpact && sporpuanImpact.bonuses.genelOrtalamaBonus > 0 && (
+                        <span className="ml-1 text-[10px] font-black bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                          <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          +{sporpuanImpact.bonuses.genelOrtalamaBonus} SP
+                        </span>
+                      )}
                     </div>
 
                     <button
@@ -565,6 +682,91 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                 </div>
               </div>
 
+              {/* Dinamik SporPuan & Karne Dengesi Canlı Paneli */}
+              {sporpuanImpact && (
+                <div className="mx-6 md:mx-8 mt-6 p-4 md:p-5 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-blue-500/10 rounded-2xl border border-amber-200/80">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-slate-950 font-black flex items-center justify-center shadow-md shrink-0">
+                        <Zap className="w-6 h-6 fill-slate-950 text-slate-950" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-extrabold text-slate-900 text-sm md:text-base flex items-center gap-1.5">
+                            SporPuan & Karne Dinamik Dengesi
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                            Canlı Senkronize
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          Antrenörün verdiği hızlı puanlar ve devamlılık puanları sporcu karnesine dinamik not artışı olarak yansır.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Stats & Quick Action */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="bg-white/90 border border-amber-200 px-3.5 py-2 rounded-xl text-center shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Toplam SporPuan</span>
+                        <span className="text-base font-black text-amber-600">
+                          {sporpuanImpact.totalSP} SP
+                        </span>
+                      </div>
+
+                      <div className="bg-white/90 border border-emerald-200 px-3.5 py-2 rounded-xl text-center shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Karne Not Katkısı</span>
+                        <span className="text-base font-black text-emerald-600 flex items-center justify-center gap-0.5">
+                          <TrendingUp className="w-3.5 h-3.5" />
+                          +{sporpuanImpact.bonuses.genelOrtalamaBonus} Not
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickPointModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 print:hidden"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        <span>+ Hızlı Puan Ver</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Category Points Breakdown */}
+                  <div className="mt-4 pt-3.5 border-t border-amber-200/60 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="p-2 bg-white/70 rounded-lg border border-slate-200/60">
+                      <span className="text-[10px] font-bold text-slate-500 block">Davranış & Fair-Play</span>
+                      <span className="font-black text-slate-800">{sporpuanImpact.categoryPoints.davranis} SP</span>
+                      <span className="text-[10px] text-indigo-600 font-bold ml-1">
+                        (+{sporpuanImpact.bonuses.davranisBonus})
+                      </span>
+                    </div>
+                    <div className="p-2 bg-white/70 rounded-lg border border-slate-200/60">
+                      <span className="text-[10px] font-bold text-slate-500 block">Teknik & Gelişim</span>
+                      <span className="font-black text-slate-800">{sporpuanImpact.categoryPoints.gelisim} SP</span>
+                      <span className="text-[10px] text-blue-600 font-bold ml-1">
+                        (+{sporpuanImpact.bonuses.teknikBonus})
+                      </span>
+                    </div>
+                    <div className="p-2 bg-white/70 rounded-lg border border-slate-200/60">
+                      <span className="text-[10px] font-bold text-slate-500 block">Liderlik & Zihin</span>
+                      <span className="font-black text-slate-800">{sporpuanImpact.categoryPoints.liderlik} SP</span>
+                      <span className="text-[10px] text-amber-600 font-bold ml-1">
+                        (+{sporpuanImpact.bonuses.zihinselBonus})
+                      </span>
+                    </div>
+                    <div className="p-2 bg-white/70 rounded-lg border border-slate-200/60">
+                      <span className="text-[10px] font-bold text-slate-500 block">Antrenman Devamı</span>
+                      <span className="font-black text-emerald-700">{sporpuanImpact.categoryPoints.devam} SP</span>
+                      <span className="text-[10px] text-emerald-600 font-bold ml-1">
+                        (%{activeKarne.katilimYuzdesi})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Main Content Grid */}
               <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                 
@@ -575,16 +777,23 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                       <Target className="w-4 h-4 text-blue-600" />
                       Teknik Gelişim
                     </h3>
-                    <div className="bg-blue-100 text-blue-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
-                      {selectedKarne.teknik.ortalama} / 10
+                    <div className="flex items-center gap-1.5">
+                      {sporpuanImpact && sporpuanImpact.bonuses.teknikBonus > 0 && (
+                        <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                          +{sporpuanImpact.bonuses.teknikBonus} SP
+                        </span>
+                      )}
+                      <div className="bg-blue-100 text-blue-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
+                        {activeKarne.teknik.ortalama} / 10
+                      </div>
                     </div>
                   </div>
                   <div>
-                    {selectedKarne.teknik.topKontrolu !== undefined && renderProgressBar('Top Kontrolü', selectedKarne.teknik.topKontrolu, 'bg-blue-500')}
-                    {selectedKarne.teknik.pasBasarisi !== undefined && renderProgressBar('Pas Başarısı', selectedKarne.teknik.pasBasarisi, 'bg-blue-500')}
-                    {selectedKarne.teknik.sut !== undefined && renderProgressBar('Şut / Bitiricilik', selectedKarne.teknik.sut, 'bg-blue-500')}
-                    {selectedKarne.teknik.topSurme !== undefined && renderProgressBar('Top Sürme', selectedKarne.teknik.topSurme, 'bg-blue-500')}
-                    {selectedKarne.teknik.savunma !== undefined && renderProgressBar('Birebir Savunma', selectedKarne.teknik.savunma, 'bg-blue-500')}
+                    {activeKarne.teknik.topKontrolu !== undefined && renderProgressBar('Top Kontrolü', activeKarne.teknik.topKontrolu, 'bg-blue-500', sporpuanImpact?.bonuses.teknikBonus)}
+                    {activeKarne.teknik.pasBasarisi !== undefined && renderProgressBar('Pas Başarısı', activeKarne.teknik.pasBasarisi, 'bg-blue-500', sporpuanImpact?.bonuses.teknikBonus)}
+                    {activeKarne.teknik.sut !== undefined && renderProgressBar('Şut / Bitiricilik', activeKarne.teknik.sut, 'bg-blue-500', sporpuanImpact?.bonuses.teknikBonus)}
+                    {activeKarne.teknik.topSurme !== undefined && renderProgressBar('Top Sürme', activeKarne.teknik.topSurme, 'bg-blue-500', sporpuanImpact?.bonuses.teknikBonus)}
+                    {activeKarne.teknik.savunma !== undefined && renderProgressBar('Birebir Savunma', activeKarne.teknik.savunma, 'bg-blue-500', sporpuanImpact?.bonuses.teknikBonus)}
                   </div>
                 </div>
 
@@ -595,15 +804,22 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                       <Activity className="w-4 h-4 text-emerald-600" />
                       Fiziksel Gelişim
                     </h3>
-                    <div className="bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
-                      {selectedKarne.fiziksel.ortalama} / 10
+                    <div className="flex items-center gap-1.5">
+                      {sporpuanImpact && sporpuanImpact.bonuses.fizikselBonus > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                          +{sporpuanImpact.bonuses.fizikselBonus} SP
+                        </span>
+                      )}
+                      <div className="bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
+                        {activeKarne.fiziksel.ortalama} / 10
+                      </div>
                     </div>
                   </div>
                   <div>
-                    {selectedKarne.fiziksel.hiz !== undefined && renderProgressBar('Hız / Çabukluk', selectedKarne.fiziksel.hiz, 'bg-emerald-500')}
-                    {selectedKarne.fiziksel.dayaniklilik !== undefined && renderProgressBar('Dayanıklılık (Kondisyon)', selectedKarne.fiziksel.dayaniklilik, 'bg-emerald-500')}
-                    {selectedKarne.fiziksel.guc !== undefined && renderProgressBar('Kuvvet', selectedKarne.fiziksel.guc, 'bg-emerald-500')}
-                    {selectedKarne.fiziksel.ceviklik !== undefined && renderProgressBar('Çeviklik / Koordinasyon', selectedKarne.fiziksel.ceviklik, 'bg-emerald-500')}
+                    {activeKarne.fiziksel.hiz !== undefined && renderProgressBar('Hız / Çabukluk', activeKarne.fiziksel.hiz, 'bg-emerald-500', sporpuanImpact?.bonuses.fizikselBonus)}
+                    {activeKarne.fiziksel.dayaniklilik !== undefined && renderProgressBar('Dayanıklılık (Kondisyon)', activeKarne.fiziksel.dayaniklilik, 'bg-emerald-500', sporpuanImpact?.bonuses.fizikselBonus)}
+                    {activeKarne.fiziksel.guc !== undefined && renderProgressBar('Kuvvet', activeKarne.fiziksel.guc, 'bg-emerald-500', sporpuanImpact?.bonuses.fizikselBonus)}
+                    {activeKarne.fiziksel.ceviklik !== undefined && renderProgressBar('Çeviklik / Koordinasyon', activeKarne.fiziksel.ceviklik, 'bg-emerald-500', sporpuanImpact?.bonuses.fizikselBonus)}
                   </div>
                 </div>
 
@@ -614,14 +830,21 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                       <TrendingUp className="w-4 h-4 text-purple-600" />
                       Taktiksel Gelişim
                     </h3>
-                    <div className="bg-purple-100 text-purple-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
-                      {selectedKarne.taktiksel.ortalama} / 10
+                    <div className="flex items-center gap-1.5">
+                      {sporpuanImpact && sporpuanImpact.bonuses.taktikselBonus > 0 && (
+                        <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
+                          +{sporpuanImpact.bonuses.taktikselBonus} SP
+                        </span>
+                      )}
+                      <div className="bg-purple-100 text-purple-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
+                        {activeKarne.taktiksel.ortalama} / 10
+                      </div>
                     </div>
                   </div>
                   <div>
-                    {selectedKarne.taktiksel.oyunZekasi !== undefined && renderProgressBar('Oyun Zekası', selectedKarne.taktiksel.oyunZekasi, 'bg-purple-500')}
-                    {selectedKarne.taktiksel.pozisyonAlma !== undefined && renderProgressBar('Pozisyon Alma', selectedKarne.taktiksel.pozisyonAlma, 'bg-purple-500')}
-                    {selectedKarne.taktiksel.kararVerme !== undefined && renderProgressBar('Karar Verme', selectedKarne.taktiksel.kararVerme, 'bg-purple-500')}
+                    {activeKarne.taktiksel.oyunZekasi !== undefined && renderProgressBar('Oyun Zekası', activeKarne.taktiksel.oyunZekasi, 'bg-purple-500', sporpuanImpact?.bonuses.taktikselBonus)}
+                    {activeKarne.taktiksel.pozisyonAlma !== undefined && renderProgressBar('Pozisyon Alma', activeKarne.taktiksel.pozisyonAlma, 'bg-purple-500', sporpuanImpact?.bonuses.taktikselBonus)}
+                    {activeKarne.taktiksel.kararVerme !== undefined && renderProgressBar('Karar Verme', activeKarne.taktiksel.kararVerme, 'bg-purple-500', sporpuanImpact?.bonuses.taktikselBonus)}
                   </div>
                 </div>
 
@@ -632,23 +855,30 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                       <Brain className="w-4 h-4 text-amber-600" />
                       Zihinsel Gelişim
                     </h3>
-                    <div className="bg-amber-100 text-amber-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
-                      {selectedKarne.zihinsel.ortalama} / 10
+                    <div className="flex items-center gap-1.5">
+                      {sporpuanImpact && sporpuanImpact.bonuses.zihinselBonus > 0 && (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                          +{sporpuanImpact.bonuses.zihinselBonus} SP
+                        </span>
+                      )}
+                      <div className="bg-amber-100 text-amber-700 font-bold px-2.5 py-0.5 rounded-md text-xs">
+                        {activeKarne.zihinsel.ortalama} / 10
+                      </div>
                     </div>
                   </div>
                   <div>
-                    {selectedKarne.zihinsel.disiplin !== undefined && renderProgressBar('Antrenman Disiplini', selectedKarne.zihinsel.disiplin, 'bg-amber-500')}
-                    {selectedKarne.zihinsel.ozguven !== undefined && renderProgressBar('Özgüven', selectedKarne.zihinsel.ozguven, 'bg-amber-500')}
-                    {selectedKarne.zihinsel.takimUyumu !== undefined && renderProgressBar('Takım Uyumu', selectedKarne.zihinsel.takimUyumu, 'bg-amber-500')}
-                    {selectedKarne.zihinsel.liderlik !== undefined && renderProgressBar('Liderlik', selectedKarne.zihinsel.liderlik, 'bg-amber-500')}
+                    {activeKarne.zihinsel.disiplin !== undefined && renderProgressBar('Antrenman Disiplini', activeKarne.zihinsel.disiplin, 'bg-amber-500', sporpuanImpact?.bonuses.zihinselBonus)}
+                    {activeKarne.zihinsel.ozguven !== undefined && renderProgressBar('Özgüven', activeKarne.zihinsel.ozguven, 'bg-amber-500', sporpuanImpact?.bonuses.zihinselBonus)}
+                    {activeKarne.zihinsel.takimUyumu !== undefined && renderProgressBar('Takım Uyumu', activeKarne.zihinsel.takimUyumu, 'bg-amber-500', sporpuanImpact?.bonuses.zihinselBonus)}
+                    {activeKarne.zihinsel.liderlik !== undefined && renderProgressBar('Liderlik', activeKarne.zihinsel.liderlik, 'bg-amber-500', sporpuanImpact?.bonuses.zihinselBonus)}
                   </div>
                 </div>
               </div>
 
               {/* Behavioral Development Process Section */}
-              {selectedKarne.davranissal && (
+              {activeKarne.davranissal && (
                 <div className="px-6 md:px-8 pb-8">
-                  <div className="bg-linear-to-b from-indigo-50/70 to-slate-50/50 border border-indigo-100/90 rounded-2xl p-6 relative overflow-hidden">
+                  <div className="bg-gradient-to-b from-indigo-50/70 to-slate-50/50 border border-indigo-100/90 rounded-2xl p-6 relative overflow-hidden">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                       <div className="flex items-center gap-3">
                         <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
@@ -670,7 +900,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                         <div className="bg-white border border-indigo-100 px-3.5 py-1.5 rounded-xl shadow-xs text-right">
                           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Davranış Puanı</div>
                           <div className="text-base font-black text-indigo-600">
-                            {selectedKarne.davranissal.kriterler.ortalama} <span className="text-xs font-semibold text-slate-400">/ 10</span>
+                            {activeKarne.davranissal.kriterler.ortalama} <span className="text-xs font-semibold text-slate-400">/ 10</span>
                           </div>
                         </div>
                         <button
@@ -699,11 +929,11 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                             </span>
                           </div>
                           <div className="space-y-1">
-                            {renderProgressBar('Fair-Play & Centilmenlik', selectedKarne.davranissal.kriterler.fairPlay, 'bg-indigo-500')}
-                            {renderProgressBar('Sorumluluk & Malzeme Düzeni', selectedKarne.davranissal.kriterler.sorumlulukEkipman, 'bg-indigo-500')}
-                            {renderProgressBar('Saygı & Yapıcı İletişim', selectedKarne.davranissal.kriterler.saygiIletisim, 'bg-indigo-500')}
-                            {renderProgressBar('Dinleme & Yönergelere Uyum', selectedKarne.davranissal.kriterler.yonergeyeUyum, 'bg-indigo-500')}
-                            {renderProgressBar('Duygu Kontrolü & Sakinlik', selectedKarne.davranissal.kriterler.duyguKontrolu, 'bg-indigo-500')}
+                            {renderProgressBar('Fair-Play & Centilmenlik', activeKarne.davranissal.kriterler.fairPlay, 'bg-indigo-500', sporpuanImpact?.bonuses.davranisBonus)}
+                            {renderProgressBar('Sorumluluk & Malzeme Düzeni', activeKarne.davranissal.kriterler.sorumlulukEkipman, 'bg-indigo-500', sporpuanImpact?.bonuses.davranisBonus)}
+                            {renderProgressBar('Saygı & Yapıcı İletişim', activeKarne.davranissal.kriterler.saygiIletisim, 'bg-indigo-500', sporpuanImpact?.bonuses.davranisBonus)}
+                            {renderProgressBar('Dinleme & Yönergelere Uyum', activeKarne.davranissal.kriterler.yonergeyeUyum, 'bg-indigo-500', sporpuanImpact?.bonuses.davranisBonus)}
+                            {renderProgressBar('Duygu Kontrolü & Sakinlik', activeKarne.davranissal.kriterler.duyguKontrolu, 'bg-indigo-500', sporpuanImpact?.bonuses.davranisBonus)}
                           </div>
                         </div>
 
@@ -721,7 +951,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                             
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                                {selectedKarne.davranissal.kazanimlar.length} Rozet
+                                {activeKarne.davranissal.kazanimlar.length} Rozet
                               </span>
                               <button
                                 onClick={() => setIsBadgeModalOpen(true)}
@@ -735,7 +965,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                             </div>
                           </div>
 
-                          {selectedKarne.davranissal.kazanimlar.length === 0 ? (
+                          {activeKarne.davranissal.kazanimlar.length === 0 ? (
                             <div className="text-center py-6 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                               <Award className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                               <p className="text-xs font-semibold text-slate-700">Henüz rozet atanmadı</p>
@@ -753,7 +983,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                             </div>
                           ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                              {selectedKarne.davranissal.kazanimlar.map((kazanim, idx) => {
+                              {activeKarne.davranissal.kazanimlar.map((kazanim, idx) => {
                                 const badgeMeta = getBadgeDetails(kazanim);
                                 const iconName = (badgeMeta?.ikon as any) || 'Award';
                                 const colors = badgeMeta?.renkTema || {
@@ -826,12 +1056,12 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                               Dönem Gözlemleri & Süreç Takibi
                             </h4>
                             <span className="text-[11px] text-slate-500 font-medium">
-                              {selectedKarne.davranissal.surecTakibi.length} Aşama
+                              {activeKarne.davranissal.surecTakibi.length} Aşama
                             </span>
                           </div>
 
                           <div className="space-y-4 relative flex-1 before:absolute before:top-2 before:bottom-2 before:left-3.5 before:w-0.5 before:bg-indigo-100">
-                            {selectedKarne.davranissal.surecTakibi.map((adim, index) => {
+                            {activeKarne.davranissal.surecTakibi.map((adim, index) => {
                               const statusConfig = {
                                 'Örnek Davranış': {
                                   dot: 'bg-emerald-500 ring-4 ring-emerald-100',
@@ -879,7 +1109,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                     </div>
 
                     {/* Sağlıklı Yaşam, Dijital Denge & Alışkanlık Takibi */}
-                    {selectedKarne.davranissal.bagimlilikVeAliskanlik && (
+                    {activeKarne.davranissal.bagimlilikVeAliskanlik && (
                       <div className="mt-6 bg-white border border-slate-200/90 rounded-xl p-5 shadow-2xs">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
                           <div className="flex items-center gap-2.5">
@@ -891,7 +1121,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                                   Sağlıklı Yaşam & Alışkanlık Takibi
                                 </h4>
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                                   Dijital Denge & Disiplin
                                 </span>
                               </div>
@@ -903,7 +1133,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-[11px] text-slate-500 font-medium">Genel Durum:</span>
                             <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              {selectedKarne.davranissal.bagimlilikVeAliskanlik.genelFarkindalik}
+                              {activeKarne.davranissal.bagimlilikVeAliskanlik.genelFarkindalik}
                             </span>
                           </div>
                         </div>
@@ -919,14 +1149,14 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                                   Ekran Süresi & Denge
                                 </span>
                                 <span className="text-xs font-black text-indigo-600">
-                                  {selectedKarne.davranissal.bagimlilikVeAliskanlik.ekranDengesi.puan} / 10
+                                  {activeKarne.davranissal.bagimlilikVeAliskanlik.ekranDengesi.puan} / 10
                                 </span>
                               </div>
                               <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-white text-indigo-700 border border-indigo-100 mb-2">
-                                {selectedKarne.davranissal.bagimlilikVeAliskanlik.ekranDengesi.seviye}
+                                {activeKarne.davranissal.bagimlilikVeAliskanlik.ekranDengesi.seviye}
                               </span>
                               <p className="text-[11px] text-slate-600 leading-relaxed">
-                                {selectedKarne.davranissal.bagimlilikVeAliskanlik.ekranDengesi.aciklama}
+                                {activeKarne.davranissal.bagimlilikVeAliskanlik.ekranDengesi.aciklama}
                               </p>
                             </div>
                           </div>
@@ -940,16 +1170,16 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                                   Zararlı Alışkanlık Bilinci
                                 </span>
                                 <span className="text-xs font-black text-emerald-600">
-                                  {selectedKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.puan} / 10
+                                  {activeKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.puan} / 10
                                 </span>
                               </div>
                               <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-white text-emerald-700 border border-emerald-100 mb-2">
-                                {selectedKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.seviye === 'Temiz Spor (Örnek)'
+                                {activeKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.seviye === 'Temiz Spor (Örnek)'
                                   ? 'Bilinçli (Örnek)'
-                                  : selectedKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.seviye}
+                                  : activeKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.seviye}
                               </span>
                               <p className="text-[11px] text-slate-600 leading-relaxed">
-                                {selectedKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.aciklama
+                                {activeKarne.davranissal.bagimlilikVeAliskanlik.zararliAliskanlik.aciklama
                                   ?.replace(/temiz sporcu kimliği/gi, 'sağlıklı sporcu disiplini')
                                   ?.replace(/temiz spor/gi, 'sağlıklı yaşam')}
                               </p>
@@ -965,25 +1195,25 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                                   Uyku ve Dinlenme Düzeni
                                 </span>
                                 <span className="text-xs font-black text-blue-600">
-                                  {selectedKarne.davranissal.bagimlilikVeAliskanlik.uykuVeDinlenme.puan} / 10
+                                  {activeKarne.davranissal.bagimlilikVeAliskanlik.uykuVeDinlenme.puan} / 10
                                 </span>
                               </div>
                               <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-white text-blue-700 border border-blue-100 mb-2">
-                                {selectedKarne.davranissal.bagimlilikVeAliskanlik.uykuVeDinlenme.seviye}
+                                {activeKarne.davranissal.bagimlilikVeAliskanlik.uykuVeDinlenme.seviye}
                               </span>
                               <p className="text-[11px] text-slate-600 leading-relaxed">
-                                {selectedKarne.davranissal.bagimlilikVeAliskanlik.uykuVeDinlenme.aciklama}
+                                {activeKarne.davranissal.bagimlilikVeAliskanlik.uykuVeDinlenme.aciklama}
                               </p>
                             </div>
                           </div>
                         </div>
 
                         {/* Alışkanlık Notu */}
-                        {selectedKarne.davranissal.bagimlilikVeAliskanlik.egitmenGorus && (
+                        {activeKarne.davranissal.bagimlilikVeAliskanlik.egitmenGorus && (
                           <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-start gap-2 text-xs text-slate-600">
                             <span className="font-bold text-slate-700 shrink-0">Alışkanlık & Yaşam Notu:</span>
                             <span className="italic leading-relaxed">
-                              {selectedKarne.davranissal.bagimlilikVeAliskanlik.egitmenGorus
+                              {activeKarne.davranissal.bagimlilikVeAliskanlik.egitmenGorus
                                 .replace(/temiz sporcu kimliği/gi, 'sağlıklı sporcu disiplini')
                                 .replace(/temiz spor/gi, 'sağlıklı yaşam')}
                             </span>
@@ -993,7 +1223,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                     )}
 
                     {/* Karakter ve Tutum Özeti */}
-                    {selectedKarne.davranissal.genelDegerlendirme && (
+                    {activeKarne.davranissal.genelDegerlendirme && (
                       <div className="mt-5 bg-white border border-indigo-100/80 rounded-xl p-4 flex items-start gap-3 shadow-2xs">
                         <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 text-indigo-600 mt-0.5">
                           <MessageSquare className="w-4 h-4" />
@@ -1003,7 +1233,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                             Karakter ve Tutum Değerlendirmesi
                           </div>
                           <p className="text-xs md:text-sm text-slate-700 leading-relaxed italic">
-                            "{selectedKarne.davranissal.genelDegerlendirme}"
+                            "{activeKarne.davranissal.genelDegerlendirme}"
                           </p>
                         </div>
                       </div>
@@ -1020,16 +1250,16 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                   <div>
                     <h4 className="font-bold text-slate-800 text-sm">Antrenman Katılımı</h4>
                     <div className="text-xs font-medium text-slate-500 mt-0.5">
-                      Toplam {selectedKarne.antrenmanSayisi} antrenman tamamlandı
+                      Toplam {activeKarne.antrenmanSayisi} antrenman tamamlandı
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-black ${
-                      selectedKarne.katilimYuzdesi >= 90 ? 'bg-emerald-100 text-emerald-700' :
-                      selectedKarne.katilimYuzdesi >= 75 ? 'bg-amber-100 text-amber-700' :
+                      activeKarne.katilimYuzdesi >= 90 ? 'bg-emerald-100 text-emerald-700' :
+                      activeKarne.katilimYuzdesi >= 75 ? 'bg-amber-100 text-amber-700' :
                       'bg-rose-100 text-rose-700'
                     }`}>
-                      %{selectedKarne.katilimYuzdesi}
+                      %{activeKarne.katilimYuzdesi}
                     </div>
                   </div>
                 </div>
@@ -1041,7 +1271,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                     Antrenör Genel Değerlendirmesi
                   </h4>
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    "{selectedKarne.antrenorNotu}"
+                    "{activeKarne.antrenorNotu}"
                   </p>
                 </div>
 
@@ -1052,7 +1282,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                     Öncelikli Gelişim Alanları
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedKarne.gelisimAlanlari.map((alan, index) => (
+                    {activeKarne.gelisimAlanlari.map((alan, index) => (
                       <span key={index} className="bg-white border border-rose-200 text-rose-700 px-3 py-1 rounded-lg text-xs font-semibold shadow-2xs">
                         {alan}
                       </span>
@@ -1067,7 +1297,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                 <div className="text-center">
                   <div className="w-32 h-px bg-slate-300 mb-2"></div>
                   <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Antrenör</div>
-                  <div className="text-sm text-slate-800 font-medium">{selectedKarne.antrenor}</div>
+                  <div className="text-sm text-slate-800 font-medium">{activeKarne.antrenor}</div>
                 </div>
                 <div className="text-center">
                   <div className="w-32 h-px bg-slate-300 mb-2"></div>
@@ -1495,6 +1725,22 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
           }}
           onDownloadPDF={handleDownloadPDF}
           isDownloadingPDF={isDownloading}
+        />
+      )}
+
+      {/* Hızlı SporPuan Verme & Dinamik Karne Denge Modalı */}
+      {selectedKarne && isQuickPointModalOpen && (
+        <QuickPointAwardModal
+          isOpen={isQuickPointModalOpen}
+          onClose={() => setIsQuickPointModalOpen(false)}
+          onSuccess={() => {
+            setSporpuanRefreshKey(k => k + 1);
+            setKarneler(getStoredKarneler());
+            showToast(`✓ ${selectedKarne.adSoyad} için SporPuan başarıyla verildi ve karnesine yansıtıldı!`);
+          }}
+          initialAthleteId={selectedKarne.sporcuId}
+          initialBranch={selectedKarne.brans}
+          initialGroup={selectedKarne.grup}
         />
       )}
 

@@ -31,10 +31,13 @@ import {
 import { NavPage } from '../../../types';
 import { SportsFlyIcon } from '../../SportsFlyLogo';
 import { ActiveAthletesQuickList } from './ActiveAthletesQuickList';
+import { UpcomingEventsNotificationPanel } from '../../dashboard/UpcomingEventsNotificationPanel';
 import { getStoredUserProfile } from '../../../data/userProfile';
 import { getActiveSessionPlan, isPageAllowedForPlan, isSuperAdminUser } from '../../../data/packagePermissions';
 import { getStoredSubeler, getActiveSubeId, setActiveSubeId } from '../../../data/subeData';
 import { getStoredSubeSporcular, getStoredSubeEgitmenler, getStoredSubeGelirGider } from '../../../data/subeOzetData';
+import { UpdatesModal } from '../../modals/UpdatesModal';
+import { getRoleBannerText } from '../../../data/updatesData';
 
 interface ClubManagerHomeViewProps {
   onNavigate?: (page: NavPage) => void;
@@ -44,6 +47,8 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
   const [userProfile] = useState(() => getStoredUserProfile());
   const [activePlan] = useState(() => getActiveSessionPlan());
   const [showHint, setShowHint] = useState(true);
+  const [isUpdatesModalOpen, setIsUpdatesModalOpen] = useState(false);
+  const roleBanner = getRoleBannerText(userProfile?.role);
 
   // Real-time clock for top bar
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -248,17 +253,50 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
 
   return (
     <div className="space-y-6">
-      {/* İpucu Kartı */}
+      {/* İpucu / Yeni Özellikleri Keşfedin Kartı (Tıklanabilir & Kullanıcı Rolüne Özel) */}
       {showHint && (
-        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start gap-4 shadow-sm">
-           <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-           <div className="flex-1">
-              <h4 className="font-semibold text-blue-900 dark:text-blue-100">Yeni Özellikler Keşfedin!</h4>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">Sporcularınızın gelişimini Sporpuan ile değerlendirebilir ve yeni Eğitim Planlama aracı ile antrenmanlarınızı organize edebilirsiniz.</p>
-           </div>
-           <button onClick={() => setShowHint(false)} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-300">
-              <X className="w-4 h-4" />
-           </button>
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-50/95 via-indigo-50/80 to-blue-50/95 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-2xl p-4 sm:p-4.5 shadow-xs transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div
+              onClick={() => setIsUpdatesModalOpen(true)}
+              className="flex items-start gap-3.5 flex-1 cursor-pointer group"
+            >
+              <div className="p-2 rounded-xl bg-blue-600 text-white shadow-xs group-hover:scale-105 transition-transform shrink-0 mt-0.5 flex items-center justify-center">
+                <SportsFlyIcon className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="font-bold text-blue-950 dark:text-blue-100 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                    <span>{roleBanner.title}</span>
+                  </h4>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-200/70 dark:bg-blue-900 text-blue-900 dark:text-blue-200 border border-blue-300/60 font-mono">
+                    {roleBanner.badge}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-blue-800/90 dark:text-blue-300/90 mt-1 leading-relaxed">
+                  {roleBanner.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <button
+                id="btn-open-updates-modal"
+                onClick={() => setIsUpdatesModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>Yenilikleri Keşfet</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setShowHint(false)}
+                className="p-2 rounded-xl text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100/50 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                title="Kapat"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {/* 1. Header Bar: Club Info & Live Time */}
@@ -268,9 +306,6 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/60">
                 Kulüp Yönetim Masası
-              </span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60">
-                {activePlan}
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mt-1 flex flex-wrap items-center gap-2">
@@ -325,10 +360,10 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
                       window.dispatchEvent(new CustomEvent('sportsfly_active_sube_changed', { detail: sube.id }));
                     }
                   }}
-                  className={`relative bg-white dark:bg-[#111c2e] rounded-2xl border p-4 transition-all duration-200 flex flex-col justify-between min-h-[110px] ${
+                  className={`relative rounded-2xl border p-4 transition-all duration-200 flex flex-col justify-between min-h-[110px] ${
                     isActive
-                      ? 'border-blue-500 dark:border-blue-400 shadow-sm ring-1 ring-blue-500/10 bg-blue-50/5 dark:bg-blue-950/10'
-                      : 'border-slate-200/80 dark:border-slate-800/80 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-[#111c2e]'
+                      ? 'border-blue-500 dark:border-blue-400 shadow-md ring-2 ring-blue-500/15 bg-gradient-to-br from-blue-50/80 via-white to-blue-50/30 dark:from-blue-950/40 dark:via-[#111c2e] dark:to-blue-950/20'
+                      : 'border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/70 hover:bg-white dark:bg-[#152033]/60 dark:hover:bg-[#152033]'
                   } ${canClick ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default'}`}
                 >
                   <div className="flex items-start justify-between gap-1.5">
@@ -342,7 +377,7 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
                     </div>
                     
                     {isActive ? (
-                      <span className="shrink-0 flex items-center gap-1 text-[9px] font-extrabold bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-md border border-blue-200/50 dark:border-blue-900/40">
+                      <span className="shrink-0 flex items-center gap-1 text-[9px] font-extrabold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-md border border-blue-200/60 dark:border-blue-900/50">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                         Aktif
                       </span>
@@ -353,7 +388,7 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
                     ) : null}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2.5 mt-3 border-t border-slate-100 dark:border-slate-800/50 text-xs">
+                  <div className="grid grid-cols-2 gap-2 pt-2.5 mt-3 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
                     <div>
                       <div className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">Sporcu</div>
                       <div className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1">
@@ -381,37 +416,37 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
             Hızlı İşlemler
           </h2>
           
-          <div className="bg-white dark:bg-[#111c2e] p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs h-[142px] flex flex-col justify-between">
+          <div className="bg-slate-50/70 dark:bg-[#152033]/60 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs h-[142px] flex flex-col justify-between">
             <div className="grid grid-cols-2 gap-2 h-full">
               <button
                 onClick={() => onNavigate?.('sporcular')}
-                className="flex flex-col items-center justify-center p-2 rounded-xl bg-blue-50/50 hover:bg-blue-100/50 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-100/50 dark:border-blue-900/30 text-blue-700 dark:text-blue-300 transition-all cursor-pointer text-center group"
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/80 hover:bg-blue-50 dark:bg-[#111c2e]/80 dark:hover:bg-blue-950/40 border border-slate-200/70 hover:border-blue-200 dark:border-slate-700/60 text-blue-700 dark:text-blue-300 transition-all cursor-pointer text-center group shadow-2xs"
               >
-                <Plus className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
+                <Plus className="w-4 h-4 mb-1 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
                 <span className="text-[10px] font-bold">Sporcu Ekle</span>
               </button>
               
               <button
                 onClick={() => onNavigate?.('yoklama')}
-                className="flex flex-col items-center justify-center p-2 rounded-xl bg-emerald-50/50 hover:bg-emerald-100/50 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 border border-emerald-100/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-300 transition-all cursor-pointer text-center group"
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/80 hover:bg-emerald-50 dark:bg-[#111c2e]/80 dark:hover:bg-emerald-950/40 border border-slate-200/70 hover:border-emerald-200 dark:border-slate-700/60 text-emerald-700 dark:text-emerald-300 transition-all cursor-pointer text-center group shadow-2xs"
               >
-                <ClipboardCheck className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
+                <ClipboardCheck className="w-4 h-4 mb-1 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
                 <span className="text-[10px] font-bold">Yoklama Al</span>
               </button>
               
               <button
                 onClick={() => onNavigate?.('on-muhasebe')}
-                className="flex flex-col items-center justify-center p-2 rounded-xl bg-amber-50/50 hover:bg-amber-100/50 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 border border-amber-100/50 dark:border-amber-900/30 text-amber-700 dark:text-amber-300 transition-all cursor-pointer text-center group"
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/80 hover:bg-amber-50 dark:bg-[#111c2e]/80 dark:hover:bg-amber-950/40 border border-slate-200/70 hover:border-amber-200 dark:border-slate-700/60 text-amber-700 dark:text-amber-300 transition-all cursor-pointer text-center group shadow-2xs"
               >
-                <CreditCard className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
+                <CreditCard className="w-4 h-4 mb-1 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
                 <span className="text-[10px] font-bold">Aidat Al</span>
               </button>
               
               <button
                 onClick={() => onNavigate?.('on-kayit')}
-                className="flex flex-col items-center justify-center p-2 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 border border-purple-100/50 dark:border-purple-900/30 text-purple-700 dark:text-purple-300 transition-all cursor-pointer text-center group"
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-white/80 hover:bg-purple-50 dark:bg-[#111c2e]/80 dark:hover:bg-purple-950/40 border border-slate-200/70 hover:border-purple-200 dark:border-slate-700/60 text-purple-700 dark:text-purple-300 transition-all cursor-pointer text-center group shadow-2xs"
               >
-                <UserCheck className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
+                <UserCheck className="w-4 h-4 mb-1 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
                 <span className="text-[10px] font-bold">Ön Kayıtlar</span>
               </button>
             </div>
@@ -421,18 +456,18 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
 
 
 
-      {/* 3. Sade ve Net Özet KPI Kartları (4 Temel Sütun) */}
+      {/* 3. Sade ve Net Özet KPI Kartları (4 Temel Sütun - Farklı Şeffaf Renk Tonlarıyla Zenginleştirildi) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Kart 1: Mevcut Aktif Sporcu */}
+        {/* Kart 1: Mevcut Aktif Sporcu (Şeffaf Mavi / Gökyüzü Tonu) */}
         <div
           onClick={() => onNavigate?.('sporcular')}
-          className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#111c2e] border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-blue-300 transition-all cursor-pointer group"
+          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-50/70 via-white/95 to-sky-50/40 dark:from-blue-950/30 dark:via-[#111c2e] dark:to-sky-950/15 border border-blue-200/80 dark:border-blue-900/50 shadow-xs hover:border-blue-400 dark:hover:border-blue-700 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Mevcut Aktif Sporcu
             </span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-blue-100/80 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
               <Users className="w-4 h-4" />
             </div>
           </div>
@@ -440,26 +475,26 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
             <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
               {displayActiveCount}
             </span>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/60 px-2 py-0.5 rounded-md">
               Aktif Sporcu
             </span>
           </div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-blue-100/80 dark:border-blue-900/40">
             <span>Toplam: {displayTotalCount} Kayıtlı</span>
             <span className="text-blue-600 dark:text-blue-400 font-semibold group-hover:underline">Listele &gt;</span>
           </div>
         </div>
 
-        {/* Kart 2: Bugünkü Antrenman Seansları */}
+        {/* Kart 2: Bugünkü Antrenman Seansları (Şeffaf Zümrüt / Yeşil Tonu) */}
         <div
           onClick={() => onNavigate?.('antrenman-takvimi')}
-          className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#111c2e] border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-emerald-300 transition-all cursor-pointer group"
+          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-white/95 to-teal-50/40 dark:from-emerald-950/30 dark:via-[#111c2e] dark:to-teal-950/15 border border-emerald-200/80 dark:border-emerald-900/50 shadow-xs hover:border-emerald-400 dark:hover:border-emerald-700 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Bugünkü Antrenmanlar
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
@@ -467,26 +502,26 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
             <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
               {displayTrainingsCount} Seans
             </span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
               %94 Katılım
             </span>
           </div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-emerald-100/80 dark:border-emerald-900/40">
             <span>{Math.max(4, Math.round(displayTrainingsCount * 0.7))} Eğitmen Sahada</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold group-hover:underline">Takvim &gt;</span>
           </div>
         </div>
 
-        {/* Kart 3: Aylık Aidat Durumu */}
+        {/* Kart 3: Aylık Aidat Durumu (Şeffaf Kehribar / Amber Tonu) */}
         <div
           onClick={() => onNavigate?.('on-muhasebe')}
-          className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#111c2e] border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-amber-300 transition-all cursor-pointer group"
+          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-50/70 via-white/95 to-orange-50/40 dark:from-amber-950/30 dark:via-[#111c2e] dark:to-orange-950/15 border border-amber-200/80 dark:border-amber-900/50 shadow-xs hover:border-amber-400 dark:hover:border-amber-700 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               {resolvedBranchId === 'all' ? 'Aylık Konsolide Ciro' : 'Aylık Şube Cirosu'}
             </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-amber-100/80 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
@@ -494,26 +529,26 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
               ₺{displayRevenue.toLocaleString('tr-TR')}
             </span>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
               %88
             </span>
           </div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-amber-100/80 dark:border-amber-900/40">
             <span>Bekleyen: ₺{Math.round(displayRevenue * 0.12).toLocaleString('tr-TR')}</span>
             <span className="text-amber-600 dark:text-amber-400 font-semibold group-hover:underline">Muhasebe &gt;</span>
           </div>
         </div>
 
-        {/* Kart 4: Ön Kayıt & Deneme */}
+        {/* Kart 4: Ön Kayıt & Deneme (Şeffaf Mor / Lila Tonu) */}
         <div
           onClick={() => onNavigate?.('on-kayit')}
-          className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#111c2e] border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-purple-300 transition-all cursor-pointer group"
+          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/70 via-white/95 to-fuchsia-50/40 dark:from-purple-950/30 dark:via-[#111c2e] dark:to-fuchsia-950/15 border border-purple-200/80 dark:border-purple-900/50 shadow-xs hover:border-purple-400 dark:hover:border-purple-700 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Ön Kayıt &amp; Deneme
             </span>
-            <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-purple-100/80 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
               <UserCheck className="w-4 h-4" />
             </div>
           </div>
@@ -521,21 +556,28 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
             <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
               {displayPreRegistrationCount} Aday
             </span>
-            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+            <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-100/60 dark:bg-purple-950/60 px-2 py-0.5 rounded-md">
               {Math.max(2, Math.round(displayPreRegistrationCount * 0.3))} Görüşülecek
             </span>
           </div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-purple-100/80 dark:border-purple-900/40">
             <span>Deneme seansları hazır</span>
             <span className="text-purple-600 dark:text-purple-400 font-semibold group-hover:underline">İncele &gt;</span>
           </div>
         </div>
       </div>
 
-      {/* 4. ⭐ MEVCUT AKTİF SPORCULAR LİSTESİ (SADE, NET, DOĞRUDAN LİSTE) */}
+      {/* 4. 🔔 BİLDİRİM MERKEZİ: YAKLAŞAN ANTRENMANLAR & SÖZLEŞME YENİLEME TAKVİMİ */}
+      <UpcomingEventsNotificationPanel
+        onNavigate={onNavigate}
+        branchFilter={resolvedBranchId}
+        defaultTab="all"
+      />
+
+      {/* 5. ⭐ MEVCUT AKTİF SPORCULAR LİSTESİ (SADE, NET, DOĞRUDAN LİSTE) */}
       <ActiveAthletesQuickList onNavigate={onNavigate} resolvedBranchId={resolvedBranchId} />
 
-      {/* 5. Alt İki Sütun: Günün Antrenman Programı & Bekleyen Hatırlatmalar */}
+      {/* 6. Alt İki Sütun: Günün Antrenman Programı & Bekleyen Hatırlatmalar */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Sol Kolon: Günün Antrenman Seansları */}
         <div className="lg:col-span-7 bg-white dark:bg-[#111c2e] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs space-y-4">
@@ -689,6 +731,13 @@ export const ClubManagerHomeView: React.FC<ClubManagerHomeViewProps> = ({ onNavi
           </div>
         </div>
       </div>
+
+      {/* Sistem Güncellemeleri ve Yenilikler Modal */}
+      <UpdatesModal
+        isOpen={isUpdatesModalOpen}
+        onClose={() => setIsUpdatesModalOpen(false)}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 };

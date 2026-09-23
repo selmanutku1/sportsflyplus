@@ -4,7 +4,6 @@ import {
   Home,
   User,
   Layout,
-  Package,
   UserX,
   UserCheck,
   UserPlus,
@@ -34,7 +33,11 @@ import {
   LifeBuoy,
   Headphones,
   Video,
-  Sparkles,
+  Settings,
+  Trophy,
+  Boxes,
+  Package,
+  Blocks,
 } from 'lucide-react';
 import { NavPage, PackagePlanType } from '../types';
 import { SportsFlyLogo, SportsFlyIcon } from './SportsFlyLogo';
@@ -89,15 +92,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ] as NavPage[]
   ).filter((page) => !isRestricted(page));
 
-  const visibleSporpuanItems = (
-    [
-      'sporpuan-sporcu-degerlendirme',
-      'sporpuan-degerlendirmeler',
-      'sporpuan-dogrulamalar',
-      'sporpuan-raporlar',
-    ] as NavPage[]
-  ).filter((page) => !isRestricted(page));
-
   // Ensure "Kulüpler" sub-menu stays open if child is active or by default
   const isBusinessChildActive = [
     'subeler',
@@ -115,14 +109,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'kulup-galerisi',
   ].includes(currentPage);
 
-  // Sporpuan child active state
-  const isSporpuanChildActive = [
-    'sporpuan-degerlendirmeler',
-    'sporpuan-sporcu-degerlendirme',
-    'sporpuan-dogrulamalar',
-    'sporpuan-raporlar',
-  ].includes(currentPage);
-
   // Ön Muhasebe child active state
   const isOnMuhasebeChildActive = [
     'on-muhasebe',
@@ -133,7 +119,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ].includes(currentPage);
 
   const [isBusinessesOpen, setIsBusinessesOpen] = useState(true);
-  const [isReputationOpen, setIsReputationOpen] = useState(true);
   const [isOnMuhasebeOpen, setIsOnMuhasebeOpen] = useState(true);
 
   const handleNavClick = (page: NavPage) => {
@@ -192,46 +177,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <Home className="w-4 h-4" />
-              </button>
-
-              {isSuperAdmin && (
-                <button
-                  onClick={() => handleNavClick('sporsepeti-user')}
-                  title="Sporsepeti User"
-                  className={`p-2.5 rounded-xl transition-all cursor-pointer ${
-                    currentPage === 'sporsepeti-user'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <User className="w-4 h-4" />
-                </button>
-              )}
-
-              {isSuperAdmin && (
-                <button
-                  onClick={() => handleNavClick('sayfa-yonetimi')}
-                  title="Sayfa Yönetimi"
-                  className={`p-2.5 rounded-xl transition-all cursor-pointer ${
-                    currentPage === 'sayfa-yonetimi'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Layout className="w-4 h-4" />
-                </button>
-              )}
-
-              <button
-                onClick={() => handleNavClick('paketler')}
-                title="Paketler"
-                className={`p-2.5 rounded-xl transition-all cursor-pointer ${
-                  currentPage === 'paketler' || currentPage === 'paket-yonetimi'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <Package className="w-4 h-4" />
               </button>
 
               <button
@@ -353,21 +298,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               )}
 
-              {/* Sporpuan */}
-              {visibleSporpuanItems.length > 0 && (
+              {/* Entegrasyonlar */}
+              {!isRestricted('entegrasyonlar') && (
                 <button
-                  onClick={() => handleNavClick(visibleSporpuanItems[0])}
-                  title={isSuperAdmin ? 'Sporpuan İtibar Portalı (Süper Admin Yetkisi Aktif)' : 'Sporpuan İtibar Portalı'}
+                  onClick={() => handleNavClick('entegrasyonlar')}
+                  title="Entegrasyonlar & Modül Portalı"
                   className={`p-2.5 rounded-xl transition-all relative cursor-pointer ${
-                    isSporpuanChildActive
-                      ? 'bg-slate-900 dark:bg-blue-600 text-amber-400 dark:text-white shadow-xs'
-                      : 'text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-slate-800'
+                    currentPage === 'entegrasyonlar'
+                      ? 'bg-orange-500 text-white shadow-xs'
+                      : 'text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  {isSuperAdmin && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-amber-400 rounded-full ring-2 ring-white dark:ring-slate-900" title="Süper Admin Erişimi Aktif" />
-                  )}
+                  <Blocks className="w-4 h-4" />
                 </button>
               )}
 
@@ -397,20 +339,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <LifeBuoy className="w-4 h-4" />
                 <span className="w-2 h-2 rounded-full bg-emerald-500 absolute top-1.5 right-1.5 ring-1 ring-white dark:ring-slate-900" />
               </button>
+
+              {/* Ayarlar & Yetkilendirmeler (En Altta) */}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => handleNavClick('yetkilendirmeler')}
+                  title="Ayarlar > Yetkilendirme & Roller"
+                  className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+                    currentPage === 'yetkilendirmeler'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </aside>
       )}
 
       <AnimatePresence>
-        {(isOpen || (typeof window !== 'undefined' && window.innerWidth >= 1024)) && (
+        {isOpen && (
           <motion.aside
             id="app-sidebar"
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-            className={`fixed top-0 left-0 bottom-0 z-50 w-72 bg-white dark:bg-[#111c2e] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shadow-2xl lg:static lg:w-64 lg:flex lg:flex-col lg:shadow-none lg:!transform-none`}
+            transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
+            className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-white dark:bg-[#111c2e] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shadow-2xl lg:static lg:w-64 lg:shadow-none lg:shrink-0"
           >
         {/* Brand Logo matching the screenshots */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
@@ -464,34 +421,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Home className="w-4 h-4 shrink-0" />
             <span>{t('sidebar.dashboard')}</span>
           </button>
-
-          {/* Paketler */}
-          <button
-            onClick={() => handleNavClick('paketler')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all cursor-pointer ${
-              currentPage === 'paketler' || currentPage === 'paket-yonetimi'
-                ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Package className="w-4 h-4 shrink-0" />
-            <span>{t('sidebar.packages')}</span>
-          </button>
-
-          {/* Kulüp Sözleşmeleri (Süper Admin Özel) */}
-          {isSuperAdmin && !isRestricted('kullanici-sozlesmeleri') && (
-            <button
-              onClick={() => handleNavClick('kullanici-sozlesmeleri')}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all cursor-pointer ${
-                currentPage === 'kullanici-sozlesmeleri'
-                  ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <FileText className="w-4 h-4 shrink-0" />
-              <span>Kulüp Sözleşmeleri</span>
-            </button>
-          )}
 
           {/* Ön Kayıt */}
           <button
@@ -783,9 +712,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <ImageIcon className="w-3.5 h-3.5" />
-                        <span>Kulüp Galerisi</span>
+                        <FolderTree className="w-3.5 h-3.5" />
+                        <span>Medya Yönetimi</span>
                       </div>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                          currentPage === 'kulup-galerisi'
+                            ? 'bg-blue-700 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        Klasör
+                      </span>
                     </button>
                   )}
                   {!isRestricted('anket-yonetimi') && (
@@ -805,6 +743,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </div>
+
+          {/* ENTEGRASYONLAR */}
+          {!isRestricted('entegrasyonlar') && (
+            <div className="pt-2">
+              <button
+                onClick={() => handleNavClick('entegrasyonlar')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  currentPage === 'entegrasyonlar'
+                    ? 'text-white bg-gradient-to-r from-orange-500 to-amber-600 font-bold shadow-xs'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Blocks className={`w-4 h-4 shrink-0 ${currentPage === 'entegrasyonlar' ? 'text-white' : 'text-orange-500'}`} />
+                  <span className="font-semibold">Entegrasyonlar</span>
+                </div>
+                <span
+                  className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                    currentPage === 'entegrasyonlar'
+                      ? 'bg-orange-700 text-white'
+                      : 'bg-orange-100 dark:bg-orange-950/80 text-orange-700 dark:text-orange-300'
+                  }`}
+                >
+                  Yeni
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* ÖN MUHASEBE (Accordion) */}
           {visibleMuhasebeItems.length > 0 && (
@@ -917,70 +883,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* SPORPUAN ANA KATEGORİSİ */}
-          {visibleSporpuanItems.length > 0 && (
-            <div className="pt-3">
-              <div className="px-3 py-1 mb-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-amber-300 bg-slate-100/90 dark:bg-slate-800 rounded-md flex items-center border border-slate-200/80 dark:border-slate-700">
-                <span className="flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                  Sporpuan
-                </span>
-              </div>
-
-              {/* İtibar Yönetimi Accordion */}
-              <div>
-                <button
-                  onClick={() => setIsReputationOpen(!isReputationOpen)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all cursor-pointer ${
-                    isSporpuanChildActive
-                      ? 'text-blue-900 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-900/30 font-semibold'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span>İtibar Yönetimi</span>
-                  </div>
-                  {isReputationOpen ? (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  )}
-                </button>
-
-                {/* Alt sayfalar: Değerlendirmeler, Doğrulamalar, Raporlar */}
-                {isReputationOpen && (
-                  <div className="ml-5 mt-1 pl-3 border-l-2 border-slate-200 dark:border-slate-800 space-y-1">
-                    {!isRestricted('sporpuan-sporcu-degerlendirme') && (
-                      <button
-                        onClick={() => handleNavClick('sporpuan-sporcu-degerlendirme')}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                          currentPage === 'sporpuan-sporcu-degerlendirme'
-                            ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <ClipboardCheck className="w-3.5 h-3.5" />
-                          <span>Sporcu Değerlendirme</span>
-                        </div>
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                            currentPage === 'sporpuan-sporcu-degerlendirme'
-                              ? 'bg-blue-700 text-white'
-                              : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400'
-                          }`}
-                        >
-                          Yeni
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* SportsFly Destek & Yardım Masası */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
             <button
@@ -1005,6 +907,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 7/24
               </span>
             </button>
+          </div>
+
+          {/* AYARLAR (Sol Menüde En Altta) */}
+          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 mt-2 space-y-1">
+            <div className="px-3 py-1 mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center">
+              <span className="flex items-center gap-1.5">
+                <Settings className="w-3.5 h-3.5 text-slate-400" />
+                Ayarlar
+              </span>
+            </div>
+
+            {/* Yetkilendirme & Roller (Ayarlar Altında En Altta) */}
+            {isSuperAdmin && (
+              <button
+                onClick={() => handleNavClick('yetkilendirmeler')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  currentPage === 'yetkilendirmeler'
+                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                  <span>Yetkilendirme &amp; Roller</span>
+                </div>
+              </button>
+            )}
+
+            {/* Kulüp Sözleşmeleri */}
+            {isSuperAdmin && !isRestricted('kullanici-sozlesmeleri') && (
+              <button
+                onClick={() => handleNavClick('kullanici-sozlesmeleri')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  currentPage === 'kullanici-sozlesmeleri'
+                    ? 'bg-blue-600 text-white shadow-xs font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span>Kulüp Sözleşmeleri</span>
+                </div>
+              </button>
+            )}
           </div>
         </div>
 

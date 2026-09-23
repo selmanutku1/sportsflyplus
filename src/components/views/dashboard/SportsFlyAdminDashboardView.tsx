@@ -24,6 +24,7 @@ import {
   INITIAL_SUPPORT_TICKETS,
 } from '../../../data/mockData';
 import { SupportTicket, NavPage } from '../../../types';
+import { UpcomingEventsNotificationPanel } from '../../dashboard/UpcomingEventsNotificationPanel';
 
 interface SportsFlyAdminDashboardViewProps {
   onNavigate?: (page: NavPage) => void;
@@ -140,6 +141,9 @@ export const SportsFlyAdminDashboardView: React.FC<SportsFlyAdminDashboardViewPr
           </div>
         </div>
       </div>
+
+      {/* Merkezi Bildirim Merkezi & Yaklaşan Olaylar */}
+      <UpcomingEventsNotificationPanel onNavigate={onNavigate} defaultTab="all" />
 
       {/* 1. Paketler & Kullanıcı Listesi (Screenshot 5) */}
       <div className="bg-white dark:bg-[#111c2e] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
