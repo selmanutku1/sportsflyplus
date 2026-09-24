@@ -23,6 +23,7 @@ import { KulupEvraklariView } from './components/views/sporcu/KulupEvraklariView
 import { KulupGalerisiView } from './components/views/sporcu/KulupGalerisiView';
 import { TurnuvaYonetimiView } from './components/views/moduller/TurnuvaYonetimiView';
 import { EnvanterYonetimiView } from './components/views/moduller/EnvanterYonetimiView';
+import { ReferralProgramView } from './components/views/moduller/ReferralProgramView';
 import { EntegrasyonlarView } from './components/views/EntegrasyonlarView';
 import { INITIAL_SPORCULAR } from './data/mockData';
 import { PaketlerView } from './components/views/PaketlerView';
@@ -225,6 +226,8 @@ export default function App() {
         return <TurnuvaYonetimiView />;
       case 'envanter-yonetimi':
         return <EnvanterYonetimiView />;
+      case 'referans-programi':
+        return <ReferralProgramView onNavigate={handlePageSelect} />;
       case 'entegrasyonlar':
         return <EntegrasyonlarView onNavigate={handlePageSelect} />;
       case 'paketler':

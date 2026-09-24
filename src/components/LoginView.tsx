@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { LEGAL_TEXTS, LegalDoc } from '../data/legalTexts';
 import { useLanguage } from '../i18n/LanguageContext';
+import { getStoredUserProfile, saveStoredUserProfile } from '../data/userProfile';
 
 interface LoginViewProps {
   onLoginSuccess: (userRole?: string) => void;
@@ -99,32 +100,48 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   };
 
   // Role Quick Select Handlers
-  const handleRoleQuickSelect = (type: 'ebeveyn' | 'sporcu' | 'sube') => {
+  const handleRoleQuickSelect = (type: 'ebeveyn' | 'sporcu' | 'sube' | 'yonetici') => {
+    let roleName = 'Kulüp Yöneticisi';
+    let defaultPage = 'on-kayit';
+    let title = 'Kulüp Yöneticisi';
+
     if (type === 'ebeveyn') {
-      setRoleModalInfo({
-        title: 'Ebeveyn & Veli Giriş Portalı',
-        description:
-          'Sporcu velileri; antrenman takvimini, sporcu devamsızlık durumunu, aidat ve ödeme planlarını mobil ve web üzerinden takip edebilir.',
-        role: 'Veli / Ebeveyn',
-        badge: 'Veli Girişi'
-      });
+      roleName = 'Veli / Ebeveyn';
+      defaultPage = 'sporcu-karnesi';
+      title = 'Sporcu Velisi';
     } else if (type === 'sporcu') {
-      setRoleModalInfo({
-        title: 'Sporcu Giriş Portalı',
-        description:
-          'Sporcular; kişisel antrenman programları, performans sporpuanları, antrenör değerlendirmeleri ve katılım QR kodlarını görüntüleyebilir.',
-        role: 'Sporcu',
-        badge: 'Sporcu Girişi'
-      });
+      roleName = 'Sporcu';
+      defaultPage = 'sporsepeti-user';
+      title = 'Akademi Sporcusu';
+    } else if (type === 'sube') {
+      roleName = 'Kulüp Yöneticisi';
+      defaultPage = 'sube-ozet';
+      title = 'Kulüp & Tesis Yöneticisi';
     } else {
-      setRoleModalInfo({
-        title: 'Şube / Tesis Giriş Portalı',
-        description:
-          'Kulüp şubeleri, salon ve kort sorumluları; anlık yoklama, saha rezervasyonları ve tesis içi giriş kontrollerini yönetebilir.',
-        role: 'Şube Yöneticisi',
-        badge: 'Şube Girişi'
-      });
+      roleName = 'Kulüp Yöneticisi';
+      defaultPage = 'on-kayit';
+      title = 'SportsFly Kulüp Yöneticisi';
     }
+
+    try {
+      const currentProf = getStoredUserProfile();
+      saveStoredUserProfile({
+        ...currentProf,
+        role: roleName,
+        title: title,
+        preferences: {
+          ...currentProf.preferences,
+          defaultPage: defaultPage,
+        },
+      });
+    } catch (e) {}
+
+    setIsLoading(true);
+    setLoadingText(`${roleName} portalına bağlanıyor...`);
+    setTimeout(() => {
+      setIsLoading(false);
+      onLoginSuccess(roleName);
+    }, 600);
   };
 
   // Copy legal text to clipboard
@@ -474,6 +491,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             <span className="text-slate-400 font-semibold mr-1">Hızlı Demo:</span>
             <button
               type="button"
+              onClick={() => handleRoleQuickSelect('yonetici')}
+              className="px-2.5 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold transition-colors cursor-pointer"
+            >
+              Admin / Kurucu
+            </button>
+            <button
+              type="button"
               onClick={() => handleRoleQuickSelect('ebeveyn')}
               className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 font-semibold transition-colors cursor-pointer"
             >
@@ -491,7 +515,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               onClick={() => handleRoleQuickSelect('sube')}
               className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 font-semibold transition-colors cursor-pointer"
             >
-              Şube Portalı
+              Kulüp Yöneticisi
             </button>
           </div>
         </div>

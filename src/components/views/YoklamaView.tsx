@@ -13,11 +13,16 @@ import {
   Zap,
   Bot,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  QrCode,
+  Camera,
+  Smartphone
 } from 'lucide-react';
 import { GrupItem } from '../../types';
 import { INITIAL_GRUPLAR } from '../../data/mockMuhasebeData';
 import { processAttendanceAutomation } from '../../utils/sporpuanAutomation';
+import { DynamicQrAttendanceModal } from '../modals/DynamicQrAttendanceModal';
+import { QrYoklamaScannerModal } from '../modals/QrYoklamaScannerModal';
 
 // Types for local state
 type AttendanceStatus = 'present' | 'absent' | 'excused' | null;
@@ -39,6 +44,27 @@ export const YoklamaView: React.FC = () => {
     totalPointsGiven: number;
   } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // QR Modals state
+  const [isDynamicQrModalOpen, setIsDynamicQrModalOpen] = useState(false);
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
+
+  // Listen for live QR check-ins triggered from camera scanner or athlete phone
+  useEffect(() => {
+    const handleQrCheckIn = (e: CustomEvent<{ memberId: string; name: string }>) => {
+      if (e.detail && e.detail.memberId) {
+        setAttendanceState((prev) => ({
+          ...prev,
+          [e.detail.memberId]: 'present',
+        }));
+      }
+    };
+
+    window.addEventListener('sportsfly_qr_checkin' as any, handleQrCheckIn);
+    return () => {
+      window.removeEventListener('sportsfly_qr_checkin' as any, handleQrCheckIn);
+    };
+  }, []);
 
   // Groups list
   const gruplar = INITIAL_GRUPLAR;
@@ -127,22 +153,49 @@ export const YoklamaView: React.FC = () => {
             <ClipboardCheck className="w-8 h-8 text-blue-600" />
             Yoklama Yönetimi
           </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Dinamik QR Kod ile sporcular telefon kameralarından yoklamaya katılır
+          </p>
         </div>
         
-        {selectedGroup && (
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {/* Dynamic QR Display Button */}
+          {selectedGroup && (
+            <button
+              type="button"
+              onClick={() => setIsDynamicQrModalOpen(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-slate-800 transition-colors shadow-sm text-sm"
+            >
+              <QrCode className="w-4 h-4 text-emerald-400" />
+              <span>Dinamik QR Kodu Göster</span>
+            </button>
+          )}
+
+          {/* Camera QR Scanner Button */}
           <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-70"
+            type="button"
+            onClick={() => setIsCameraScannerOpen(true)}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-emerald-700 transition-colors shadow-sm text-sm"
           >
-            {isSaving ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Save className="w-5 h-5" />
-            )}
-            <span>Yoklamayı Kaydet</span>
+            <Camera className="w-4 h-4" />
+            <span>Kamera İle QR Tara</span>
           </button>
-        )}
+
+          {selectedGroup && (
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-70 text-sm"
+            >
+              {isSaving ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Save className="w-5 h-5" />
+              )}
+              <span>Yoklamayı Kaydet</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Select Group & Date Section */}
@@ -431,6 +484,36 @@ export const YoklamaView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Dynamic QR Session Modal */}
+      {selectedGroup && (
+        <DynamicQrAttendanceModal
+          isOpen={isDynamicQrModalOpen}
+          onClose={() => setIsDynamicQrModalOpen(false)}
+          group={selectedGroup}
+          date={attendanceDate}
+          attendanceState={attendanceState}
+          onAthleteCheckedIn={(memberId) => {
+            setAttendanceState((prev) => ({
+              ...prev,
+              [memberId]: 'present',
+            }));
+          }}
+        />
+      )}
+
+      {/* Phone Camera Scanner Modal */}
+      <QrYoklamaScannerModal
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        selectedGroupMembers={selectedGroup?.members}
+        onAttendanceSuccess={(memberId) => {
+          setAttendanceState((prev) => ({
+            ...prev,
+            [memberId]: 'present',
+          }));
+        }}
+      />
     </div>
   );
 };

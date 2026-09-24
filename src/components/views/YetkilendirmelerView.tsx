@@ -273,6 +273,52 @@ export const YetkilendirmelerView: React.FC = () => {
     showToast(`"${currentRole.title}" rolü için tüm modül ve aksiyonlar aktif edildi.`);
   };
 
+  const handleSelectAll = () => {
+    setRoles((prev) => {
+      const updatedModules = prev[activeRoleKey].modules.map((m) => ({
+        ...m,
+        canView: true,
+        canCreate: true,
+        canEdit: true,
+        canDelete: true,
+        canExport: true,
+        canNotify: true,
+      }));
+      return {
+        ...prev,
+        [activeRoleKey]: {
+          ...prev[activeRoleKey],
+          modules: updatedModules,
+        },
+      };
+    });
+    setHasUnsavedChanges(true);
+    showToast(`"${currentRole.title}" rolü için tüm izinler seçildi.`);
+  };
+
+  const handleDeselectAll = () => {
+    setRoles((prev) => {
+      const updatedModules = prev[activeRoleKey].modules.map((m) => ({
+        ...m,
+        canView: false,
+        canCreate: false,
+        canEdit: false,
+        canDelete: false,
+        canExport: false,
+        canNotify: false,
+      }));
+      return {
+        ...prev,
+        [activeRoleKey]: {
+          ...prev[activeRoleKey],
+          modules: updatedModules,
+        },
+      };
+    });
+    setHasUnsavedChanges(true);
+    showToast(`"${currentRole.title}" rolü için tüm izinler kaldırıldı.`);
+  };
+
   // Save changes to localStorage
   const handleSave = () => {
     saveRoleDefinitions(roles);
@@ -522,6 +568,24 @@ export const YetkilendirmelerView: React.FC = () => {
         {/* Quick Presets for this role */}
         <div className="flex items-center gap-2 flex-wrap shrink-0 pt-2 lg:pt-0 border-t border-slate-100 dark:border-slate-800 lg:border-t-0">
           <button
+            onClick={handleSelectAll}
+            className="flex-1 sm:flex-initial px-3 py-2 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-xl border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+            title="Tüm izinleri tek tıkla seçer"
+          >
+            <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Tümünü Seç</span>
+          </button>
+
+          <button
+            onClick={handleDeselectAll}
+            className="flex-1 sm:flex-initial px-3 py-2 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+            title="Tüm izinleri tek tıkla kaldırır"
+          >
+            <X className="w-3.5 h-3.5 text-rose-600" />
+            <span>Tümünü Kaldır</span>
+          </button>
+
+          <button
             onClick={handleSetReadOnlyPreset}
             className="flex-1 sm:flex-initial px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
             title="Sadece görüntüleme izinlerini açık bırakır"
@@ -536,7 +600,7 @@ export const YetkilendirmelerView: React.FC = () => {
             title="Tüm izinleri tam yetkiliye çevirir"
           >
             <CheckCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span>Tümünü Aç</span>
+            <span>Tam Yetki</span>
           </button>
 
           {/* Mobile Quick Batch Column Trigger */}

@@ -32,7 +32,10 @@ import {
   Trash2,
   CheckCheck,
   Sparkles,
+  QrCode,
+  Camera,
 } from 'lucide-react';
+import { QrYoklamaScannerModal } from './modals/QrYoklamaScannerModal';
 import { SportsFlyIcon } from './SportsFlyLogo';
 import { NavPage, PackagePlanType } from '../types';
 import {
@@ -96,6 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [subeler, setSubeler] = useState<Sube[]>(() => getStoredSubeler());
   const [activeBranchId, setActiveBranchIdState] = useState<string>(() => getActiveSubeId());
   const [showBranchMenu, setShowBranchMenu] = useState(false);
+  const [isHeaderCameraScannerOpen, setIsHeaderCameraScannerOpen] = useState(false);
   const branchMenuRef = useRef<HTMLDivElement>(null);
   const themeMenuRef = useRef<HTMLDivElement>(null);
 
@@ -856,6 +860,16 @@ export const Header: React.FC<HeaderProps> = ({
 
 
 
+          {/* Camera QR Attendance Quick Action Button */}
+          <button
+            onClick={() => setIsHeaderCameraScannerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+            title="Telefon Kamerası İle Yoklama QR Okut"
+          >
+            <Camera className="w-4 h-4" />
+            <span className="hidden md:inline">Yoklama QR Tara</span>
+          </button>
+
           {/* Notifications */}
           <div className="relative" ref={notificationRef}>
             <button
@@ -1440,6 +1454,12 @@ export const Header: React.FC<HeaderProps> = ({
         isOpen={isUpdatesModalOpen}
         onClose={() => setIsUpdatesModalOpen(false)}
         onNavigate={onNavigate}
+      />
+
+      {/* Global Header Camera Scanner Modal */}
+      <QrYoklamaScannerModal
+        isOpen={isHeaderCameraScannerOpen}
+        onClose={() => setIsHeaderCameraScannerOpen(false)}
       />
     </header>
   );

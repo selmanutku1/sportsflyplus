@@ -28,6 +28,19 @@ export const INITIAL_INTEGRATIONS: EntegrasyonItem[] = [
     connectedAt: '01.03.2024',
   },
   {
+    id: 'int-referans',
+    name: 'Arkadaşını Tavsiye Et & %20 İndirim Programı',
+    category: 'Kulüp & Spor Modülleri',
+    description: 'Veli ve sporcuların kulübümüze yönlendirdiği yeni aileler için otomatik referans linki oluşturur. Tavsiye edilen sporcu devam ettiği sürece her ay %20 aidat indirimi tanımlar.',
+    logoUrl: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200&auto=format&fit=crop&q=80',
+    iconName: 'Sparkles',
+    isRecommended: true,
+    isActive: true,
+    isInternalModule: true,
+    targetPage: 'referans-programi',
+    connectedAt: '24.09.2024',
+  },
+  {
     id: 'int-envanter',
     name: 'Envanter & Malzeme Takibi',
     category: 'Kulüp & Spor Modülleri',
@@ -40,90 +53,6 @@ export const INITIAL_INTEGRATIONS: EntegrasyonItem[] = [
     targetPage: 'envanter-yonetimi',
     connectedAt: '10.02.2024',
   },
-  {
-    id: 'int-iyzico',
-    name: 'İyzico Sanal POS',
-    category: 'Ödeme Yöntemleri',
-    description: 'Kredi kartı ve banka kartı ile 3D Secure güvencesinde online aidat tahsilatı ve taksit imkanı.',
-    iconName: 'CreditCard',
-    isRecommended: true,
-    isActive: true,
-    isInternalModule: false,
-    connectedAt: '20.01.2024',
-  },
-  {
-    id: 'int-paytr',
-    name: 'PayTR Ödeme Altyapısı',
-    category: 'Ödeme Yöntemleri',
-    description: 'Düşük komisyon ve ertesi gün hesaba geçen alternatif sanal POS ve havale/EFT ödeme geçidi.',
-    iconName: 'CreditCard',
-    isRecommended: false,
-    isActive: false,
-    isInternalModule: false,
-  },
-  {
-    id: 'int-whatsapp',
-    name: 'WhatsApp Business API',
-    category: 'İletişim & Bildirim',
-    description: 'Karneler, devamsızlık bildirimleri ve aidat hatırlatmalarını velilerin WhatsApp hattına otomatik iletir.',
-    iconName: 'MessageSquare',
-    isRecommended: true,
-    isActive: true,
-    isInternalModule: false,
-    connectedAt: '05.02.2024',
-  },
-  {
-    id: 'int-netgsm',
-    name: 'Netgsm Başlıklı SMS',
-    category: 'İletişim & Bildirim',
-    description: 'Kulübünüze özel resmi SMS başlığıyla tek dokunuşla seans iptali ve toplu veli SMS gönderimi.',
-    iconName: 'PhoneCall',
-    isRecommended: false,
-    isActive: true,
-    isInternalModule: false,
-    connectedAt: '12.01.2024',
-  },
-  {
-    id: 'int-parasut',
-    name: 'Paraşüt e-Fatura & Muhasebe',
-    category: 'Faturalandırma & Muhasebe',
-    description: 'Tahsil edilen aidatlar için tek tıkla GİB onaylı e-Arşiv veya e-Fatura oluşturma ve kasa entegrasyonu.',
-    iconName: 'Receipt',
-    isRecommended: true,
-    isActive: false,
-    isInternalModule: false,
-  },
-  {
-    id: 'int-ical',
-    name: 'Google Calendar / iCal Takvim',
-    category: 'Takvim & Senkronizasyon',
-    description: 'Antrenman ve maç seanslarını veli ve antrenörlerin Google ve Apple takvimleriyle anlık senkronize eder.',
-    iconName: 'Calendar',
-    isRecommended: true,
-    isActive: true,
-    isInternalModule: false,
-    connectedAt: '18.01.2024',
-  },
-  {
-    id: 'int-polar',
-    name: 'Polar Team Nabız & GPS',
-    category: 'Giyilebilir & GPS',
-    description: 'Göğüs bantlarından gelen canlı nabız bölgeleri ve antrenman yükü verilerini sporcu profiline kaydeder.',
-    iconName: 'Activity',
-    isRecommended: false,
-    isActive: false,
-    isInternalModule: false,
-  },
-  {
-    id: 'int-catapult',
-    name: 'Catapult Atletik GPS Sensörleri',
-    category: 'Giyilebilir & GPS',
-    description: 'Yüksek tempolu koşu mesafesi, maksimum sprint hızı ve ivmelenme verilerini analitik panele aktarır.',
-    iconName: 'Flame',
-    isRecommended: false,
-    isActive: false,
-    isInternalModule: false,
-  },
 ];
 
 const INTEGRATIONS_STORAGE_KEY = 'sportsfly_integrations_list_v2';
@@ -132,27 +61,43 @@ export function getStoredIntegrations(): EntegrasyonItem[] {
   try {
     // Check both v2 and legacy storage keys
     const raw = localStorage.getItem(INTEGRATIONS_STORAGE_KEY) || localStorage.getItem('sportsfly_integrations_list_v1');
+    let items = INITIAL_INTEGRATIONS;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Sanitize any legacy cached items so that 'SporPuan' is always transformed to 'Sporpuan'
-        const sanitized: EntegrasyonItem[] = parsed.map((item: EntegrasyonItem) => {
-          if (item.id === 'int-sporpuan') {
-            return {
-              ...item,
-              name: 'Sporpuan İtibar & Değerlendirme',
-              description: 'Sporcu teknik, taktik, devam ve fair-play puanlama altyapısı. Dijital rozetler ve federasyon onaylı karne entegrasyonu.',
-            };
-          }
-          return {
-            ...item,
-            name: item.name ? item.name.replace(/SporPuan/g, 'Sporpuan').replace(/Spor Puan/g, 'Sporpuan') : item.name,
-            description: item.description ? item.description.replace(/SporPuan/g, 'Sporpuan').replace(/Spor Puan/g, 'Sporpuan') : item.description,
-          };
-        });
-        return sanitized;
+        items = parsed.filter((i: EntegrasyonItem) => i.category === 'Kulüp & Spor Modülleri');
       }
     }
+
+    if (items.length === 0) {
+      items = INITIAL_INTEGRATIONS;
+    }
+
+    // Ensure int-referans exists
+    const hasReferans = items.some((i) => i.id === 'int-referans');
+    if (!hasReferans) {
+      const refItem = INITIAL_INTEGRATIONS.find((i) => i.id === 'int-referans');
+      if (refItem) {
+        items = [refItem, ...items];
+      }
+    }
+
+    // Sanitize items
+    const sanitized: EntegrasyonItem[] = items.map((item: EntegrasyonItem) => {
+      if (item.id === 'int-sporpuan') {
+        return {
+          ...item,
+          name: 'Sporpuan İtibar & Değerlendirme',
+          description: 'Sporcu teknik, taktik, devam ve fair-play puanlama altyapısı. Dijital rozetler ve federasyon onaylı karne entegrasyonu.',
+        };
+      }
+      return {
+        ...item,
+        name: item.name ? item.name.replace(/SporPuan/g, 'Sporpuan').replace(/Spor Puan/g, 'Sporpuan') : item.name,
+        description: item.description ? item.description.replace(/SporPuan/g, 'Sporpuan').replace(/Spor Puan/g, 'Sporpuan') : item.description,
+      };
+    });
+    return sanitized;
   } catch (e) {
     console.error('Entegrasyonlar yüklenirken hata:', e);
   }

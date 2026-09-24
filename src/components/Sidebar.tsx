@@ -38,6 +38,7 @@ import {
   Boxes,
   Package,
   Blocks,
+  Sparkles,
 } from 'lucide-react';
 import { NavPage, PackagePlanType } from '../types';
 import { SportsFlyLogo, SportsFlyIcon } from './SportsFlyLogo';
@@ -78,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isSuperAdmin = isSuperAdminUser(userProfile?.role);
 
   const isRestricted = (page: NavPage) => {
+    if (isSuperAdmin) return false;
     if (!currentPlan) return false;
     return !isPageAllowedForPlan(page, currentPlan, userProfile?.role);
   };
@@ -179,17 +181,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Home className="w-4 h-4" />
               </button>
 
-              <button
-                onClick={() => handleNavClick('on-kayit')}
-                title="Ön Kayıt"
-                className={`p-2.5 rounded-xl transition-all cursor-pointer ${
-                  currentPage === 'on-kayit'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <UserPlus className="w-4 h-4" />
-              </button>
+
+
+              {!isRestricted('on-kayit') && (
+                <button
+                  onClick={() => handleNavClick('on-kayit')}
+                  title="Ön Kayıt"
+                  className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+                    currentPage === 'on-kayit'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+              )}
 
               <button
                 onClick={() => handleNavClick('sporcular')}
@@ -422,27 +428,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>{t('sidebar.dashboard')}</span>
           </button>
 
+
+
           {/* Ön Kayıt */}
-          <button
-            onClick={() => handleNavClick('on-kayit')}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all cursor-pointer ${
-              currentPage === 'on-kayit'
-                ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <UserPlus className="w-4 h-4 shrink-0" />
-              <span>{t('sidebar.preRegistration')}</span>
-            </div>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-              currentPage === 'on-kayit'
-                ? 'bg-blue-700 text-white'
-                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
-            }`}>
-              Yeni
-            </span>
-          </button>
+          {!isRestricted('on-kayit') && (
+            <button
+              onClick={() => handleNavClick('on-kayit')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all cursor-pointer ${
+                currentPage === 'on-kayit'
+                  ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <UserPlus className="w-4 h-4 shrink-0" />
+                <span>{t('sidebar.preRegistration')}</span>
+              </div>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                currentPage === 'on-kayit'
+                  ? 'bg-blue-700 text-white'
+                  : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
+              }`}>
+                Yeni
+              </span>
+            </button>
+          )}
 
           {/* Kulüpler (Accordion) */}
           <div className="pt-1">

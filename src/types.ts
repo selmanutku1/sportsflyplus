@@ -38,6 +38,7 @@ export type NavPage =
   | 'kulup-galerisi'
   | 'turnuva-yonetimi'
   | 'envanter-yonetimi'
+  | 'referans-programi'
   | 'entegrasyonlar';
 
 export interface EntegrasyonItem {
@@ -80,6 +81,8 @@ export interface EnvanterItem {
   category: EnvanterKategori;
   club: string;
   branch: string;
+  subeId?: string;
+  subeAd?: string;
   totalQuantity: number;
   inUseQuantity: number;
   inStorageQuantity: number;
@@ -96,54 +99,112 @@ export interface EnvanterItem {
   photoUrl?: string;
 }
 
+export interface EnvanterTransferLog {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemCode: string;
+  fromSubeId: string;
+  fromSubeAd: string;
+  toSubeId: string;
+  toSubeAd: string;
+  quantity: number;
+  unit: string;
+  transferDate: string;
+  transferredBy: string;
+  notes?: string;
+  status: 'Tamamlandı' | 'Yolda' | 'İptal';
+}
+
+export interface TurnuvaBasvuruItem {
+  id: string;
+  turnuvaId: string;
+  teamName: string;
+  clubName: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  squadSize: number;
+  notes?: string;
+  appliedAt: string;
+  status: 'Bekliyor' | 'Onaylandı' | 'Reddedildi';
+  registrationCode: string;
+}
+
 export interface TurnuvaTakimItem {
   id: string;
   name: string;
   club: string;
+  group?: string; // e.g. 'A Grubu', 'B Grubu'
+  seed?: number; // Kura seribaşı numarası
   logoUrl?: string;
   coachName?: string;
+  contactPhone?: string;
+  squadSize?: number;
   played: number;
   won: number;
   drawn: number;
   lost: number;
-  goalsFor: number;
-  goalsAgainst: number;
+  goalsFor: number; // Atılan (Sayı / Gol / Puan)
+  goalsAgainst: number; // Yenilen
   points: number;
+  setsWon?: number; // Voleybol / Tenis için
+  setsLost?: number;
 }
 
 export interface TurnuvaMacItem {
   id: string;
   turnuvaId: string;
   round: string; // e.g. '1. Hafta', 'Çeyrek Final', 'Yarı Final', 'Final'
+  stage?: 'Grup' | 'Eleme' | 'Lig' | 'Final';
+  group?: string; // 'A Grubu', 'B Grubu' vb.
+  bracketMatchId?: string; // 'QF-1', 'QF-2', 'SF-1', 'SF-2', 'F-1'
+  nextBracketMatchId?: string;
   date: string;
   time: string;
   venue: string;
+  court?: string; // 'Saha 1', 'Masa 2', 'A Salonu'
   homeTeam: string;
   awayTeam: string;
   homeScore?: number;
   awayScore?: number;
+  periodScores?: {
+    p1?: { home: number; away: number };
+    p2?: { home: number; away: number };
+    p3?: { home: number; away: number };
+    p4?: { home: number; away: number };
+  };
+  setScores?: { home: number; away: number }[]; // Voleybol/Tenis set dökümleri örn. [{home:25, away:21}, {home:22, away:25}]
+  penalties?: { home: number; away: number }; // Futbol penaltı atışları
   status: 'Oynanacak' | 'Canlı' | 'Bitti' | 'Ertelendi';
   mvp?: string;
   referee?: string;
+  notes?: string;
 }
 
 export interface TurnuvaItem {
   id: string;
   name: string;
   organizerClub: string;
-  branch: string;
+  branch: 'Futbol' | 'Basketbol' | 'Voleybol' | 'Tenis' | 'Yüzme' | 'Masa Tenisi' | string;
   ageCategory: string;
   season: string;
   startDate: string;
   endDate: string;
   location: string;
   status: 'Kayıt Açık' | 'Devam Ediyor' | 'Tamamlandı' | 'Planlandı';
-  format: 'Lig Usulü' | 'Grup + Eleme' | 'Tek Maç Eleme';
+  format: 'Lig Usulü' | 'Grup + Eleme' | 'Tek Maç Eleme' | 'Seri & Kulvar';
   teamsCount: number;
+  maxTeams?: number;
+  entryFee?: number;
+  registrationOpen?: boolean;
+  registrationDeadline?: string;
+  registrationSlug?: string;
   description?: string;
   bannerUrl?: string;
   teams: TurnuvaTakimItem[];
   matches: TurnuvaMacItem[];
+  applications?: TurnuvaBasvuruItem[];
 }
 
 export interface DashboardPackage {
@@ -426,6 +487,8 @@ export interface AntrenmanItem {
   color: 'blue' | 'emerald' | 'amber' | 'purple' | 'rose' | 'indigo' | 'sky';
   notes?: string;
   attendees: AntrenmanAttendee[];
+  googleCalendarEventId?: string;
+  googleCalendarLink?: string;
 }
 
 export type PackagePlanType =
@@ -538,6 +601,8 @@ export interface OdemePlaniItem {
   amount: number;
   status: 'Ödendi' | 'Bekliyor' | 'Gecikti';
   paidDate?: string;
+  receiptNumber?: string;
+  receiptDate?: string;
 }
 
 export interface KulupSozlesmesi {

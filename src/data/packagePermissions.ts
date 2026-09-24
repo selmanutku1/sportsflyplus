@@ -1,4 +1,5 @@
 import { NavPage, PackagePlanType, PackageLimits } from '../types';
+import { getStoredRoleDefinitions, UserRoleKey } from './rolePermissions';
 
 export interface PackageDetail {
   id: string;
@@ -586,7 +587,7 @@ export function setActiveSessionPlan(plan: PackagePlanType) {
 export function isSuperAdminUser(role?: string): boolean {
   if (role) {
     const r = role.toLowerCase();
-    return r.includes('süper') || r.includes('super');
+    return r.includes('süper') || r.includes('super') || r.includes('admin') || r.includes('kurucu') || (r.includes('kulüp yöneticisi') && !r.includes('şube'));
   }
   if (typeof window !== 'undefined') {
     try {
@@ -595,7 +596,7 @@ export function isSuperAdminUser(role?: string): boolean {
         const parsed = JSON.parse(stored);
         if (parsed?.role) {
           const r = parsed.role.toLowerCase();
-          return r.includes('süper') || r.includes('super');
+          return r.includes('süper') || r.includes('super') || r.includes('admin') || r.includes('kurucu');
         }
       }
     } catch (e) {}
@@ -612,6 +613,78 @@ export function isPageAllowedForPlan(
   plan: PackagePlanType,
   userRole?: string
 ): boolean {
+  const roleStr = (userRole || '').toLowerCase();
+
+  // Super Admin / Admin / Kurucu has full access to all modules
+  if (isSuperAdminUser(userRole)) {
+    return true;
+  }
+
+  // Check dynamic role permissions saved in localStorage via YetkilendirmelerView
+  try {
+    const roleDefs = getStoredRoleDefinitions();
+    let roleKey: UserRoleKey = 'kulup_yoneticisi';
+    if (roleStr.includes('veli') || roleStr.includes('ebeveyn')) {
+      roleKey = 'veli';
+    } else if (roleStr.includes('sporcu')) {
+      roleKey = 'sporcu';
+    } else if (roleStr.includes('eğitmen') || roleStr.includes('antrenor') || roleStr.includes('antrenör')) {
+      roleKey = 'egitmen';
+    } else if (roleStr.includes('şube') || roleStr.includes('sube') || roleStr.includes('kulüp yöneticisi') || roleStr.includes('yonetici')) {
+      roleKey = 'kulup_yoneticisi';
+    }
+
+    const currentRoleDef = roleDefs[roleKey];
+    if (currentRoleDef && currentRoleDef.modules) {
+      const modConfig = currentRoleDef.modules.find((m) => m.moduleId === page);
+      if (modConfig) {
+        return modConfig.canView;
+      }
+    }
+  } catch (e) {}
+  
+  // Role-based custom module visibility restriction
+  if (roleStr.includes('veli') || roleStr.includes('ebeveyn')) {
+    const allowedForVeli: NavPage[] = [
+      'sporcu-karnesi',
+      'antrenman-takvimi',
+      'odeme-plani',
+      'referans-programi',
+      'kulup-galerisi',
+      'anasayfa',
+    ];
+    return allowedForVeli.includes(page);
+  }
+
+  if (roleStr.includes('sporcu')) {
+    const allowedForSporcu: NavPage[] = [
+      'sporsepeti-user',
+      'antrenman-takvimi',
+      'turnuva-yonetimi',
+      'referans-programi',
+      'kulup-galerisi',
+      'destek',
+      'anasayfa',
+    ];
+    return allowedForSporcu.includes(page);
+  }
+
+  if (roleStr.includes('şube') || roleStr.includes('sube')) {
+    const allowedForSube: NavPage[] = [
+      'sube-ozet',
+      'subeler',
+      'antrenman-takvimi',
+      'yoklama',
+      'envanter-yonetimi',
+      'sporcular',
+      'entegrasyonlar',
+      'referans-programi',
+      'destek',
+      'anasayfa',
+    ];
+    return allowedForSube.includes(page);
+  }
+
   const isSuper = isSuperAdminUser(userRole);
 
   // If user is explicitly in Super Admin mode and not testing a lower package:

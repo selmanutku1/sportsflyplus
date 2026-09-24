@@ -34,6 +34,7 @@ import {
   ChevronDown,
   ChevronUp,
   Settings2,
+  Sparkles,
   X
 } from 'lucide-react';
 import { SportsFlyIcon } from '../../SportsFlyLogo';
@@ -355,8 +356,6 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
     }
   };
   const [copiedTemplateId, setCopiedTemplateId] = useState<string | null>(null);
-  const [selectedRibbonNoteId, setSelectedRibbonNoteId] = useState<string>(HAZIR_ANTRENOR_NOTLARI[0].id);
-  const [showQuickTemplatesRibbon, setShowQuickTemplatesRibbon] = useState<boolean>(true);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -963,10 +962,10 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
               setTemplateModalTab('notlar');
               setShowTemplateModal(true);
             }}
-            className="px-3.5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <Zap className="w-4 h-4 text-amber-100" />
-            <span>Hızlı Şablonlar</span>
+            <BookOpen className="w-4 h-4 text-blue-400" />
+            <span>Hazır Şablonlar</span>
           </button>
           <button
             onClick={() => setShowBatchModal(true)}
@@ -1217,170 +1216,56 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleSaveCurrentEdit}
-                    disabled={!hasUnsavedChanges}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-all cursor-pointer ${
-                      hasUnsavedChanges
-                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white animate-pulse'
-                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{hasUnsavedChanges ? 'Değişiklikleri Kaydet' : 'Kaydedildi'}</span>
-                  </button>
-                </div>
-              </div>
+                  <div className="flex items-center gap-2">
+                    {/* Compact Quick Profile Selector */}
+                    <select
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) return;
+                        const foundProfile = HAZIR_PUANLAMA_PROFILLERI.find((p) => p.id === val);
+                        if (foundProfile) {
+                          handleApplyScoringProfile(foundProfile, true);
+                        }
+                        e.target.value = '';
+                      }}
+                      defaultValue=""
+                      className="text-xs py-2 px-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors max-w-[200px] truncate"
+                      title="Hazır Puanlama Profili Uygula"
+                    >
+                      <option value="" disabled>⚡️ Hazır Profil Seç...</option>
+                      {HAZIR_PUANLAMA_PROFILLERI.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.baslik} ({p.rozet})
+                        </option>
+                      ))}
+                    </select>
 
-              {/* HIZLI ŞABLONLAR & PUANLAMA METİN BLOKLARI (TEK TIKLA DOLDUR) */}
-              <div className="border-b border-slate-200 bg-gradient-to-r from-amber-50/70 via-blue-50/30 to-slate-50/80 p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center font-black shrink-0">
-                      <Zap className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-slate-800">
-                          Hızlı Şablonlar &amp; Puanlama Metin Blokları
-                        </span>
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300/70 shadow-2xs">
-                          ⚡️ Tek Tıkla Kutucukları Doldur
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500">
-                        Puanlama kutucuklarını, karne değerlendirme notunu ve gelişim etiketlerini tek tıkla aktarın.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
                         setTemplateModalTab('notlar');
                         setShowTemplateModal(true);
                       }}
-                      className="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                      className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white text-slate-600 hover:text-blue-600 transition-colors cursor-pointer"
+                      title="Şablon Kütüphanesini Aç"
                     >
-                      <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Tüm Şablon Kütüphanesi</span>
+                      <BookOpen className="w-4 h-4" />
                     </button>
+
                     <button
-                      type="button"
-                      onClick={() => setShowQuickTemplatesRibbon(!showQuickTemplatesRibbon)}
-                      className="p-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 transition-colors cursor-pointer"
-                      title={showQuickTemplatesRibbon ? 'Şablon panelini gizle' : 'Şablon panelini göster'}
+                      onClick={handleSaveCurrentEdit}
+                      disabled={!hasUnsavedChanges}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-all cursor-pointer ${
+                        hasUnsavedChanges
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white animate-pulse'
+                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      }`}
                     >
-                      {showQuickTemplatesRibbon ? (
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      ) : (
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      )}
+                      <Save className="w-4 h-4" />
+                      <span>{hasUnsavedChanges ? 'Değişiklikleri Kaydet' : 'Kaydedildi'}</span>
                     </button>
                   </div>
                 </div>
-
-                {showQuickTemplatesRibbon && (
-                  <div className="space-y-3 pt-1">
-                    {/* 5 Hızlı Puanlama & Not Profili */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-                      {HAZIR_PUANLAMA_PROFILLERI.map((profile) => (
-                        <div
-                          key={profile.id}
-                          className="bg-white rounded-xl border border-slate-200/90 hover:border-amber-300 p-3 flex flex-col justify-between gap-2 shadow-2xs hover:shadow-xs transition-all group"
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200/60">
-                                {profile.rozet}
-                              </span>
-                            </div>
-                            <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 leading-snug line-clamp-1">
-                              {profile.baslik}
-                            </h4>
-                            <p className="text-[10px] text-slate-500 line-clamp-2 leading-tight">
-                              {profile.aciklama}
-                            </p>
-                          </div>
-
-                          <div className="space-y-1 pt-1.5 border-t border-slate-100">
-                            <button
-                              type="button"
-                              onClick={() => handleApplyScoringProfile(profile, true)}
-                              title="Tüm puanlama kutucuklarını, antrenör notunu ve etiketleri bu profille doldur"
-                              className="w-full py-1.5 px-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
-                            >
-                              <Zap className="w-3 h-3 text-amber-300" />
-                              <span>Kutucukları Doldur</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (profile.antrenorNotu) {
-                                  setCurrentEdit({
-                                    ...currentEdit,
-                                    antrenorNotu: profile.antrenorNotu,
-                                  });
-                                  setHasUnsavedChanges(true);
-                                  showToast(`"${profile.baslik}" metin bloğu antrenör notuna aktarıldı.`);
-                                }
-                              }}
-                              title="Yalnızca antrenör not kutucuğuna hazır metni aktar"
-                              className="w-full py-0.5 text-[10px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded text-center transition-colors cursor-pointer"
-                            >
-                              Yalnızca Metni Kutuya Yaz
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Hızlı Antrenör Metin Bloğu Seçim Çubuğu */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2.5 bg-white/90 border border-slate-200 rounded-xl">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-700 shrink-0">
-                        <FileText className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Hazır Metin Bloğu:</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <select
-                          value={selectedRibbonNoteId}
-                          onChange={(e) => setSelectedRibbonNoteId(e.target.value)}
-                          className="w-full text-xs p-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-800 truncate"
-                        >
-                          {HAZIR_ANTRENOR_NOTLARI.map((n) => (
-                            <option key={n.id} value={n.id}>
-                              [{n.kategori}] {n.baslik}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const found = HAZIR_ANTRENOR_NOTLARI.find((n) => n.id === selectedRibbonNoteId);
-                            if (found) handleApplyCoachNoteTemplate(found, false);
-                          }}
-                          className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer shadow-2xs"
-                        >
-                          Not Kutusuna Doldur
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const found = HAZIR_ANTRENOR_NOTLARI.find((n) => n.id === selectedRibbonNoteId);
-                            if (found) handleApplyCoachNoteTemplate(found, true);
-                          }}
-                          className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                          title="Mevcut notun sonuna yeni paragraf olarak ekle"
-                        >
-                          + Ekle
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Tabs Navigation */}
@@ -1738,38 +1623,39 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                             <Plus className="w-3.5 h-3.5 text-blue-600" />
-                            Yeni Gelişim / Periyot Gözlemi Ekle
+                            <span>Yeni Gelişim / Periyot Gözlemi Ekle</span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setTemplateModalTab('gozlemler');
-                              setShowTemplateModal(true);
-                            }}
-                            className="text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Zap className="w-3 h-3 text-amber-600" />
-                            <span>Tüm Gözlem Şablonları</span>
-                          </button>
-                        </div>
-
-                        {/* Quick observation template chips */}
-                        <div className="flex flex-wrap items-center gap-1.5 py-1">
-                          <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                            <Zap className="w-3 h-3 text-amber-500" />
-                            Hızlı Doldur:
-                          </span>
-                          {HAZIR_GOZLEM_SABLONLARI.slice(0, 5).map((tpl) => (
-                            <button
-                              key={tpl.id}
-                              type="button"
-                              onClick={() => handleApplyObservationTemplate(tpl, false)}
-                              title={`${tpl.durum}: ${tpl.gozlem}`}
-                              className="text-[10px] px-2 py-0.5 bg-white hover:bg-amber-50 hover:border-amber-300 text-slate-700 hover:text-amber-900 border border-slate-200 rounded-md font-medium transition-colors cursor-pointer shadow-2xs"
+                          
+                          <div className="flex items-center gap-1.5">
+                            <select
+                              onChange={(e) => {
+                                const found = HAZIR_GOZLEM_SABLONLARI.find((t) => t.id === e.target.value);
+                                if (found) handleApplyObservationTemplate(found, false);
+                                e.target.value = '';
+                              }}
+                              defaultValue=""
+                              className="text-[11px] py-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium cursor-pointer"
                             >
-                              {tpl.baslik}
+                              <option value="" disabled>⚡️ Hazır Gözlem Şablonu...</option>
+                              {HAZIR_GOZLEM_SABLONLARI.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.baslik} ({t.durum})
+                                </option>
+                              ))}
+                            </select>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTemplateModalTab('gozlemler');
+                                setShowTemplateModal(true);
+                              }}
+                              className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors"
+                              title="Tüm gözlem şablonlarını aç"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
                             </button>
-                          ))}
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2008,36 +1894,37 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                         <label className="text-xs font-bold text-slate-700 block">
                           Antrenör Değerlendirme Notu (Karneye Yazılır)
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTemplateModalTab('notlar');
-                            setShowTemplateModal(true);
-                          }}
-                          className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <Zap className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Şablon Kütüphanesini Aç</span>
-                        </button>
-                      </div>
-
-                      {/* Quick Chips for Coach Notes */}
-                      <div className="flex flex-wrap items-center gap-1.5 p-2 bg-amber-50/60 border border-amber-200/70 rounded-xl">
-                        <span className="text-[10px] font-bold text-amber-900 flex items-center gap-1">
-                          <Zap className="w-3 h-3 text-amber-600" />
-                          Hızlı Not Şablonları:
-                        </span>
-                        {HAZIR_ANTRENOR_NOTLARI.map((tpl) => (
-                          <button
-                            key={tpl.id}
-                            type="button"
-                            onClick={() => handleApplyCoachNoteTemplate(tpl, false)}
-                            title={tpl.metin}
-                            className="text-[10px] font-semibold px-2 py-0.5 bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-amber-200 rounded-md transition-colors cursor-pointer shadow-2xs"
+                        
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            onChange={(e) => {
+                              const found = HAZIR_ANTRENOR_NOTLARI.find((n) => n.id === e.target.value);
+                              if (found) handleApplyCoachNoteTemplate(found, false);
+                              e.target.value = '';
+                            }}
+                            defaultValue=""
+                            className="text-xs py-1 px-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 font-medium cursor-pointer max-w-[220px] truncate"
                           >
-                            {tpl.baslik}
+                            <option value="" disabled>⚡️ Hazır Not Şablonu Ekle...</option>
+                            {HAZIR_ANTRENOR_NOTLARI.map((tpl) => (
+                              <option key={tpl.id} value={tpl.id}>
+                                [{tpl.kategori}] {tpl.baslik}
+                              </option>
+                            ))}
+                          </select>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTemplateModalTab('notlar');
+                              setShowTemplateModal(true);
+                            }}
+                            className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors"
+                            title="Şablon Kütüphanesini Aç"
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
                           </button>
-                        ))}
+                        </div>
                       </div>
 
                       <textarea

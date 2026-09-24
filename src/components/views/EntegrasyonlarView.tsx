@@ -40,12 +40,6 @@ interface EntegrasyonlarViewProps {
 const CATEGORIES = [
   'Tüm Entegrasyonlar',
   'Kulüp & Spor Modülleri',
-  'Ödeme Yöntemleri',
-  'İletişim & Bildirim',
-  'Faturalandırma & Muhasebe',
-  'Takvim & Senkronizasyon',
-  'Giyilebilir & GPS',
-  'Diğerleri',
 ];
 
 export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
@@ -109,6 +103,8 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
       setActiveSubModule('turnuva');
     } else if (item.id === 'int-envanter') {
       setActiveSubModule('envanter');
+    } else if (item.id === 'int-referans') {
+      if (onNavigate) onNavigate('referans-programi');
     } else {
       setSettingsModalItem(item);
       setApiKeyInput(item.apiKey || '');
@@ -184,6 +180,8 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
         return <Activity className="w-7 h-7 text-rose-500" />;
       case 'Flame':
         return <Flame className="w-7 h-7 text-orange-500" />;
+      case 'Sparkles':
+        return <Sparkles className="w-7 h-7 text-emerald-500" />;
       default:
         return <Layers className="w-7 h-7 text-slate-600" />;
     }
