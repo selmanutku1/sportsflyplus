@@ -860,15 +860,17 @@ export const Header: React.FC<HeaderProps> = ({
 
 
 
-          {/* Camera QR Attendance Quick Action Button */}
-          <button
-            onClick={() => setIsHeaderCameraScannerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
-            title="Telefon Kamerası İle Yoklama QR Okut"
-          >
-            <Camera className="w-4 h-4" />
-            <span className="hidden md:inline">Yoklama QR Tara</span>
-          </button>
+          {/* Camera QR Attendance Quick Action Button - Athlete Entry Only */}
+          {(userProfile.role.toLowerCase().includes('sporcu') || userProfile.role.toLowerCase().includes('veli')) && (
+            <button
+              onClick={() => setIsHeaderCameraScannerOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+              title="Telefon Kamerası İle Yoklama QR Okut"
+            >
+              <Camera className="w-4 h-4" />
+              <span className="hidden md:inline">Yoklama QR Tara</span>
+            </button>
+          )}
 
           {/* Notifications */}
           <div className="relative" ref={notificationRef}>

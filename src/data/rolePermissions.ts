@@ -1,4 +1,9 @@
 import { NavPage } from '../types';
+import {
+  secureStorageGet,
+  secureStorageSet,
+  recordSecurityAuditEvent,
+} from '../utils/securityCore';
 
 export type UserRoleKey = 'super_admin' | 'kulup_yoneticisi' | 'egitmen' | 'veli' | 'sporcu';
 
@@ -265,35 +270,43 @@ export const ROLE_PERMISSIONS_STORAGE_KEY = 'sportsfly_role_permissions_v1';
  * Load role permissions from localStorage or return fresh defaults
  */
 export function getStoredRoleDefinitions(): Record<UserRoleKey, UserRoleDefinition> {
-  if (typeof window === 'undefined') return getDefaultRoleDefinitions();
+  const defaults = getDefaultRoleDefinitions();
+  if (typeof window === 'undefined') return defaults;
   try {
-    const stored = localStorage.getItem(ROLE_PERMISSIONS_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Validate that all 5 keys exist
-      if (
-        parsed.super_admin &&
-        parsed.kulup_yoneticisi &&
-        parsed.egitmen &&
-        parsed.veli &&
-        parsed.sporcu
-      ) {
-        return parsed;
-      }
+    const parsed = secureStorageGet<Record<UserRoleKey, UserRoleDefinition> | null>(
+      ROLE_PERMISSIONS_STORAGE_KEY,
+      null
+    );
+    if (
+      parsed &&
+      parsed.super_admin &&
+      parsed.kulup_yoneticisi &&
+      parsed.egitmen &&
+      parsed.veli &&
+      parsed.sporcu
+    ) {
+      return parsed;
     }
   } catch (e) {
     console.error('Failed to load role permissions from storage', e);
   }
-  return getDefaultRoleDefinitions();
+  return defaults;
 }
 
 /**
- * Save role permissions to localStorage and broadcast event
+ * Save role permissions to localStorage with cryptographic integrity and broadcast event
  */
 export function saveRoleDefinitions(roles: Record<UserRoleKey, UserRoleDefinition>) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(ROLE_PERMISSIONS_STORAGE_KEY, JSON.stringify(roles));
+    secureStorageSet(ROLE_PERMISSIONS_STORAGE_KEY, roles);
+    recordSecurityAuditEvent({
+      category: 'RBAC',
+      severity: 'INFO',
+      action: 'RBAC_MATRIX_SIGNED_AND_SAVED',
+      actor: 'Süper Admin',
+      details: '5 temel rol için modül erişim ve finans/KVKK izolasyon matrisi imzalanarak kaydedildi.',
+    });
     window.dispatchEvent(
       new CustomEvent('sportsfly_roles_updated', { detail: { roles } })
     );

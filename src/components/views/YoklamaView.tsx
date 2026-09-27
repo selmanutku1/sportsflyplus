@@ -16,13 +16,21 @@ import {
   ShieldCheck,
   QrCode,
   Camera,
-  Smartphone
+  Smartphone,
+  BellRing,
+  Bell,
+  Send,
+  FileSpreadsheet,
+  Download
 } from 'lucide-react';
 import { GrupItem } from '../../types';
 import { INITIAL_GRUPLAR } from '../../data/mockMuhasebeData';
 import { processAttendanceAutomation } from '../../utils/sporpuanAutomation';
 import { DynamicQrAttendanceModal } from '../modals/DynamicQrAttendanceModal';
 import { QrYoklamaScannerModal } from '../modals/QrYoklamaScannerModal';
+import { YoklamaHatirlatmaModal } from '../modals/YoklamaHatirlatmaModal';
+import { YoklamaRaporExportModal } from '../modals/YoklamaRaporExportModal';
+import { executeYoklamaReminderTrigger, getAutomationConfig } from '../../services/yoklamaHatirlaticiService';
 
 // Types for local state
 type AttendanceStatus = 'present' | 'absent' | 'excused' | null;
@@ -45,9 +53,11 @@ export const YoklamaView: React.FC = () => {
   } | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // QR Modals state
+  // QR, Reminder & Report Modals state
   const [isDynamicQrModalOpen, setIsDynamicQrModalOpen] = useState(false);
   const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Listen for live QR check-ins triggered from camera scanner or athlete phone
   useEffect(() => {
@@ -116,6 +126,33 @@ export const YoklamaView: React.FC = () => {
       attendanceDate
     );
 
+    // 2. Automated Reminder Trigger: Check if absent athletes exist and trigger configured parent/trainer notifications
+    const absentMembers = selectedGroup.members.filter(
+      (m) => attendanceState[m.id] === 'absent' || attendanceState[m.id] === null
+    );
+
+    const config = getAutomationConfig();
+    if (config.autoSendOnSave && absentMembers.length > 0) {
+      const recipients = absentMembers.map((m) => ({
+        memberId: m.id,
+        athleteName: m.name,
+        parentName: `Veli (${m.name.split(' ')[0]})`,
+        parentPhone: m.phone || '05300000000',
+        trainerName: selectedGroup.instructorName,
+        groupName: selectedGroup.name,
+        status: (attendanceState[m.id] as any) || 'unmarked',
+      }));
+
+      executeYoklamaReminderTrigger({
+        groupName: selectedGroup.name,
+        trainingDate: attendanceDate,
+        recipients,
+        targetAudience: config.targetAudience || 'parent',
+        channels: config.channels,
+        triggeredBy: 'Otomatik Yoklama Kaydetme Tetikleyicisi',
+      });
+    }
+
     setTimeout(() => {
       setIsSaving(false);
       setAutomationSummary({
@@ -159,6 +196,30 @@ export const YoklamaView: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {/* Export Attendance Report Button */}
+          <button
+            type="button"
+            onClick={() => setIsReportModalOpen(true)}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-slate-800 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-slate-700 transition-colors shadow-sm text-sm"
+            title="Tüm sporcu yoklama verilerini tarih aralığına göre CSV olarak indirin"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Raporu Dışa Aktar</span>
+          </button>
+
+          {/* Reminder Trigger Button */}
+          {selectedGroup && (
+            <button
+              type="button"
+              onClick={() => setIsReminderModalOpen(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-sm text-sm"
+              title="Giriş yapmayan sporcular için veli & eğitmen hatırlatma bildirimi gönder"
+            >
+              <BellRing className="w-4 h-4 text-amber-300" />
+              <span>Hatırlatma Tetikleyicisi</span>
+            </button>
+          )}
+
           {/* Dynamic QR Display Button */}
           {selectedGroup && (
             <button
@@ -170,16 +231,6 @@ export const YoklamaView: React.FC = () => {
               <span>Dinamik QR Kodu Göster</span>
             </button>
           )}
-
-          {/* Camera QR Scanner Button */}
-          <button
-            type="button"
-            onClick={() => setIsCameraScannerOpen(true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-emerald-700 transition-colors shadow-sm text-sm"
-          >
-            <Camera className="w-4 h-4" />
-            <span>Kamera İle QR Tara</span>
-          </button>
 
           {selectedGroup && (
             <button
@@ -197,6 +248,37 @@ export const YoklamaView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Unmarked / Missing Check-in Active Reminder Callout Banner */}
+      {selectedGroup && (unmarkedCount > 0 || absentCount > 0) && (
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border border-amber-300/40 dark:border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 font-bold">
+              <BellRing className="w-5 h-5 animate-bounce" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span>Yoklama Hatırlatma Uyarısı</span>
+                <span className="text-[10px] bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full font-extrabold">
+                  {unmarkedCount + absentCount} Sporcu Katılmadı
+                </span>
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                Bu grupta henüz yoklamaya girmemiş veya gelmedi olarak işaretlenmiş sporcular var. Velilere otomatik SMS/Push hatırlatması tetikleyebilirsiniz.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsReminderModalOpen(true)}
+            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Hatırlatma Bildirimi Gönder</span>
+          </button>
+        </div>
+      )}
 
       {/* Select Group & Date Section */}
       <div className="bg-white rounded-2xl shadow-xs border border-slate-200/60 p-5 mb-6 flex flex-col md:flex-row gap-5 items-end">
@@ -513,6 +595,27 @@ export const YoklamaView: React.FC = () => {
             [memberId]: 'present',
           }));
         }}
+      />
+
+      {/* Yoklama Reminder & Automation Modal */}
+      {selectedGroup && (
+        <YoklamaHatirlatmaModal
+          isOpen={isReminderModalOpen}
+          onClose={() => setIsReminderModalOpen(false)}
+          selectedGroup={selectedGroup}
+          attendanceDate={attendanceDate}
+          attendanceState={attendanceState}
+        />
+      )}
+
+      {/* Yoklama Attendance Report & CSV Export Modal */}
+      <YoklamaRaporExportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        gruplar={gruplar}
+        currentSelectedGroup={selectedGroup}
+        currentAttendanceDate={attendanceDate}
+        currentAttendanceState={attendanceState}
       />
     </div>
   );

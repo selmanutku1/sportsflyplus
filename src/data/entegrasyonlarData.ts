@@ -2,6 +2,19 @@ import { EntegrasyonItem } from '../types';
 
 export const INITIAL_INTEGRATIONS: EntegrasyonItem[] = [
   {
+    id: 'int-sportsfly-lab',
+    name: 'SportsFly Lab',
+    category: 'Kulüp & Spor Modülleri',
+    description: 'Beden kompozisyonu, motor performans, Heath-Carter somatotip, kardiyorespiratuar (VO2peak), D3 radar/gelişim grafikleri ve yapay zeka önerilerini Excel ile içe aktararak 7 sayfalık profesyonel sporcu karnesi oluşturur.',
+    logoUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=200&auto=format&fit=crop&q=80',
+    iconName: 'Activity',
+    isRecommended: true,
+    isActive: true,
+    isInternalModule: true,
+    targetPage: 'sportsfly-lab',
+    connectedAt: '27.09.2026',
+  },
+  {
     id: 'int-sporpuan',
     name: 'Sporpuan İtibar & Değerlendirme',
     category: 'Kulüp & Spor Modülleri',
@@ -79,6 +92,15 @@ export function getStoredIntegrations(): EntegrasyonItem[] {
       const refItem = INITIAL_INTEGRATIONS.find((i) => i.id === 'int-referans');
       if (refItem) {
         items = [refItem, ...items];
+      }
+    }
+
+    // Ensure int-sportsfly-lab exists at the top
+    const hasSportsFlyLab = items.some((i) => i.id === 'int-sportsfly-lab');
+    if (!hasSportsFlyLab) {
+      const labItem = INITIAL_INTEGRATIONS.find((i) => i.id === 'int-sportsfly-lab');
+      if (labItem) {
+        items = [labItem, ...items];
       }
     }
 

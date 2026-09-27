@@ -31,6 +31,8 @@ import { getStoredIntegrations, saveStoredIntegrations } from '../../data/entegr
 import { SporpuanSporcuDegerlendirmeView } from './sporpuan/SporpuanSporcuDegerlendirmeView';
 import { TurnuvaYonetimiView } from './moduller/TurnuvaYonetimiView';
 import { EnvanterYonetimiView } from './moduller/EnvanterYonetimiView';
+import { SportsFlyLabView } from './moduller/SportsFlyLabView';
+import { SportsFlyVectorMark } from '../SportsFlyLogo';
 
 interface EntegrasyonlarViewProps {
   onNavigate?: (page: NavPage) => void;
@@ -56,8 +58,8 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
   const [onlyRecommended, setOnlyRecommended] = useState(false);
   const [onlyActive, setOnlyActive] = useState(false);
 
-  // Active Sub-module viewing (e.g. if user opens SporPuan, Turnuva, or Envanter directly inside Integrations)
-  const [activeSubModule, setActiveSubModule] = useState<'sporpuan' | 'turnuva' | 'envanter' | null>(null);
+  // Active Sub-module viewing (e.g. if user opens SporPuan, Turnuva, Envanter, or SportsFly Lab directly inside Integrations)
+  const [activeSubModule, setActiveSubModule] = useState<'sportsfly-lab' | 'sporpuan' | 'turnuva' | 'envanter' | null>(null);
 
   // Settings Modal for 3rd party APIs (İyzico, WhatsApp, etc.)
   const [settingsModalItem, setSettingsModalItem] = useState<EntegrasyonItem | null>(null);
@@ -97,7 +99,9 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
 
   // Open integration action
   const handleOpenIntegration = (item: EntegrasyonItem) => {
-    if (item.id === 'int-sporpuan') {
+    if (item.id === 'int-sportsfly-lab') {
+      setActiveSubModule('sportsfly-lab');
+    } else if (item.id === 'int-sporpuan') {
       setActiveSubModule('sporpuan');
     } else if (item.id === 'int-turnuva') {
       setActiveSubModule('turnuva');
@@ -159,54 +163,111 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
 
   // Helper Icon Renderer
   const renderIcon = (name?: string, id?: string) => {
+    if (id === 'int-sportsfly-lab') {
+      return <SportsFlyVectorMark className="w-7 h-7" />;
+    }
     switch (name) {
       case 'Star':
-        return <Star className="w-7 h-7 fill-amber-400 text-amber-500" />;
+        return <Star className="w-6 h-6 sm:w-7 sm:h-7 fill-amber-400 text-amber-500" />;
       case 'Trophy':
-        return <Trophy className="w-7 h-7 text-amber-600" />;
+        return <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />;
       case 'Boxes':
-        return <Boxes className="w-7 h-7 text-blue-600" />;
+        return <Boxes className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" />;
       case 'CreditCard':
-        return <CreditCard className="w-7 h-7 text-emerald-600" />;
+        return <CreditCard className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" />;
       case 'MessageSquare':
-        return <MessageSquare className="w-7 h-7 text-green-500" />;
+        return <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7 text-green-500" />;
       case 'PhoneCall':
-        return <PhoneCall className="w-7 h-7 text-indigo-600" />;
+        return <PhoneCall className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600" />;
       case 'Receipt':
-        return <Receipt className="w-7 h-7 text-purple-600" />;
+        return <Receipt className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />;
       case 'Calendar':
-        return <Calendar className="w-7 h-7 text-sky-600" />;
+        return <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-sky-600" />;
       case 'Activity':
-        return <Activity className="w-7 h-7 text-rose-500" />;
+        return <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-rose-500" />;
       case 'Flame':
-        return <Flame className="w-7 h-7 text-orange-500" />;
+        return <Flame className="w-6 h-6 sm:w-7 sm:h-7 text-orange-500" />;
       case 'Sparkles':
-        return <Sparkles className="w-7 h-7 text-emerald-500" />;
+        return <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-500" />;
       default:
-        return <Layers className="w-7 h-7 text-slate-600" />;
+        return <Layers className="w-6 h-6 sm:w-7 sm:h-7 text-slate-600" />;
     }
   };
 
-  // If user is inside a submodule (SporPuan, Turnuva, or Envanter), show the submodule with a clean back button
+  // If user is inside a submodule (SportsFly Lab, SporPuan, Turnuva, or Envanter), show the submodule with a responsive back & quick-switch header
   if (activeSubModule) {
+    const subModules: Array<{
+      key: 'sportsfly-lab' | 'sporpuan' | 'turnuva' | 'envanter';
+      shortLabel: string;
+      fullLabel: string;
+    }> = [
+      {
+        key: 'sportsfly-lab',
+        shortLabel: 'SportsFly Lab',
+        fullLabel: 'SportsFly Lab — Performans & Karne Laboratuvarı',
+      },
+      {
+        key: 'sporpuan',
+        shortLabel: 'SporPuan',
+        fullLabel: 'SporPuan Modülü',
+      },
+      {
+        key: 'turnuva',
+        shortLabel: 'Turnuva & Lig',
+        fullLabel: 'Turnuva & Lig Yönetimi',
+      },
+      {
+        key: 'envanter',
+        shortLabel: 'Envanter',
+        fullLabel: 'Envanter & Malzeme Takibi',
+      },
+    ];
+
+    const activeModuleMeta = subModules.find((m) => m.key === activeSubModule);
+
     return (
-      <div className="space-y-4">
-        {/* Back navigation header */}
-        <div className="bg-white dark:bg-[#111c2e] p-3.5 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-2xs">
-          <button
-            onClick={() => setActiveSubModule(null)}
-            className="flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4 rotate-180" />
-            <span>Entegrasyonlar Sayfasına Geri Dön</span>
-          </button>
-          <div className="text-xs text-slate-400 font-semibold">
-            {activeSubModule === 'sporpuan' && 'Sporpuan Modülü'}
-            {activeSubModule === 'turnuva' && 'Turnuva & Lig Yönetimi'}
-            {activeSubModule === 'envanter' && 'Envanter & Malzeme Takibi'}
+      <div className="space-y-3 sm:space-y-4 print:space-y-0">
+        {/* Responsive Back Navigation & Quick Sub-Module Switcher Bar */}
+        <div className="bg-white dark:bg-[#111c2e] p-3 sm:px-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs print:hidden">
+          <div className="flex items-center justify-between sm:justify-start gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => setActiveSubModule(null)}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180 text-blue-600 dark:text-blue-400" />
+              <span className="sm:hidden">Entegrasyonlar</span>
+              <span className="hidden sm:inline">Entegrasyonlar Sayfasına Geri Dön</span>
+            </button>
+
+            <div className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate sm:hidden">
+              {activeModuleMeta?.shortLabel}
+            </div>
+          </div>
+
+          {/* Quick Module Switcher Pills (Scrollable on mobile, inline on desktop) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:pb-0 -mx-1 px-1">
+            {subModules.map((mod) => {
+              const isCurrent = activeSubModule === mod.key;
+              return (
+                <button
+                  key={mod.key}
+                  type="button"
+                  onClick={() => setActiveSubModule(mod.key)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+                    isCurrent
+                      ? 'bg-slate-900 text-white dark:bg-sky-600 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {mod.shortLabel}
+                </button>
+              );
+            })}
           </div>
         </div>
 
+        {activeSubModule === 'sportsfly-lab' && <SportsFlyLabView onToast={onToast} />}
         {activeSubModule === 'sporpuan' && <SporpuanSporcuDegerlendirmeView onToast={onToast} />}
         {activeSubModule === 'turnuva' && <TurnuvaYonetimiView onToast={onToast} />}
         {activeSubModule === 'envanter' && <EnvanterYonetimiView onToast={onToast} />}
@@ -227,35 +288,87 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
         </div>
       )}
 
-      {/* Main Container matching screenshot layout */}
-      <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 flex flex-col md:flex-row gap-4 md:gap-6">
+      {/* Main Responsive Container */}
+      <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-col md:flex-row gap-3.5 md:gap-6">
         
-        {/* MOBILE VIEW ONLY: Search & Horizontal Category Scroll */}
-        <div className="md:hidden space-y-3">
-          {/* Mobile Search Box */}
+        {/* MOBILE & TABLET UNIFIED CONTROL PANEL (md:hidden) */}
+        <div className="md:hidden bg-white dark:bg-[#111c2e] p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
+          {/* Row 1: Title + Count + Quick Filter Switches */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight truncate">
+                {selectedCategory}
+              </h1>
+              <span className="text-[11px] text-slate-500 dark:text-slate-300 font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 shrink-0">
+                {filteredList.length}
+              </span>
+            </div>
+
+            {/* Compact Filter Buttons for Mobile */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setOnlyRecommended((prev) => !prev)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer ${
+                  onlyRecommended
+                    ? 'bg-emerald-600 text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${onlyRecommended ? 'bg-white' : 'bg-emerald-500'}`} />
+                <span>Önerilen</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOnlyActive((prev) => !prev)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer ${
+                  onlyActive
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${onlyActive ? 'bg-white' : 'bg-blue-500'}`} />
+                <span>Aktif</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Row 2: Search Input */}
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Entegrasyon ara..."
-              className="w-full pl-3.5 pr-9 py-2.5 bg-white dark:bg-[#111c2e] border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 dark:focus:ring-blue-500 shadow-2xs"
+              placeholder="Entegrasyon veya modül ara..."
+              className="w-full pl-3.5 pr-9 py-2 bg-slate-50 dark:bg-[#0b1320] border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 dark:focus:ring-blue-500"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-slate-400 hover:text-slate-600 absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            )}
           </div>
 
-          {/* Horizontal Scrollable Categories for Mobile */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none -mx-3 px-3">
+          {/* Row 3: 2-Column Segmented Category Selector */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl">
             {CATEGORIES.map((category) => {
               const isActive = selectedCategory === category;
               return (
                 <button
                   key={category}
+                  type="button"
                   onClick={() => setSelectedCategory(category)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all truncate cursor-pointer ${
                     isActive
-                      ? 'bg-orange-500 text-white shadow-xs'
-                      : 'bg-white dark:bg-[#111c2e] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                      ? 'bg-white dark:bg-slate-900 text-orange-600 dark:text-sky-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
                   }`}
                 >
                   {category}
@@ -318,10 +431,10 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Header bar with switches & Grid Cards */}
+        {/* RIGHT COLUMN: Desktop Header Bar & Responsive Grid Cards */}
         <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
-          {/* Top Bar: Title & Toggle Switches */}
-          <div className="flex flex-row items-center justify-between gap-3 bg-white dark:bg-[#111c2e] p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          {/* Desktop Top Bar: Title & Toggle Switches (hidden on mobile because unified control panel above handles it) */}
+          <div className="hidden md:flex flex-row items-center justify-between gap-3 bg-white dark:bg-[#111c2e] p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
                 {selectedCategory}
@@ -402,23 +515,42 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredList.map((item) => {
+                const isLab = item.id === 'int-sportsfly-lab';
                 return (
                   <div
                     key={item.id}
                     onClick={() => handleOpenIntegration(item)}
-                    className="bg-white dark:bg-[#111c2e] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-2xs hover:shadow-md hover:border-orange-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between cursor-pointer group"
+                    className={`bg-white dark:bg-[#111c2e] rounded-2xl border p-4 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group ${
+                      isLab
+                        ? 'border-sky-200/90 dark:border-sky-800/70 hover:border-sky-400'
+                        : 'border-slate-200/90 dark:border-slate-800 hover:border-orange-300 dark:hover:border-slate-700'
+                    }`}
                   >
                     <div>
-                      {/* Card Header: Icon / Brand & Badge */}
-                      <div className="flex items-start justify-between gap-3 mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-[#162238] border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      {/* Card Header: Icon + Title on Mobile / Badges */}
+                      <div className="flex items-start justify-between gap-3 mb-2.5 sm:mb-3.5">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
+                              isLab
+                                ? 'bg-slate-900 border border-slate-800 shadow-xs'
+                                : 'bg-slate-50 dark:bg-[#162238] border border-slate-100 dark:border-slate-800'
+                            }`}
+                          >
                             {renderIcon(item.iconName, item.id)}
+                          </div>
+                          <div className="min-w-0 sm:hidden">
+                            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                              {item.name}
+                            </h3>
+                            <span className="text-[10px] font-semibold text-slate-400 block truncate">
+                              {item.category}
+                            </span>
                           </div>
                         </div>
 
                         {/* Top Right Badges (Önerilen or Aktif) */}
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {item.isRecommended && (
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
                               Önerilen
@@ -430,24 +562,24 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Title */}
-                      <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-blue-400 transition-colors mb-2">
+                      {/* Title (Desktop & Tablet) */}
+                      <h3 className="hidden sm:block font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-blue-400 transition-colors mb-1.5">
                         {item.name}
                       </h3>
 
-                      {/* Description (Sade, net, kendini tekrar etmeyen) */}
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                      {/* Description */}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                         {item.description}
                       </p>
                     </div>
 
                     {/* Card Footer: Active toggle switch + Action button */}
                     <div
-                      className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2"
+                      className="mt-4 sm:mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Active / Inactive Switch */}
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <label className="flex items-center gap-2 cursor-pointer select-none py-1">
                         <input
                           type="checkbox"
                           checked={item.isActive}
@@ -472,8 +604,13 @@ export const EntegrasyonlarView: React.FC<EntegrasyonlarViewProps> = ({
 
                       {/* Action Button */}
                       <button
+                        type="button"
                         onClick={() => handleOpenIntegration(item)}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-orange-500 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                          isLab
+                            ? 'bg-slate-900 hover:bg-sky-600 text-white dark:bg-sky-600 dark:hover:bg-sky-500'
+                            : 'bg-slate-100 hover:bg-orange-500 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200'
+                        }`}
                       >
                         <span>{item.isInternalModule ? 'Modülü Aç' : 'Ayarla'}</span>
                         <ChevronRight className="w-3.5 h-3.5" />

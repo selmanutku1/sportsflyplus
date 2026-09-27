@@ -37,6 +37,7 @@ import { GenericPageView } from './components/views/GenericPageView';
 import { PackageAccessRestrictedView } from './components/views/PackageAccessRestrictedView';
 import { LoginView } from './components/LoginView';
 import { PointEarnedPushToast } from './components/notifications/PointEarnedPushToast';
+import { ReminderPushToast } from './components/notifications/ReminderPushToast';
 import {
   getActiveSessionPlan,
   isPageAllowedForPlan,
@@ -252,11 +253,13 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen h-[100dvh] bg-slate-50 dark:bg-[#0b1320] text-slate-800 dark:text-slate-100 flex flex-col antialiased relative transition-colors duration-200 overflow-hidden">
+    <div className="h-screen h-[100dvh] print:h-auto print:overflow-visible print:static bg-slate-50 dark:bg-[#0b1320] text-slate-800 dark:text-slate-100 flex flex-col antialiased relative transition-colors duration-200 overflow-hidden">
       {/* Mobile/Desktop Instant Point Award Push Notification Toast */}
       <PointEarnedPushToast onNavigate={handlePageSelect} />
+      {/* Mobile/Desktop Automatic Yoklama Reminder Push Toast */}
+      <ReminderPushToast onNavigate={handlePageSelect} />
 
-      <div className="flex flex-1 overflow-hidden h-full">
+      <div className="flex flex-1 overflow-hidden h-full print:h-auto print:overflow-visible print:block">
         {/* Sidebar */}
         <Sidebar
           currentPage={currentPage}
@@ -267,7 +270,7 @@ export default function App() {
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden print:h-auto print:overflow-visible print:block">
           {/* Header - Permanently pinned at the top on both web & mobile */}
           <Header
             currentPage={currentPage}
@@ -278,14 +281,14 @@ export default function App() {
           />
 
           {/* Body Content - Dedicated scrollable viewport */}
-          <main className="flex-1 p-3.5 sm:p-4 lg:p-6 w-full overflow-y-auto overflow-x-hidden">
+          <main className="flex-1 p-3.5 sm:p-4 lg:p-6 w-full overflow-y-auto overflow-x-hidden print:p-0 print:overflow-visible print:h-auto">
             {renderActiveView()}
           </main>
         </div>
       </div>
 
       {/* Quick return to Login Screen Floating Helper */}
-      <div className="fixed bottom-4 right-4 z-40">
+      <div className="fixed bottom-4 right-4 z-40 print:hidden">
         <button
           onClick={handleLogout}
           className="bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-semibold py-2 px-3.5 rounded-full shadow-lg border border-slate-700/60 backdrop-blur-xs flex items-center gap-2 transition-all hover:scale-105 cursor-pointer group"

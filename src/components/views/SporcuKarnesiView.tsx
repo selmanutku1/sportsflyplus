@@ -34,11 +34,14 @@ import {
   Send,
   Sparkles,
   Flame,
-  Trophy
+  Trophy,
+  Eye,
+  BarChart3
 } from 'lucide-react';
-import { SportsFlyIcon } from '../SportsFlyLogo';
-import { toCanvas } from 'html-to-image';
-import { jsPDF } from 'jspdf';
+import { SporcuKarnePerformanceCharts } from '../charts/KarnePerformansGrafikleri';
+import { SportsFlyIcon, SportsFlyVectorMark } from '../SportsFlyLogo';
+import { getStoredLabSchoolBranding } from '../../data/sportsFlyLabData';
+import { exportContainerToSmartA4Pdf } from '../../utils/pdfExportHelper';
 import { INITIAL_KARNELER, SporcuKarne, getStoredKarneler, saveStoredKarneler } from '../../data/mockKarneData';
 import { SporcuProfil, getStoredSporcuProfilleri } from '../../data/sporcuProfilData';
 import { INITIAL_SPORCULAR } from '../../data/mockData';
@@ -111,14 +114,20 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
       handleProfillerSync();
     };
 
+    const handleBrandingUpdate = () => {
+      setSporpuanRefreshKey(k => k + 1);
+    };
+
     window.addEventListener('sportsfly_karneler_updated', handleUpdate);
     window.addEventListener('sportsfly_sporcular_updated', handleSporcularSync);
     window.addEventListener('sportsfly_sporcu_profilleri_updated', handleProfillerSync);
     window.addEventListener('sportsfly_sporpuan_updated', handleSporPuanUpdate);
+    window.addEventListener('sportsfly_lab_branding_updated', handleBrandingUpdate);
     window.addEventListener('storage', () => {
       handleSporcularSync();
       handleProfillerSync();
       handleUpdate(null);
+      handleBrandingUpdate();
     });
 
     return () => {
@@ -126,6 +135,7 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
       window.removeEventListener('sportsfly_sporcular_updated', handleSporcularSync);
       window.removeEventListener('sportsfly_sporcu_profilleri_updated', handleProfillerSync);
       window.removeEventListener('sportsfly_sporpuan_updated', handleSporPuanUpdate);
+      window.removeEventListener('sportsfly_lab_branding_updated', handleBrandingUpdate);
     };
   }, []);
 
@@ -137,8 +147,21 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
     });
   };
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPdfPreviewMode, setIsPdfPreviewMode] = useState(false);
+  const [showPerformanceCharts, setShowPerformanceCharts] = useState(true);
+  const [pdfZoom, setPdfZoom] = useState(100);
   const [isVeliModalOpen, setIsVeliModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const schoolBranding = useMemo(() => getStoredLabSchoolBranding(), [sporpuanRefreshKey]);
+
+  React.useEffect(() => {
+    const handleBeforePrint = () => {
+      setShowPerformanceCharts(true);
+      setPdfZoom(100);
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    return () => window.removeEventListener('beforeprint', handleBeforePrint);
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -344,93 +367,81 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
   };
 
   const handleDownloadPDF = async () => {
-    if (!karneRef.current || !selectedKarne) return;
-    
+    if (!karneRef.current || !selectedKarne || isDownloading) return;
+
+    const prevCharts = showPerformanceCharts;
+    const prevZoom = pdfZoom;
+
     try {
       setIsDownloading(true);
-      showToast(`${selectedKarne.adSoyad} sporcu karnesi PDF olarak derleniyor...`);
-      
-      const canvas = await toCanvas(karneRef.current, {
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        skipFonts: true,
-        filter: (domNode) => {
-          if (domNode instanceof HTMLElement) {
-            if (
-              domNode.getAttribute('data-html2canvas-ignore') === 'true' ||
-              domNode.classList.contains('print:hidden') ||
-              domNode.hasAttribute('data-print-ignore')
-            ) {
-              return false;
-            }
-          }
-          return true;
-        }
-      });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      if (pdfHeight > pageHeight) {
-        let heightLeft = pdfHeight;
-        let position = 0;
-        
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
-        
-        while (heightLeft > 0) {
-          position = heightLeft - pdfHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-          heightLeft -= pageHeight;
-        }
+      if (!showPerformanceCharts || pdfZoom !== 100) {
+        setShowPerformanceCharts(true);
+        setPdfZoom(100);
+        await new Promise((r) => setTimeout(r, 250));
       } else {
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        await new Promise((r) => setTimeout(r, 80));
       }
 
-      const fileName = `${selectedKarne.adSoyad.replace(/\s+/g, '_')}_Sporcu_Karnesi.pdf`;
-      pdf.save(fileName);
-      showToast(`✓ ${fileName} başarıyla indirildi!`);
-      
+      showToast(`${selectedKarne.adSoyad} için tüm sporcu karnesi PDF olarak hazırlanıyor...`);
+
+      const fileName = `${selectedKarne.adSoyad.replace(/\s+/g, '_')}_Tum_Sporcu_Karnesi.pdf`;
+      await exportContainerToSmartA4Pdf({
+        containerEl: karneRef.current,
+        fileName,
+      });
+
+      showToast(`✓ ${fileName} (Tüm Karne) başarıyla indirildi!`);
     } catch (error) {
       console.error('PDF oluşturulurken hata:', error);
       showToast('PDF oluşturulurken bir hata oluştu. Tarayıcınızın "Yazdır" seçeneğini kullanabilirsiniz.');
     } finally {
       setIsDownloading(false);
+      setShowPerformanceCharts(prevCharts);
+      setPdfZoom(prevZoom);
     }
   };
 
-  const renderProgressBar = (label: string, value: number, colorClass: string, bonus?: number) => (
-    <div className="mb-4">
-      <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
-        <span className="text-slate-600">{label}</span>
-        <div className="flex items-center gap-1.5">
-          {bonus !== undefined && bonus > 0 && (
-            <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-              <Zap className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
-              +{bonus} SP
-            </span>
-          )}
-          <span className="text-slate-800 font-bold">{value}/10</span>
+  const handlePrintKarne = () => {
+    setShowPerformanceCharts(true);
+    setPdfZoom(100);
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
+  const getProgressHex = (colorClass: string) => {
+    if (colorClass.includes('emerald')) return '#10b981';
+    if (colorClass.includes('purple')) return '#9333ea';
+    if (colorClass.includes('amber')) return '#f59e0b';
+    if (colorClass.includes('indigo')) return '#4f46e5';
+    if (colorClass.includes('rose')) return '#e11d48';
+    return '#3b82f6';
+  };
+
+  const renderProgressBar = (label: string, value: number, colorClass: string, bonus?: number) => {
+    const barHex = getProgressHex(colorClass);
+    const pctWidth = Math.max(4, Math.min(200, value * 20));
+    return (
+      <div className="mb-4">
+        <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
+          <span className="text-slate-600">{label}</span>
+          <div className="flex items-center gap-1.5">
+            {bonus !== undefined && bonus > 0 && (
+              <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                <Zap className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
+                +{bonus} SP
+              </span>
+            )}
+            <span className="text-slate-800 font-bold">{value}/10</span>
+          </div>
         </div>
+        <svg viewBox="0 0 200 8" preserveAspectRatio="none" className="w-full h-2 rounded-full overflow-hidden block">
+          <rect x="0" y="0" width="200" height="8" rx="4" fill="#f1f5f9" />
+          <rect x="0" y="0" width={pctWidth} height="8" rx="4" fill={barHex} />
+        </svg>
       </div>
-      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
-        <div 
-          className={`h-full rounded-full ${colorClass} transition-all duration-1000 ease-out`} 
-          style={{ width: `${Math.min(100, value * 10)}%` }}
-        ></div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const genelOrtalama = activeKarne ? (
     (
@@ -443,9 +454,9 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
   ).toFixed(1) : '0.0';
 
   return (
-    <div className="flex-1 p-4 lg:p-8 pt-6 overflow-y-auto w-full h-full">
+    <div className="flex-1 p-4 lg:p-8 pt-6 overflow-y-auto w-full h-full print:p-0 print:overflow-visible print:h-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 print:hidden">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
             <Award className="w-8 h-8 text-blue-600" />
@@ -454,10 +465,10 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-8 print:block">
         
         {/* Left Panel - Selection List */}
-        <div className="w-full lg:w-80 shrink-0">
+        <div className={`w-full lg:w-80 shrink-0 print:hidden ${isPdfPreviewMode ? 'hidden' : ''}`}>
           <div className="bg-white rounded-2xl shadow-xs border border-slate-200/60 p-4 sticky top-6">
             <div className="relative mb-4">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -528,85 +539,243 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
         {/* Right Panel - Report Card View */}
         {selectedKarne ? (
           <div className="flex-1 min-w-0">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-end gap-2.5 mb-4 print:hidden">
-              {/* Quick Point Award Button directly on Karne */}
-              <button 
-                type="button"
-                onClick={() => setIsQuickPointModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black rounded-lg text-xs transition-all shadow-xs cursor-pointer active:scale-95"
-                title="Sporcuya tek tıkla saha içi hızlı puan ver ve karnesine anında yansıt"
-              >
-                <Zap className="w-4 h-4 fill-slate-950" />
-                <span>Hızlı Puan Ver</span>
-              </button>
+            {/* Toolbar — Structured into Action Groups & Mobile Responsive Grid */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 mb-4 shadow-2xs flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 print:hidden">
+              {/* Left Group: Point & Chart Controls */}
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                <button 
+                  type="button"
+                  onClick={() => setIsQuickPointModalOpen(true)}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black rounded-xl text-xs transition-all shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
+                  title="Sporcuya tek tıkla saha içi hızlı puan ver ve karnesine anında yansıt"
+                >
+                  <Zap className="w-4 h-4 fill-slate-950 shrink-0" />
+                  <span>Hızlı Puan Ver</span>
+                </button>
 
-              {onNavigate && (
+                {onNavigate && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('sporpuan-sporcu-degerlendirme')}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors shadow-2xs cursor-pointer whitespace-nowrap"
+                  >
+                    <ClipboardCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="hidden sm:inline">Puanları Değerlendir</span>
+                    <span className="sm:hidden">Değerlendir</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => onNavigate('sporpuan-sporcu-degerlendirme')}
-                  className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors shadow-2xs cursor-pointer"
+                  onClick={() => setShowPerformanceCharts(prev => !prev)}
+                  className={`col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer whitespace-nowrap ${
+                    showPerformanceCharts
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                  title="D3 Radar Grafik ve Çizgi Grafiklerle görselleştirilen Performans Grafikleri panelini göster/gizle"
                 >
-                  <ClipboardCheck className="w-4 h-4 text-blue-600" />
-                  <span className="hidden sm:inline">Puanları Değerlendir / Düzenle</span>
-                  <span className="sm:hidden">Değerlendir</span>
+                  <BarChart3 className="w-4 h-4 shrink-0" />
+                  <span>Performans Grafikleri</span>
                 </button>
-              )}
-              <button 
-                type="button"
-                onClick={() => window.print()}
-                className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
-                title="Yazıcıdan yazdırın veya tarayıcıdan PDF olarak kaydedin"
-              >
-                <Printer className="w-4 h-4 text-slate-500" />
-                <span className="hidden sm:inline">Yazdır</span>
-              </button>
-              <button 
-                type="button"
-                onClick={handleDownloadPDF}
-                disabled={isDownloading}
-                className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
-                title="Karnenin yüksek çözünürlüklü A4 PDF belgesini indirin"
-              >
-                {isDownloading ? (
-                  <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4 text-blue-600" />
-                )}
-                <span>
-                  {isDownloading ? 'İndiriliyor...' : 'PDF İndir'}
-                </span>
-              </button>
-              <button 
-                type="button"
-                onClick={() => setIsVeliModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors shadow-2xs cursor-pointer"
-                title="Veliye WhatsApp üzerinden karnenin özetini ve PDF'ini gönderin"
-              >
-                <MessageSquare className="w-4 h-4 text-emerald-600" />
-                <span className="hidden md:inline">WhatsApp</span>
-              </button>
-              <button 
-                type="button"
-                onClick={() => setIsVeliModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-blue-50 border border-blue-300 text-blue-800 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors shadow-2xs cursor-pointer"
-                title="Kulüp resmi SMS başlığıyla veliye SMS gönderin"
-              >
-                <Smartphone className="w-4 h-4 text-blue-600" />
-                <span className="hidden md:inline">SMS</span>
-              </button>
-              <button 
-                type="button"
-                onClick={() => setIsVeliModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-lg text-xs font-extrabold transition-all shadow-xs cursor-pointer"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>Veliye Gönder</span>
-              </button>
+              </div>
+
+              {/* Right Group: PDF / Print / Parent Share Actions */}
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                <button 
+                  type="button"
+                  onClick={() => setIsPdfPreviewMode(prev => !prev)}
+                  className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer whitespace-nowrap ${
+                    isPdfPreviewMode
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                  title="Sporcu karnesini A4 PDF formatında web üzerinde görüntüleyin ve yazdırın"
+                >
+                  <Eye className="w-4 h-4 shrink-0" />
+                  <span>{isPdfPreviewMode ? 'PDF Görünümünü Kapat' : 'PDF Olarak Görüntüle'}</span>
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={handlePrintKarne}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer whitespace-nowrap"
+                  title="Tarayıcı yazdırma modunu kullanarak arka plan grafikleri ve SportsFly Lab markalamasıyla A4 çıktı alın"
+                >
+                  <Printer className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>A4 Yazdır</span>
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={handleDownloadPDF}
+                  disabled={isDownloading}
+                  className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold transition-colors shadow-xs disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                  title="Tüm karne sayfalarını ve performans grafiklerini kapsayan temiz A4 PDF belgesini indirin"
+                >
+                  {isDownloading ? (
+                    <div className="w-4 h-4 border-2 border-slate-400 border-t-white rounded-full animate-spin shrink-0" />
+                  ) : (
+                    <Download className="w-4 h-4 text-sky-400 shrink-0" />
+                  )}
+                  <span>
+                    {isDownloading ? 'Tüm Karne İndiriliyor...' : 'Tüm Karneyi İndir'}
+                  </span>
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={() => setIsVeliModalOpen(true)}
+                  className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs font-extrabold transition-all shadow-xs cursor-pointer whitespace-nowrap"
+                  title="Veliye WhatsApp veya SMS üzerinden karnenin özetini ve PDF'ini gönderin"
+                >
+                  <Share2 className="w-4 h-4 shrink-0" />
+                  <span>Veliye Gönder (WhatsApp / SMS)</span>
+                </button>
+              </div>
             </div>
 
-            {/* Print Area Container (Simulated) */}
-            <div ref={karneRef} id="sporcu-karne-print-area" className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden relative">
+            {/* Interactive A4 PDF Document Preview Bar (Shown when 'PDF Olarak Görüntüle' is active) */}
+            {isPdfPreviewMode && (
+              <div className="mb-4 bg-slate-900 text-white rounded-2xl p-3.5 sm:px-5 border border-slate-700 flex flex-wrap items-center justify-between gap-3 shadow-lg print:hidden">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-extrabold tracking-tight flex items-center gap-2">
+                      <span>A4 PDF Önizleme Modu — {activeKarne.adSoyad}</span>
+                      <span className="text-[11px] font-mono font-normal text-slate-300">
+                        (210 × 297 mm · A4 Baskı Formatı)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Karnenin A4 yazdırma görünümünü inceliyorsunuz. Doğrudan A4 yazdırabilir veya PDF indirebilirsiniz.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs">
+                    {[90, 100, 110].map((z) => (
+                      <button
+                        key={z}
+                        type="button"
+                        onClick={() => setPdfZoom(z)}
+                        className={`px-2.5 py-1 rounded-lg font-mono font-bold transition-colors cursor-pointer ${
+                          pdfZoom === z ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        %{z}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handlePrintKarne}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>A4 Yazdır / PDF Çıktısı Al</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading}
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-blue-600" />
+                    <span>{isDownloading ? 'İndiriliyor...' : 'Tüm Karneyi İndir'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsPdfPreviewMode(false)}
+                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Kapat</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Print Area Container (A4 Styled when in PDF Preview or @media print) */}
+            <div
+              className={
+                isPdfPreviewMode
+                  ? 'bg-slate-800/95 p-4 sm:p-8 rounded-2xl border border-slate-700 shadow-2xl overflow-x-auto print:bg-white print:p-0 print:border-0 print:shadow-none'
+                  : ''
+              }
+            >
+              <div
+                ref={karneRef}
+                id="sporcu-karne-print-area"
+                className={`bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden relative print:rounded-none print:shadow-none print:border-slate-300 ${
+                  isPdfPreviewMode ? 'max-w-[210mm] mx-auto ring-1 ring-slate-300 shadow-2xl' : ''
+                }`}
+                style={
+                  isPdfPreviewMode && pdfZoom !== 100
+                    ? { zoom: `${pdfZoom}%` }
+                    : undefined
+                }
+              >
+              {/* Top Institutional Bar: Spor Okulu Adı & Logosu + SportsFly Lab Co-Branding */}
+              <div className="bg-white px-6 md:px-8 pt-4 pb-3 border-b border-slate-200">
+                <svg
+                  viewBox="0 0 600 6"
+                  preserveAspectRatio="none"
+                  className="w-full h-1.5 rounded-full overflow-hidden block mb-3"
+                  aria-hidden="true"
+                >
+                  <rect x="0" y="0" width="348" height="6" fill="#0f172a" />
+                  <rect x="348" y="0" width="144" height="6" fill="#0ea5e9" />
+                  <rect x="492" y="0" width="108" height="6" fill="#e11d48" />
+                </svg>
+
+                <div className="flex flex-col sm:flex-row print:flex-row sm:items-center print:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {schoolBranding.logoDataUrl ? (
+                      <div className="w-11 h-11 rounded-xl border border-slate-200 bg-slate-50 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                        <img
+                          src={schoolBranding.logoDataUrl}
+                          alt={schoolBranding.schoolName}
+                          className="w-full h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs shrink-0">
+                        {(schoolBranding.schoolName || 'SK').slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-[10px] font-mono font-bold tracking-widest text-sky-700 uppercase">
+                        RESMİ SPORCU GELİŞİM &amp; PERFORMANS KARNESİ · {schoolBranding.branchName || 'Merkez Kampüs'}
+                      </div>
+                      <div className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight">
+                        {schoolBranding.schoolName || 'ATAŞEHİR SPOR OKULLARI AKADEMİSİ'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shrink-0">
+                    <SportsFlyVectorMark className="w-6 h-6" />
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-black tracking-tight text-slate-900">SportsFly</span>
+                        <span className="text-[10px] font-black tracking-widest text-sky-600 uppercase">LAB</span>
+                      </div>
+                      <div className="text-[8.5px] font-mono font-semibold tracking-wider text-slate-400 uppercase">
+                        ATHLETIC PERFORMANCE LAB
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Report Header */}
               <div className="bg-slate-900 text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
                 <div className="flex items-center gap-5 relative z-10">
@@ -767,8 +936,13 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                 </div>
               )}
 
+              {/* D3 Radar & Progression Line Charts Panel */}
+              {showPerformanceCharts && (
+                <SporcuKarnePerformanceCharts karne={activeKarne} />
+              )}
+
               {/* Main Content Grid */}
-              <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6">
                 
                 {/* Technical Skills */}
                 <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-5">
@@ -1292,17 +1466,48 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
 
               </div>
 
-              {/* Footer Signature Area */}
-              <div className="bg-slate-50 p-6 md:p-8 flex items-center justify-between border-t border-slate-200">
-                <div className="text-center">
-                  <div className="w-32 h-px bg-slate-300 mb-2"></div>
-                  <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Antrenör</div>
-                  <div className="text-sm text-slate-800 font-medium">{activeKarne.antrenor}</div>
+              {/* Footer Signature Area & Official SportsFly Lab Branding Strip */}
+              <div className="a4-avoid-break bg-slate-50 p-6 md:p-8 border-t border-slate-200 space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="text-center">
+                    <div className="w-32 h-px bg-slate-300 mb-2"></div>
+                    <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Antrenör</div>
+                    <div className="text-sm text-slate-800 font-medium">{activeKarne.antrenor}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-32 h-px bg-slate-300 mb-2"></div>
+                    <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Veli / Sporcu İmza</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="w-32 h-px bg-slate-300 mb-2"></div>
-                  <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Veli / Sporcu İmza</div>
+
+                {/* Bottom SportsFly Lab Brand & Logo Strip */}
+                <div className="pt-4 border-t border-slate-200/90 flex flex-col sm:flex-row print:flex-row sm:items-center print:items-center justify-between gap-3 bg-white px-4 py-3 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
+                      <SportsFlyVectorMark className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black tracking-tight text-slate-900">
+                          SportsFly <span className="text-sky-600">LAB</span>
+                        </span>
+                        <span className="text-slate-300">·</span>
+                        <span className="text-[9.5px] font-mono font-bold text-slate-500 uppercase tracking-wider">
+                          ATLETİK PERFORMANS &amp; SPORCU KARNE SİSTEMİ
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Spor okulları için bilimsel performans ölçümü, gelişim analizi ve kurumsal karne altyapısı
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right font-mono text-[10px] text-slate-500 shrink-0">
+                    <div className="font-bold text-slate-800 uppercase">{schoolBranding.schoolName || 'SPOR OKULU AKADEMİSİ'}</div>
+                    <div>SportsFly Lab Onaylı Belge</div>
+                  </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>

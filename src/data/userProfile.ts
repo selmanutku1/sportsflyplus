@@ -1,3 +1,10 @@
+import {
+  secureStorageGet,
+  secureStorageSet,
+  sanitizeInputString,
+  recordSecurityAuditEvent,
+} from '../utils/securityCore';
+
 export interface UserProfileData {
   name: string;
   email: string;
@@ -60,9 +67,18 @@ export function getStoredUserProfile(): UserProfileData {
     return DEFAULT_USER_PROFILE;
   }
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (data) {
-      return { ...DEFAULT_USER_PROFILE, ...JSON.parse(data) };
+    const stored = secureStorageGet<Partial<UserProfileData> | null>(STORAGE_KEY, null);
+    if (stored && typeof stored === 'object') {
+      return {
+        ...DEFAULT_USER_PROFILE,
+        ...stored,
+        name: sanitizeInputString(stored.name || DEFAULT_USER_PROFILE.name, 100),
+        email: sanitizeInputString(stored.email || DEFAULT_USER_PROFILE.email, 160),
+        phone: sanitizeInputString(stored.phone || DEFAULT_USER_PROFILE.phone, 32),
+        role: sanitizeInputString(stored.role || DEFAULT_USER_PROFILE.role, 60),
+        title: sanitizeInputString(stored.title || DEFAULT_USER_PROFILE.title, 100),
+        club: sanitizeInputString(stored.club || DEFAULT_USER_PROFILE.club, 140),
+      };
     }
   } catch (err) {
     console.error('Failed to parse stored user profile:', err);
@@ -73,8 +89,26 @@ export function getStoredUserProfile(): UserProfileData {
 export function saveStoredUserProfile(profile: UserProfileData): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    window.dispatchEvent(new CustomEvent('sportsfly_profile_updated', { detail: profile }));
+    const cleanProfile: UserProfileData = {
+      ...profile,
+      name: sanitizeInputString(profile.name, 100),
+      email: sanitizeInputString(profile.email, 160),
+      phone: sanitizeInputString(profile.phone, 32),
+      role: sanitizeInputString(profile.role, 60),
+      title: sanitizeInputString(profile.title, 100),
+      club: sanitizeInputString(profile.club, 140),
+      branch: sanitizeInputString(profile.branch, 200),
+      bio: sanitizeInputString(profile.bio, 500),
+    };
+    secureStorageSet(STORAGE_KEY, cleanProfile);
+    recordSecurityAuditEvent({
+      category: 'AUTH',
+      severity: 'INFO',
+      action: 'USER_PROFILE_UPDATED',
+      actor: cleanProfile.name || 'Kullanıcı',
+      details: `Kullanıcı profili ve oturum rolü (${cleanProfile.role}) kriptografik imza ile güncellendi.`,
+    });
+    window.dispatchEvent(new CustomEvent('sportsfly_profile_updated', { detail: cleanProfile }));
   } catch (err) {
     console.error('Failed to save user profile:', err);
   }
