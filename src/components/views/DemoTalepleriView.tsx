@@ -44,6 +44,17 @@ export interface DemoRequestItem {
   approvedAt?: string;
 }
 
+const LEGACY_TEST_IDS = new Set([
+  'demo_101',
+  'demo_102',
+  'demo_103',
+  'req_101',
+  'req_102',
+  'req_103',
+  'req_104',
+  'req_105',
+]);
+
 export const DemoTalepleriView: React.FC = () => {
   const [items, setItems] = useState<DemoRequestItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,29 +78,31 @@ export const DemoTalepleriView: React.FC = () => {
       if (res.ok) {
         const json = await res.json();
         const rawList: any[] = Array.isArray(json.items) ? json.items : Array.isArray(json.data) ? json.data : [];
-        const mapped: DemoRequestItem[] = rawList.map((r) => ({
-          id: String(r.id || ''),
-          fullName: String(r.fullName || r.managerName || 'Kulüp Yetkilisi'),
-          clubName: String(r.clubName || 'Spor Okulu'),
-          phone: String(r.phone || ''),
-          email: String(r.email || ''),
-          branch: String(r.branch || (Array.isArray(r.branches) ? r.branches.join(', ') : 'Genel Branş')),
-          studentEstimate: String(r.studentEstimate ?? r.athleteCount ?? 'Belirtilmedi'),
-          selectedPlan: String(r.selectedPlan || 'Kulüp & Akademi'),
-          submittedAt: String(r.submittedAt || r.createdAt || ''),
-          requestType: r.requestType || 'demo_rezervasyonu',
-          source: r.source || 'sportsfly.com.tr',
-          status: r.status || 'onay_bekliyor',
-          notes: r.notes,
-          rejectionReason: r.rejectionReason,
-          approvedAt: r.approvedAt,
-        }));
+        const mapped: DemoRequestItem[] = rawList
+          .filter((r) => r && r.id && !LEGACY_TEST_IDS.has(String(r.id)))
+          .map((r) => ({
+            id: String(r.id || ''),
+            fullName: String(r.fullName || r.managerName || 'Kulüp Yetkilisi'),
+            clubName: String(r.clubName || 'Spor Okulu'),
+            phone: String(r.phone || ''),
+            email: String(r.email || ''),
+            branch: String(r.branch || (Array.isArray(r.branches) ? r.branches.join(', ') : 'Genel Branş')),
+            studentEstimate: String(r.studentEstimate ?? r.athleteCount ?? 'Belirtilmedi'),
+            selectedPlan: String(r.selectedPlan || 'Kulüp & Akademi'),
+            submittedAt: String(r.submittedAt || r.createdAt || ''),
+            requestType: r.requestType || 'demo_rezervasyonu',
+            source: r.source || 'sportsfly.com.tr',
+            status: r.status || 'onay_bekliyor',
+            notes: r.notes,
+            rejectionReason: r.rejectionReason,
+            approvedAt: r.approvedAt,
+          }));
         setItems(mapped);
         setLastSyncedAt(
           new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         );
         if (notify) {
-          showToast('GET /api/demo-requests üzerinden güncel demo talepleri yüklendi.', 'info');
+          showToast('Güncel demo talepleri senkronize edildi.', 'info');
         }
       }
     } catch {
@@ -106,59 +119,6 @@ export const DemoTalepleriView: React.FC = () => {
     const timer = setInterval(() => fetchDemoRequests(false), 8000);
     return () => clearInterval(timer);
   }, [fetchDemoRequests]);
-
-  const handleSimulateWebhook = async () => {
-    const samples = [
-      {
-        id: `demo_${Math.floor(100000 + Math.random() * 900000)}`,
-        fullName: 'Kaan Özdemir',
-        clubName: 'Beşiktaş Akademi Basketbol & Yüzme Okulu',
-        phone: '0532 811 22 33',
-        email: 'kaan@besiktasakademi.com.tr',
-        branch: 'Basketbol, Yüzme',
-        studentEstimate: '320',
-        selectedPlan: 'Pro Akademi & Çoklu Şube',
-        submittedAt: new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Istanbul' }).slice(0, 16),
-      },
-      {
-        id: `demo_${Math.floor(100000 + Math.random() * 900000)}`,
-        fullName: 'Zeynep Kaya',
-        clubName: 'Çankaya Elit Voleybol Akademisi',
-        phone: '0544 610 90 12',
-        email: 'iletisim@cankayavoleybol.com.tr',
-        branch: 'Voleybol',
-        studentEstimate: '185',
-        selectedPlan: 'Kulüp & Akademi',
-        submittedAt: new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Istanbul' }).slice(0, 16),
-      },
-      {
-        id: `demo_${Math.floor(100000 + Math.random() * 900000)}`,
-        fullName: 'Tolga Yavuz',
-        clubName: 'Karşıyaka Olimpik Futbol Okulu',
-        phone: '0533 412 77 88',
-        email: 'tolga@karsiyakaolimpik.com',
-        branch: 'Futbol',
-        studentEstimate: '240',
-        selectedPlan: 'Kulüp & Akademi',
-        submittedAt: new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Istanbul' }).slice(0, 16),
-      },
-    ];
-    const sample = samples[Math.floor(Math.random() * samples.length)];
-
-    try {
-      const res = await fetch('/api/demo-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sample),
-      });
-      if (res.ok) {
-        await fetchDemoRequests(false);
-        showToast(`Yeni demo talebi (${sample.clubName}) POST /api/demo-requests ile tabloya eklendi!`);
-      }
-    } catch {
-      showToast('Test gönderimi sırasında hata oluştu.', 'error');
-    }
-  };
 
   const handleUpdateStatus = async (item: DemoRequestItem, status: 'onaylandi' | 'reddedildi') => {
     try {
@@ -285,14 +245,6 @@ await fetch('https://webapp.sportsfly.com.tr/api/demo-requests', {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={handleSimulateWebhook}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>Örnek Demo Formu Gönder (Test)</span>
-          </button>
-
           <button
             onClick={() => setIsCodeModalOpen(true)}
             className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"

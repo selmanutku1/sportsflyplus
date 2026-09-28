@@ -1169,118 +1169,18 @@ export interface ServerDemoOrClubRequest {
 const DEMO_REQUESTS_DATA_DIR = path.join(process.cwd(), 'data');
 const DEMO_REQUESTS_FILE = path.join(DEMO_REQUESTS_DATA_DIR, 'demo-requests.json');
 
-const INITIAL_SERVER_DEMO_REQUESTS: ServerDemoOrClubRequest[] = [
-  {
-    id: 'demo_101',
-    fullName: 'Selman Utku Marmara',
-    clubName: 'Kadıköy Basketbol Akademisi',
-    phone: '0532 123 45 67',
-    email: 'selman@kadikoybasket.com',
-    branch: 'Basketbol',
-    studentEstimate: '350+',
-    selectedPlan: 'Pro Akademi & Çoklu Şube',
-    submittedAt: '2026-09-28 14:30',
-    requestType: 'demo_rezervasyonu',
-    source: 'sportsfly.com.tr',
-    managerName: 'Selman Utku Marmara',
-    city: 'İstanbul',
-    district: 'Kadıköy',
-    branches: ['Basketbol'],
-    athleteCount: '350+',
-    demoDate: '2026-09-30',
-    demoTime: '14:00',
-    createdAt: '2026-09-28 14:30',
-    status: 'onay_bekliyor',
-    notes: 'sportsfly.com.tr üzerinden canlı demo formu dolduruldu.',
-  },
-  {
-    id: 'demo_102',
-    fullName: 'Elif Zeynep Aydın',
-    clubName: 'Anadolu Voleybol Gençlik Kulübü',
-    phone: '0533 987 65 43',
-    email: 'info@anadoluvoleybol.org',
-    branch: 'Voleybol',
-    studentEstimate: '120-250',
-    selectedPlan: 'Kulüp & Akademi',
-    submittedAt: '2026-09-27 18:15',
-    requestType: 'demo_rezervasyonu',
-    source: 'sportsfly.com.tr',
-    managerName: 'Elif Zeynep Aydın',
-    city: 'Ankara',
-    district: 'Çankaya',
-    branches: ['Voleybol'],
-    athleteCount: '120-250',
-    createdAt: '2026-09-27 18:15',
-    status: 'onay_bekliyor',
-    notes: 'sportsfly.com.tr üzerinden demo talebi iletildi.',
-  },
-  {
-    id: 'demo_103',
-    fullName: 'Murat Kara',
-    clubName: 'İzmir Gelişim Atletizm Spor Kulübü',
-    phone: '0542 555 12 34',
-    email: 'murat@izmiratletizm.com',
-    branch: 'Atletizm, Cimnastik',
-    studentEstimate: '85',
-    selectedPlan: 'Başlangıç Kulübü',
-    submittedAt: '2026-09-26 11:20',
-    requestType: 'demo_rezervasyonu',
-    source: 'sportsfly.com.tr',
-    managerName: 'Murat Kara',
-    city: 'İzmir',
-    district: 'Alsancak',
-    branches: ['Atletizm', 'Cimnastik'],
-    athleteCount: '85',
-    demoDate: '2026-09-27',
-    demoTime: '11:00',
-    createdAt: '2026-09-26 11:20',
-    status: 'onaylandi',
-    approvedAt: '2026-09-26 14:00',
-    notes: 'Demo görüşmesi tamamlandı, tesis onay belgeleri doğrulandı.',
-  },
-  {
-    id: 'req_104',
-    fullName: 'Ahmet Yılmaz',
-    clubName: 'Bursa Yıldızlar Futbol Okulu',
-    phone: '0535 444 88 99',
-    email: 'ahmet@bursayildizlar.com',
-    branch: 'Futbol',
-    studentEstimate: '210',
-    selectedPlan: 'Kulüp & Akademi',
-    submittedAt: '2026-09-25 15:45',
-    requestType: 'spor_okulu_basvurusu',
-    source: 'webapp.sportsfly.com.tr',
-    managerName: 'Ahmet Yılmaz',
-    city: 'Bursa',
-    district: 'Nilüfer',
-    branches: ['Futbol'],
-    athleteCount: '210',
-    createdAt: '2026-09-25 15:45',
-    status: 'onaylandi',
-    approvedAt: '2026-09-25 16:30',
-  },
-  {
-    id: 'req_105',
-    fullName: 'Ceren Demir',
-    clubName: 'Antalya Yüzme Akademisi',
-    phone: '0505 333 22 11',
-    email: 'ceren@antalyayuzme.com',
-    branch: 'Yüzme',
-    studentEstimate: '180',
-    selectedPlan: 'Pro Akademi & Çoklu Şube',
-    submittedAt: '2026-09-24 09:10',
-    requestType: 'spor_okulu_basvurusu',
-    source: 'sportsfly.com.tr',
-    managerName: 'Ceren Demir',
-    city: 'Antalya',
-    district: 'Muratpaşa',
-    branches: ['Yüzme'],
-    athleteCount: '180',
-    createdAt: '2026-09-24 09:10',
-    status: 'reddedildi',
-    rejectionReason: 'Vergi levhası ve yetki belgesi eksik / doğrulanamadı.',
-  },
-];
+const LEGACY_TEST_REQUEST_IDS = new Set([
+  'demo_101',
+  'demo_102',
+  'demo_103',
+  'req_101',
+  'req_102',
+  'req_103',
+  'req_104',
+  'req_105',
+]);
+
+const INITIAL_SERVER_DEMO_REQUESTS: ServerDemoOrClubRequest[] = [];
 
 function normalizeDemoRequestItem(raw: any): ServerDemoOrClubRequest {
   const fullName = String(raw.fullName || raw.managerName || raw.name || 'Kulüp Yetkilisi').trim();
@@ -1328,14 +1228,16 @@ function loadDemoRequestsFromDisk(): ServerDemoOrClubRequest[] {
     if (fs.existsSync(DEMO_REQUESTS_FILE)) {
       const raw = fs.readFileSync(DEMO_REQUESTS_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(normalizeDemoRequestItem);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((item) => item && !LEGACY_TEST_REQUEST_IDS.has(String(item.id)))
+          .map(normalizeDemoRequestItem);
       }
     }
   } catch (err) {
-    console.warn('[DemoRequests] Could not read demo-requests.json, using initial seed.');
+    console.warn('[DemoRequests] Could not read demo-requests.json, using empty store.');
   }
-  return INITIAL_SERVER_DEMO_REQUESTS.map(normalizeDemoRequestItem);
+  return INITIAL_SERVER_DEMO_REQUESTS;
 }
 
 let demoRequestsStore: ServerDemoOrClubRequest[] = loadDemoRequestsFromDisk();

@@ -1305,9 +1305,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
                 // Save new application to localStorage & POST to /api/demo-requests for Super Admin approval
                 try {
-                  const stored = localStorage.getItem('sportsfly_club_applications_v1');
+                  const stored = localStorage.getItem('sportsfly_club_applications_v3');
                   const existing = stored ? JSON.parse(stored) : [];
-                  localStorage.setItem('sportsfly_club_applications_v1', JSON.stringify([newEntry, ...existing]));
+                  localStorage.setItem('sportsfly_club_applications_v3', JSON.stringify([newEntry, ...existing]));
                 } catch (err) {}
 
                 fetch('/api/demo-requests', {
