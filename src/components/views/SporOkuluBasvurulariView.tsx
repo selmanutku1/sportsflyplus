@@ -66,11 +66,13 @@ export const SporOkuluBasvurulariView: React.FC = () => {
   const [requests, setRequests] = useState<ClubRegistrationRequest[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('sportsfly_club_applications_v1');
+        localStorage.removeItem('sportsfly_club_applications_v1');
+        localStorage.removeItem('sportsfly_club_applications_v2');
+        const stored = localStorage.getItem('sportsfly_club_applications_v3');
         if (stored) {
           const parsed = JSON.parse(stored);
           const cleaned = filterOutTestItems(parsed);
-          localStorage.setItem('sportsfly_club_applications_v1', JSON.stringify(cleaned));
+          localStorage.setItem('sportsfly_club_applications_v3', JSON.stringify(cleaned));
           return cleaned;
         }
       } catch (e) {}
@@ -86,7 +88,7 @@ export const SporOkuluBasvurulariView: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isLiveConnected, setIsLiveConnected] = useState(true);
 
   const [toastMessage, setToastMessage] = useState<{
     text: string;
@@ -100,64 +102,112 @@ export const SporOkuluBasvurulariView: React.FC = () => {
     }, 4000);
   };
 
+  const applyServerItems = useCallback((rawItems: any[]) => {
+    if (!Array.isArray(rawItems)) return;
+    const merged: ClubRegistrationRequest[] = filterOutTestItems(rawItems);
+    try {
+      const localRaw = localStorage.getItem('sportsfly_club_applications_v3');
+      if (localRaw) {
+        const localItems: ClubRegistrationRequest[] = filterOutTestItems(JSON.parse(localRaw));
+        const serverIds = new Set(merged.map((m) => m.id));
+        for (const loc of localItems) {
+          if (loc && loc.id && !serverIds.has(loc.id)) {
+            merged.unshift(loc);
+          }
+        }
+      }
+    } catch {}
+
+    setRequests(merged);
+    try {
+      localStorage.setItem('sportsfly_club_applications_v3', JSON.stringify(merged));
+    } catch {}
+  }, []);
+
   const saveRequestsToStorage = (updated: ClubRegistrationRequest[]) => {
     const cleaned = filterOutTestItems(updated);
     setRequests(cleaned);
     try {
-      localStorage.setItem('sportsfly_club_applications_v1', JSON.stringify(cleaned));
+      localStorage.setItem('sportsfly_club_applications_v3', JSON.stringify(cleaned));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('sportsfly_demo_requests_live');
+        bc.postMessage({ type: 'updated', items: cleaned });
+        bc.close();
+      }
     } catch (e) {}
   };
 
-  const fetchLiveRequests = useCallback(async (showNotification = false) => {
-    setIsSyncing(true);
+  const fetchLiveRequests = useCallback(async () => {
     try {
       const res = await fetch('/api/demo-requests');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.items)) {
-          let merged: ClubRegistrationRequest[] = filterOutTestItems(data.items);
-          try {
-            const localRaw = localStorage.getItem('sportsfly_club_applications_v1');
-            if (localRaw) {
-              const localItems: ClubRegistrationRequest[] = filterOutTestItems(JSON.parse(localRaw));
-              const serverIds = new Set(merged.map((m) => m.id));
-              for (const loc of localItems) {
-                if (loc && loc.id && !serverIds.has(loc.id)) {
-                  merged.unshift(loc);
-                }
-              }
-            }
-          } catch {}
-
-          // Keep only sports school registration applications (or items created via registration form)
-          const clubApplications = merged.filter(
-            (item) => (item.requestType || 'spor_okulu_basvurusu') === 'spor_okulu_basvurusu'
-          );
-
-          setRequests(clubApplications);
-          try {
-            localStorage.setItem('sportsfly_club_applications_v1', JSON.stringify(clubApplications));
-          } catch {}
-
-          if (showNotification) {
-            showToast('Başvuru listesi güncellendi.', 'info');
-          }
+          applyServerItems(data.items);
         }
       }
     } catch {
       // Fallback to local storage
-    } finally {
-      setIsSyncing(false);
     }
-  }, []);
+  }, [applyServerItems]);
 
   useEffect(() => {
-    fetchLiveRequests(false);
-    const interval = setInterval(() => {
-      fetchLiveRequests(false);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [fetchLiveRequests]);
+    fetchLiveRequests();
+
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/demo-requests/stream');
+      eventSource.onopen = () => {
+        setIsLiveConnected(true);
+      };
+      eventSource.onerror = () => {
+        setIsLiveConnected(false);
+      };
+      eventSource.addEventListener('sync', (evt: MessageEvent) => {
+        try {
+          const payload = JSON.parse(evt.data);
+          if (Array.isArray(payload.items)) {
+            applyServerItems(payload.items);
+          }
+          if (payload.action === 'created' && payload.record?.clubName) {
+            showToast(
+              `Yeni başvuru anlık olarak panele düştü: ${payload.record.clubName}`,
+              'success'
+            );
+          }
+        } catch {}
+      });
+    } catch {}
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('sportsfly_demo_requests_live');
+        bc.onmessage = (evt) => {
+          if (evt.data?.items && Array.isArray(evt.data.items)) {
+            applyServerItems(evt.data.items);
+          } else {
+            fetchLiveRequests();
+          }
+        };
+      }
+    } catch {}
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'sportsfly_club_applications_v3' && e.newValue) {
+        try {
+          applyServerItems(JSON.parse(e.newValue));
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      if (eventSource) eventSource.close();
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [fetchLiveRequests, applyServerItems]);
 
   const handleApprove = async (id: string) => {
     const target = requests.find((r) => r.id === id);
@@ -357,14 +407,14 @@ export const SporOkuluBasvurulariView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <button
-            onClick={() => fetchLiveRequests(true)}
-            disabled={isSyncing}
-            className="px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isSyncing ? 'animate-spin' : ''}`} />
-            <span>Listeyi Yenile</span>
-          </button>
+          <div className="px-3.5 py-2 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isLiveConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            />
+            <span>Canlı Bağlantı Aktif &bull; Başvurular Anlık Düşer</span>
+          </div>
         </div>
       </div>
 

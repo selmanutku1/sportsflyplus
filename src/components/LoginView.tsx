@@ -1307,7 +1307,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                 try {
                   const stored = localStorage.getItem('sportsfly_club_applications_v3');
                   const existing = stored ? JSON.parse(stored) : [];
-                  localStorage.setItem('sportsfly_club_applications_v3', JSON.stringify([newEntry, ...existing]));
+                  const updated = [newEntry, ...existing];
+                  localStorage.setItem('sportsfly_club_applications_v3', JSON.stringify(updated));
+                  if (typeof BroadcastChannel !== 'undefined') {
+                    const bc = new BroadcastChannel('sportsfly_demo_requests_live');
+                    bc.postMessage({ type: 'created', record: newEntry, items: updated });
+                    bc.close();
+                  }
                 } catch (err) {}
 
                 fetch('/api/demo-requests', {

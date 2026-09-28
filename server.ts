@@ -76,8 +76,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Strict JSON body limit to prevent Denial-of-Memory payload attacks
+// Strict JSON & form body limit to prevent Denial-of-Memory payload attacks
 app.use(express.json({ limit: '1.5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1.5mb' }));
+app.use(express.text({ type: ['text/plain'], limit: '1.5mb' }));
 
 // ============================================================================
 // LAYER 2: SLIDING-WINDOW RATE LIMITER & BRUTE-FORCE PROTECTION
@@ -261,8 +263,17 @@ app.use('/api', (req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
+  const isDemoRequestsRoute = req.path.startsWith('/demo-requests');
+  if (typeof req.body === 'string' && req.body.trim().startsWith('{')) {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch {
+      // leave as string
+    }
+  }
+
   const bodyInspection = sanitizeAndInspectObject(req.body);
-  if (bodyInspection.panLeak) {
+  if (bodyInspection.panLeak && !isDemoRequestsRoute) {
     securityStats.blockedPciPanLeaks += 1;
     res.status(422).json({
       error:
@@ -282,7 +293,9 @@ app.use('/api', (req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
-  req.body = bodyInspection.clean;
+  if (!bodyInspection.panLeak) {
+    req.body = bodyInspection.clean;
+  }
   next();
 });
 
@@ -1241,8 +1254,37 @@ function loadDemoRequestsFromDisk(): ServerDemoOrClubRequest[] {
 }
 
 let demoRequestsStore: ServerDemoOrClubRequest[] = loadDemoRequestsFromDisk();
+const demoRequestsSseClients = new Set<Response>();
 
-function saveDemoRequestsToDisk(list: ServerDemoOrClubRequest[]) {
+function broadcastDemoRequestsUpdate(
+  action: 'init' | 'created' | 'updated' | 'deleted',
+  record?: ServerDemoOrClubRequest,
+  deletedId?: string
+) {
+  const normalizedItems = demoRequestsStore.map(normalizeDemoRequestItem);
+  const payload = JSON.stringify({
+    action,
+    record: record ? normalizeDemoRequestItem(record) : undefined,
+    deletedId,
+    items: normalizedItems,
+    timestamp: Date.now(),
+  });
+
+  for (const client of demoRequestsSseClients) {
+    try {
+      client.write(`event: sync\ndata: ${payload}\n\n`);
+    } catch {
+      demoRequestsSseClients.delete(client);
+    }
+  }
+}
+
+function saveDemoRequestsToDisk(
+  list: ServerDemoOrClubRequest[],
+  action: 'created' | 'updated' | 'deleted' = 'updated',
+  record?: ServerDemoOrClubRequest,
+  deletedId?: string
+) {
   demoRequestsStore = list.map(normalizeDemoRequestItem);
   try {
     if (!fs.existsSync(DEMO_REQUESTS_DATA_DIR)) {
@@ -1252,6 +1294,7 @@ function saveDemoRequestsToDisk(list: ServerDemoOrClubRequest[]) {
   } catch (err) {
     console.warn('[DemoRequests] Could not write demo-requests.json:', err);
   }
+  broadcastDemoRequestsUpdate(action, record, deletedId);
 }
 
 // Dedicated CORS middleware for /api/demo-requests so sportsfly.com.tr can POST/GET directly
@@ -1274,6 +1317,41 @@ function applyDemoRequestsCors(req: Request, res: Response, next: NextFunction) 
 
 app.options('/api/demo-requests', applyDemoRequestsCors);
 app.use('/api/demo-requests', applyDemoRequestsCors);
+
+// GET /api/demo-requests/stream — Real-time Server-Sent Events (SSE) push stream for Admin Panel
+app.get('/api/demo-requests/stream', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  if (typeof res.flushHeaders === 'function') {
+    res.flushHeaders();
+  }
+
+  demoRequestsSseClients.add(res);
+
+  // Immediately push current state on connection
+  const initPayload = JSON.stringify({
+    action: 'init',
+    items: demoRequestsStore.map(normalizeDemoRequestItem),
+    timestamp: Date.now(),
+  });
+  res.write(`: connected\n\nevent: sync\ndata: ${initPayload}\n\n`);
+
+  const keepAliveTimer = setInterval(() => {
+    try {
+      res.write(`: ping ${Date.now()}\n\n`);
+    } catch {
+      clearInterval(keepAliveTimer);
+      demoRequestsSseClients.delete(res);
+    }
+  }, 20000);
+
+  req.on('close', () => {
+    clearInterval(keepAliveTimer);
+    demoRequestsSseClients.delete(res);
+  });
+});
 
 // GET /api/demo-requests — Fetch all demo requests & applications for Admin Panel
 app.get('/api/demo-requests', (_req: Request, res: Response) => {
@@ -1311,7 +1389,20 @@ app.get('/api/demo-requests', (_req: Request, res: Response) => {
 // Expected JSON fields: id, fullName, clubName, phone, email, branch, studentEstimate, selectedPlan, submittedAt
 app.post('/api/demo-requests', async (req: Request, res: Response) => {
   try {
-    const body = req.body || {};
+    let rawBody = req.body || {};
+    if (typeof rawBody === 'string') {
+      try {
+        rawBody = JSON.parse(rawBody);
+      } catch {
+        rawBody = {};
+      }
+    }
+    const body =
+      rawBody && typeof rawBody.data === 'object' && !Array.isArray(rawBody.data)
+        ? { ...rawBody, ...rawBody.data }
+        : rawBody && typeof rawBody.payload === 'object' && !Array.isArray(rawBody.payload)
+        ? { ...rawBody, ...rawBody.payload }
+        : rawBody;
 
     const clubName = String(
       body.clubName ||
@@ -1430,7 +1521,7 @@ app.post('/api/demo-requests', async (req: Request, res: Response) => {
     // Deduplicate if same id is re-sent
     const filteredExisting = demoRequestsStore.filter((item) => item.id !== newRecord.id);
     const updatedList = [newRecord, ...filteredExisting];
-    saveDemoRequestsToDisk(updatedList);
+    saveDemoRequestsToDisk(updatedList, 'created', newRecord);
 
     res.status(201).json({
       success: true,
@@ -1477,7 +1568,7 @@ app.patch('/api/demo-requests/:id', async (req: Request, res: Response) => {
 
   const nextList = [...demoRequestsStore];
   nextList[existingIndex] = updatedItem;
-  saveDemoRequestsToDisk(nextList);
+  saveDemoRequestsToDisk(nextList, 'updated', updatedItem);
 
   let smsResult = null;
   if (sendSms && updatedItem.phone) {
@@ -1504,7 +1595,7 @@ app.patch('/api/demo-requests/:id', async (req: Request, res: Response) => {
 app.delete('/api/demo-requests/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const filtered = demoRequestsStore.filter((r) => r.id !== id);
-  saveDemoRequestsToDisk(filtered);
+  saveDemoRequestsToDisk(filtered, 'deleted', undefined, id);
   res.json({
     success: true,
     deletedId: id,

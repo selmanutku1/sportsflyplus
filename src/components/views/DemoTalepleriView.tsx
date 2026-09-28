@@ -59,8 +59,7 @@ export const DemoTalepleriView: React.FC = () => {
   const [items, setItems] = useState<DemoRequestItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'tumu' | 'onay_bekliyor' | 'onaylandi' | 'reddedildi'>('tumu');
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastSyncedAt, setLastSyncedAt] = useState<string>('Şimdi');
+  const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [selectedItem, setSelectedItem] = useState<DemoRequestItem | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -71,54 +70,86 @@ export const DemoTalepleriView: React.FC = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const fetchDemoRequests = useCallback(async (notify = false) => {
-    setIsLoading(true);
+  const mapRawListToDemoItems = useCallback((rawList: any[]): DemoRequestItem[] => {
+    if (!Array.isArray(rawList)) return [];
+    return rawList
+      .filter((r) => r && r.id && !LEGACY_TEST_IDS.has(String(r.id)))
+      .map((r) => ({
+        id: String(r.id || ''),
+        fullName: String(r.fullName || r.managerName || 'Kulüp Yetkilisi'),
+        clubName: String(r.clubName || 'Spor Okulu'),
+        phone: String(r.phone || ''),
+        email: String(r.email || ''),
+        branch: String(r.branch || (Array.isArray(r.branches) ? r.branches.join(', ') : 'Genel Branş')),
+        studentEstimate: String(r.studentEstimate ?? r.athleteCount ?? 'Belirtilmedi'),
+        selectedPlan: String(r.selectedPlan || 'Kulüp & Akademi'),
+        submittedAt: String(r.submittedAt || r.createdAt || ''),
+        requestType: r.requestType || 'demo_rezervasyonu',
+        source: r.source || 'sportsfly.com.tr',
+        status: r.status || 'onay_bekliyor',
+        notes: r.notes,
+        rejectionReason: r.rejectionReason,
+        approvedAt: r.approvedAt,
+      }));
+  }, []);
+
+  const fetchDemoRequests = useCallback(async () => {
     try {
       const res = await fetch('/api/demo-requests');
       if (res.ok) {
         const json = await res.json();
         const rawList: any[] = Array.isArray(json.items) ? json.items : Array.isArray(json.data) ? json.data : [];
-        const mapped: DemoRequestItem[] = rawList
-          .filter((r) => r && r.id && !LEGACY_TEST_IDS.has(String(r.id)))
-          .map((r) => ({
-            id: String(r.id || ''),
-            fullName: String(r.fullName || r.managerName || 'Kulüp Yetkilisi'),
-            clubName: String(r.clubName || 'Spor Okulu'),
-            phone: String(r.phone || ''),
-            email: String(r.email || ''),
-            branch: String(r.branch || (Array.isArray(r.branches) ? r.branches.join(', ') : 'Genel Branş')),
-            studentEstimate: String(r.studentEstimate ?? r.athleteCount ?? 'Belirtilmedi'),
-            selectedPlan: String(r.selectedPlan || 'Kulüp & Akademi'),
-            submittedAt: String(r.submittedAt || r.createdAt || ''),
-            requestType: r.requestType || 'demo_rezervasyonu',
-            source: r.source || 'sportsfly.com.tr',
-            status: r.status || 'onay_bekliyor',
-            notes: r.notes,
-            rejectionReason: r.rejectionReason,
-            approvedAt: r.approvedAt,
-          }));
-        setItems(mapped);
-        setLastSyncedAt(
-          new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-        );
-        if (notify) {
-          showToast('Güncel demo talepleri senkronize edildi.', 'info');
-        }
+        setItems(mapRawListToDemoItems(rawList));
       }
     } catch {
-      if (notify) {
-        showToast('Sunucu bağlantısı kurulamadı.', 'error');
-      }
-    } finally {
-      setIsLoading(false);
+      // Fallback
     }
-  }, []);
+  }, [mapRawListToDemoItems]);
 
   useEffect(() => {
-    fetchDemoRequests(false);
-    const timer = setInterval(() => fetchDemoRequests(false), 8000);
-    return () => clearInterval(timer);
-  }, [fetchDemoRequests]);
+    fetchDemoRequests();
+
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/demo-requests/stream');
+      eventSource.onopen = () => {
+        setIsLiveConnected(true);
+      };
+      eventSource.onerror = () => {
+        setIsLiveConnected(false);
+      };
+      eventSource.addEventListener('sync', (evt: MessageEvent) => {
+        try {
+          const payload = JSON.parse(evt.data);
+          if (Array.isArray(payload.items)) {
+            setItems(mapRawListToDemoItems(payload.items));
+          }
+          if (payload.action === 'created' && payload.record?.clubName) {
+            showToast(`Yeni talep anlık olarak panele düştü: ${payload.record.clubName}`, 'success');
+          }
+        } catch {}
+      });
+    } catch {}
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('sportsfly_demo_requests_live');
+        bc.onmessage = (evt) => {
+          if (evt.data?.items && Array.isArray(evt.data.items)) {
+            setItems(mapRawListToDemoItems(evt.data.items));
+          } else {
+            fetchDemoRequests();
+          }
+        };
+      }
+    } catch {}
+
+    return () => {
+      if (eventSource) eventSource.close();
+      if (bc) bc.close();
+    };
+  }, [fetchDemoRequests, mapRawListToDemoItems]);
 
   const handleUpdateStatus = async (item: DemoRequestItem, status: 'onaylandi' | 'reddedildi') => {
     try {
@@ -128,7 +159,7 @@ export const DemoTalepleriView: React.FC = () => {
         body: JSON.stringify({ status, sendSms: status === 'onaylandi' }),
       });
       if (res.ok) {
-        await fetchDemoRequests(false);
+        await fetchDemoRequests();
         if (status === 'onaylandi') {
           await sendMutlucellSms(
             item.phone,
@@ -245,21 +276,14 @@ await fetch('https://webapp.sportsfly.com.tr/api/demo-requests', {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => setIsCodeModalOpen(true)}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Code2 className="w-4 h-4 text-indigo-600" />
-            <span>API &amp; CORS Bilgisi</span>
-          </button>
-
-          <button
-            onClick={() => fetchDemoRequests(true)}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
-            <span>Yenile ({lastSyncedAt})</span>
-          </button>
+          <div className="px-3.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isLiveConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            />
+            <span>Canlı Bağlantı Aktif &bull; Anlık Düşüş</span>
+          </div>
         </div>
       </div>
 
