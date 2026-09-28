@@ -1582,18 +1582,6 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                 <span>Branş: {currentReport.sportBranch}</span>
                 <span>·</span>
                 <span>Grup: {currentReport.groupInfo.ageRange}</span>
-                <span>·</span>
-                <span
-                  className="font-mono text-[10px] font-bold"
-                  style={{
-                    color: isDarkHeaderTpl ? effectiveSecondaryHex : effectivePrimaryHex,
-                  }}
-                >
-                  {activeTemplate.name}
-                  {clubColorPalette !== 'template-default'
-                    ? ` · ${activePaletteObj.shortName}`
-                    : ''}
-                </span>
               </div>
             </div>
           </div>
@@ -1738,10 +1726,6 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
         <div className="flex items-center justify-between sm:justify-end print:justify-end gap-3 text-[10px] shrink-0">
           <div className="text-right hidden sm:block print:block">
             <div className="font-bold text-slate-700 uppercase tracking-tight">{effectiveClubName}</div>
-            <div className="text-[9px] text-slate-400">
-              {activeTemplate.name}
-              {clubColorPalette !== 'template-default' ? ` · ${activePaletteObj.shortName}` : ''}
-            </div>
           </div>
           <div className="h-6 w-px bg-slate-200 hidden sm:block print:block" />
           <div
