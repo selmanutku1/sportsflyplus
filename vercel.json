@@ -15,16 +15,16 @@
   ],
   "rewrites": [
     {
+      "source": "/api/demo-request",
+      "destination": "/api/demo-requests"
+    },
+    {
       "source": "/api/demo-requests/stream",
-      "destination": "/api/demo-requests/stream.js"
+      "destination": "/api/demo-requests?stream=1"
     },
     {
       "source": "/api/demo-requests/:id",
-      "destination": "/api/demo-requests/[id].js?id=:id"
-    },
-    {
-      "source": "/api/demo-requests",
-      "destination": "/api/demo-requests.js"
+      "destination": "/api/demo-requests?id=:id"
     },
     {
       "source": "/((?!api/).*)",

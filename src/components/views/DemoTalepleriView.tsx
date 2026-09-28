@@ -93,6 +93,35 @@ export const DemoTalepleriView: React.FC = () => {
       }));
   }, []);
 
+  const applyServerAndLocalItems = useCallback(
+    (rawList: any[]) => {
+      const combined: any[] = [];
+      const seenIds = new Set<string>();
+
+      const addList = (arr: any[]) => {
+        if (!Array.isArray(arr)) return;
+        for (const r of arr) {
+          if (r && r.id && !LEGACY_TEST_IDS.has(String(r.id)) && !seenIds.has(String(r.id))) {
+            seenIds.add(String(r.id));
+            combined.push(r);
+          }
+        }
+      };
+
+      addList(rawList);
+      try {
+        const localRaw = localStorage.getItem('sportsfly_club_applications_v3');
+        if (localRaw) {
+          addList(JSON.parse(localRaw));
+        }
+      } catch {}
+
+      const mapped = mapRawListToDemoItems(combined);
+      setItems(mapped);
+    },
+    [mapRawListToDemoItems]
+  );
+
   const fetchDemoRequests = useCallback(async () => {
     try {
       const combined: any[] = [];
@@ -135,11 +164,11 @@ export const DemoTalepleriView: React.FC = () => {
         }
       }
 
-      setItems(mapRawListToDemoItems(combined));
+      applyServerAndLocalItems(combined);
     } catch {
       // Fallback
     }
-  }, [mapRawListToDemoItems]);
+  }, [applyServerAndLocalItems]);
 
   useEffect(() => {
     fetchDemoRequests();
@@ -157,7 +186,7 @@ export const DemoTalepleriView: React.FC = () => {
         try {
           const payload = JSON.parse(evt.data);
           if (Array.isArray(payload.items)) {
-            setItems(mapRawListToDemoItems(payload.items));
+            applyServerAndLocalItems(payload.items);
           }
           if (payload.action === 'created' && payload.record?.clubName) {
             showToast(`Yeni talep anlık olarak panele düştü: ${payload.record.clubName}`, 'success');
@@ -172,7 +201,7 @@ export const DemoTalepleriView: React.FC = () => {
         bc = new BroadcastChannel('sportsfly_demo_requests_live');
         bc.onmessage = (evt) => {
           if (evt.data?.items && Array.isArray(evt.data.items)) {
-            setItems(mapRawListToDemoItems(evt.data.items));
+            applyServerAndLocalItems(evt.data.items);
           } else {
             fetchDemoRequests();
           }
@@ -184,7 +213,7 @@ export const DemoTalepleriView: React.FC = () => {
       if (eventSource) eventSource.close();
       if (bc) bc.close();
     };
-  }, [fetchDemoRequests, mapRawListToDemoItems]);
+  }, [fetchDemoRequests, applyServerAndLocalItems]);
 
   const handleUpdateStatus = async (item: DemoRequestItem, status: 'onaylandi' | 'reddedildi') => {
     try {

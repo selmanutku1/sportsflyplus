@@ -105,10 +105,7 @@ function normalizeItem(raw = {}) {
   };
 }
 
-export function loadStore() {
-  if (Array.isArray(globalThis.__SPORTSFLY_DEMO_STORE__)) {
-    return globalThis.__SPORTSFLY_DEMO_STORE__;
-  }
+function loadStore() {
   try {
     if (fs.existsSync(TMP_FILE)) {
       const parsed = JSON.parse(fs.readFileSync(TMP_FILE, 'utf-8'));
@@ -123,11 +120,14 @@ export function loadStore() {
   } catch {
     // ignore read error
   }
+  if (Array.isArray(globalThis.__SPORTSFLY_DEMO_STORE__)) {
+    return globalThis.__SPORTSFLY_DEMO_STORE__;
+  }
   globalThis.__SPORTSFLY_DEMO_STORE__ = [];
   return globalThis.__SPORTSFLY_DEMO_STORE__;
 }
 
-export function saveStore(list) {
+function saveStore(list) {
   const cleaned = (Array.isArray(list) ? list : [])
     .filter((item) => item && item.id && !LEGACY_TEST_IDS.has(String(item.id)))
     .map(normalizeItem);
@@ -140,7 +140,7 @@ export function saveStore(list) {
   return cleaned;
 }
 
-export function applyCors(req, res) {
+function applyCors(req, res) {
   const origin = req.headers?.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Vary', 'Origin');
@@ -155,6 +155,22 @@ export function applyCors(req, res) {
   );
 }
 
+function extractIdFromReq(req, body = {}) {
+  if (req.query?.id && req.query.id !== 'stream') {
+    return String(req.query.id);
+  }
+  if (body?.id) {
+    return String(body.id);
+  }
+  const urlPath = String(req.url || '').split('?')[0];
+  const parts = urlPath.split('/').filter(Boolean);
+  const last = parts[parts.length - 1];
+  if (last && last !== 'demo-requests' && last !== 'demo-request' && last !== 'stream') {
+    return decodeURIComponent(last);
+  }
+  return '';
+}
+
 export default async function handler(req, res) {
   applyCors(req, res);
 
@@ -163,6 +179,28 @@ export default async function handler(req, res) {
   }
 
   const store = loadStore();
+  const urlPath = String(req.url || '').split('?')[0];
+  const isStreamRequest =
+    req.query?.stream === '1' ||
+    req.query?.id === 'stream' ||
+    urlPath.endsWith('/stream') ||
+    String(req.headers?.accept || '').includes('text/event-stream');
+
+  if (req.method === 'GET' && isStreamRequest) {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    const payload = JSON.stringify({
+      action: 'init',
+      items: store,
+      timestamp: Date.now(),
+    });
+
+    res.write(`retry: 2000\n\nevent: sync\ndata: ${payload}\n\n`);
+    return res.end();
+  }
 
   if (req.method === 'GET') {
     const total = store.length;
@@ -223,7 +261,7 @@ export default async function handler(req, res) {
         rawBody = {};
       }
     }
-    const targetId = String(req.query?.id || rawBody.id || '');
+    const targetId = extractIdFromReq(req, rawBody);
     const index = store.findIndex((item) => item.id === targetId);
     if (index === -1) {
       return res.status(404).json({
@@ -256,7 +294,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    const targetId = String(req.query?.id || '');
+    const targetId = extractIdFromReq(req);
     const filtered = store.filter((item) => item.id !== targetId);
     saveStore(filtered);
     return res.status(200).json({
