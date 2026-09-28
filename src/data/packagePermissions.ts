@@ -615,8 +615,8 @@ export function isPageAllowedForPlan(
 ): boolean {
   const roleStr = (userRole || '').toLowerCase();
 
-  // Spor Okulu Başvuruları & Demo Talepleri are strictly exclusive to Süper Admin
-  if (page === 'spor-okulu-basvurulari' || page === 'demo-talepleri') {
+  // Spor Okulu Başvuruları is strictly exclusive to Süper Admin
+  if (page === 'spor-okulu-basvurulari') {
     return isSuperAdminUser(userRole);
   }
 

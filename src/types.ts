@@ -7,7 +7,6 @@ export type NavPage =
   | 'yetkilendirmeler'
   | 'kullanici-sozlesmeleri'
   | 'spor-okulu-basvurulari'
-  | 'demo-talepleri'
   | 'brans-yonetimi'
   | 'aktivite-yonetimi'
   | 'sporcular'

@@ -20,7 +20,6 @@ import { SporcuKarnesiView } from './components/views/SporcuKarnesiView';
 import { EgitimPlanlamaView } from './components/views/EgitimPlanlamaView';
 import { KulupSozlesmeleriView } from './components/views/KulupSozlesmeleriView';
 import { SporOkuluBasvurulariView } from './components/views/SporOkuluBasvurulariView';
-import { DemoTalepleriView } from './components/views/DemoTalepleriView';
 import { KulupEvraklariView } from './components/views/sporcu/KulupEvraklariView';
 import { KulupGalerisiView } from './components/views/sporcu/KulupGalerisiView';
 import { TurnuvaYonetimiView } from './components/views/moduller/TurnuvaYonetimiView';
@@ -67,7 +66,7 @@ export default function App() {
     setIsAuthenticated(true);
     if (!isSuperAdminUser(role || freshProfile?.role)) {
       setCurrentPage((prev) =>
-        prev === 'spor-okulu-basvurulari' || prev === 'demo-talepleri' ? 'anasayfa' : prev
+        prev === 'spor-okulu-basvurulari' ? 'anasayfa' : prev
       );
     }
     try {
@@ -219,8 +218,6 @@ export default function App() {
         return <KulupSozlesmeleriView />;
       case 'spor-okulu-basvurulari':
         return <SporOkuluBasvurulariView />;
-      case 'demo-talepleri':
-        return <DemoTalepleriView />;
       case 'yetkilendirmeler':
         return <YetkilendirmelerView />;
       case 'kulup-evraklari':
@@ -299,18 +296,6 @@ export default function App() {
             {renderActiveView()}
           </main>
         </div>
-      </div>
-
-      {/* Quick return to Login Screen Floating Helper */}
-      <div className="fixed bottom-4 right-4 z-40 print:hidden">
-        <button
-          onClick={handleLogout}
-          className="bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-semibold py-2 px-3.5 rounded-full shadow-lg border border-slate-700/60 backdrop-blur-xs flex items-center gap-2 transition-all hover:scale-105 cursor-pointer group"
-          title="SportsFly Giriş Ekranına Dön"
-        >
-          <img src="/sportsfly-logo.svg" alt="" className="w-3.5 h-3.5 object-contain" />
-          <span>Giriş Ekranına Dön</span>
-        </button>
       </div>
     </div>
   );
