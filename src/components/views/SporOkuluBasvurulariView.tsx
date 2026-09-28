@@ -139,13 +139,45 @@ export const SporOkuluBasvurulariView: React.FC = () => {
 
   const fetchLiveRequests = useCallback(async () => {
     try {
+      const combined: any[] = [];
+      const seenIds = new Set<string>();
+
+      const addItems = (arr: any[]) => {
+        if (!Array.isArray(arr)) return;
+        for (const item of arr) {
+          if (item && item.id && !seenIds.has(String(item.id))) {
+            seenIds.add(String(item.id));
+            combined.push(item);
+          }
+        }
+      };
+
       const res = await fetch('/api/demo-requests');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.items)) {
-          applyServerItems(data.items);
+          addItems(data.items);
         }
       }
+
+      if (
+        typeof window !== 'undefined' &&
+        window.location.hostname !== 'webapp.sportsfly.com.tr'
+      ) {
+        try {
+          const remoteRes = await fetch('https://webapp.sportsfly.com.tr/api/demo-requests');
+          if (remoteRes.ok) {
+            const remoteData = await remoteRes.json();
+            if (Array.isArray(remoteData.items)) {
+              addItems(remoteData.items);
+            }
+          }
+        } catch {
+          // Remote domain not yet redeployed or unreachable
+        }
+      }
+
+      applyServerItems(combined);
     } catch {
       // Fallback to local storage
     }

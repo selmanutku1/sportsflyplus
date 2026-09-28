@@ -95,12 +95,47 @@ export const DemoTalepleriView: React.FC = () => {
 
   const fetchDemoRequests = useCallback(async () => {
     try {
+      const combined: any[] = [];
+      const seenIds = new Set<string>();
+
+      const addItems = (arr: any[]) => {
+        if (!Array.isArray(arr)) return;
+        for (const item of arr) {
+          if (item && item.id && !seenIds.has(String(item.id))) {
+            seenIds.add(String(item.id));
+            combined.push(item);
+          }
+        }
+      };
+
       const res = await fetch('/api/demo-requests');
       if (res.ok) {
         const json = await res.json();
         const rawList: any[] = Array.isArray(json.items) ? json.items : Array.isArray(json.data) ? json.data : [];
-        setItems(mapRawListToDemoItems(rawList));
+        addItems(rawList);
       }
+
+      if (
+        typeof window !== 'undefined' &&
+        window.location.hostname !== 'webapp.sportsfly.com.tr'
+      ) {
+        try {
+          const remoteRes = await fetch('https://webapp.sportsfly.com.tr/api/demo-requests');
+          if (remoteRes.ok) {
+            const remoteJson = await remoteRes.json();
+            const remoteList: any[] = Array.isArray(remoteJson.items)
+              ? remoteJson.items
+              : Array.isArray(remoteJson.data)
+              ? remoteJson.data
+              : [];
+            addItems(remoteList);
+          }
+        } catch {
+          // Remote domain not yet redeployed
+        }
+      }
+
+      setItems(mapRawListToDemoItems(combined));
     } catch {
       // Fallback
     }
