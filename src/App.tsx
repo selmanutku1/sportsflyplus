@@ -19,6 +19,8 @@ import { AnketYonetimiView } from './components/views/AnketYonetimiView';
 import { SporcuKarnesiView } from './components/views/SporcuKarnesiView';
 import { EgitimPlanlamaView } from './components/views/EgitimPlanlamaView';
 import { KulupSozlesmeleriView } from './components/views/KulupSozlesmeleriView';
+import { SporOkuluBasvurulariView } from './components/views/SporOkuluBasvurulariView';
+import { DemoTalepleriView } from './components/views/DemoTalepleriView';
 import { KulupEvraklariView } from './components/views/sporcu/KulupEvraklariView';
 import { KulupGalerisiView } from './components/views/sporcu/KulupGalerisiView';
 import { TurnuvaYonetimiView } from './components/views/moduller/TurnuvaYonetimiView';
@@ -42,6 +44,7 @@ import {
   getActiveSessionPlan,
   isPageAllowedForPlan,
   getPageRestrictionInfo,
+  isSuperAdminUser,
 } from './data/packagePermissions';
 import { getStoredUserProfile, UserProfileData } from './data/userProfile';
 
@@ -59,7 +62,14 @@ export default function App() {
   });
 
   const handleLoginSuccess = (role?: string) => {
+    const freshProfile = getStoredUserProfile();
+    setUserProfile(freshProfile);
     setIsAuthenticated(true);
+    if (!isSuperAdminUser(role || freshProfile?.role)) {
+      setCurrentPage((prev) =>
+        prev === 'spor-okulu-basvurulari' || prev === 'demo-talepleri' ? 'anasayfa' : prev
+      );
+    }
     try {
       sessionStorage.setItem('sportsfly_auth_active', 'true');
     } catch (e) {}
@@ -207,6 +217,10 @@ export default function App() {
         return <SporpuanRaporlarView />;
       case 'kullanici-sozlesmeleri':
         return <KulupSozlesmeleriView />;
+      case 'spor-okulu-basvurulari':
+        return <SporOkuluBasvurulariView />;
+      case 'demo-talepleri':
+        return <DemoTalepleriView />;
       case 'yetkilendirmeler':
         return <YetkilendirmelerView />;
       case 'kulup-evraklari':

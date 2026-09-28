@@ -587,7 +587,7 @@ export function setActiveSessionPlan(plan: PackagePlanType) {
 export function isSuperAdminUser(role?: string): boolean {
   if (role) {
     const r = role.toLowerCase();
-    return r.includes('süper') || r.includes('super') || r.includes('admin') || r.includes('kurucu') || (r.includes('kulüp yöneticisi') && !r.includes('şube'));
+    return r.includes('süper') || r.includes('super') || r.includes('admin') || r.includes('kurucu');
   }
   if (typeof window !== 'undefined') {
     try {
@@ -614,6 +614,11 @@ export function isPageAllowedForPlan(
   userRole?: string
 ): boolean {
   const roleStr = (userRole || '').toLowerCase();
+
+  // Spor Okulu Başvuruları & Demo Talepleri are strictly exclusive to Süper Admin
+  if (page === 'spor-okulu-basvurulari' || page === 'demo-talepleri') {
+    return isSuperAdminUser(userRole);
+  }
 
   // Super Admin / Admin / Kurucu has full access to all modules
   if (isSuperAdminUser(userRole)) {

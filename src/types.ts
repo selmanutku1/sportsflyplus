@@ -6,6 +6,8 @@ export type NavPage =
   | 'tanimsiz-kullanicilar'
   | 'yetkilendirmeler'
   | 'kullanici-sozlesmeleri'
+  | 'spor-okulu-basvurulari'
+  | 'demo-talepleri'
   | 'brans-yonetimi'
   | 'aktivite-yonetimi'
   | 'sporcular'

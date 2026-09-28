@@ -1,9 +1,16 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
+import {
+  sendMutlucellSms,
+  sendMutlucellBulkSms,
+  getMutlucellCreditStatus,
+  sendEmailNotification,
+} from './src/services/smsService';
 
 dotenv.config();
 
@@ -17,6 +24,7 @@ app.disable('x-powered-by');
 const CSRF_SECRET =
   process.env.CSRF_SIGNING_SECRET ||
   crypto.randomBytes(32).toString('hex');
+const CSRF_SIGNING_SECRET = CSRF_SECRET;
 
 const PAYMENT_WEBHOOK_SECRET =
   process.env.PAYMENT_WEBHOOK_SECRET ||
@@ -228,7 +236,23 @@ const globalApiLimiter = createRateLimiter({
   scope: 'global-api',
 });
 
-app.use('/api', globalApiLimiter, (req: Request, res: Response, next: NextFunction) => {
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith('/demo-requests')) {
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Webhook-Secret, X-API-Key, X-CSRF-Token, X-Requested-With'
+    );
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+  }
+  next();
+}, globalApiLimiter, (req: Request, res: Response, next: NextFunction) => {
   securityStats.totalApiRequests += 1;
 
   // Skip raw WAF rejection only on the self-test endpoint which intentionally tests payloads
@@ -554,6 +578,26 @@ function maskDestinationPhone(rawPhone: string): string {
   return `+${prefix.slice(0, 2)} ${prefix.slice(2, 5)} ••• •• ${last2}`;
 }
 
+// SMS Gateway & Credit Status Endpoints
+app.get('/api/sms/credit-status', async (_req: Request, res: Response) => {
+  const result = await getMutlucellCreditStatus();
+  res.json(result);
+});
+
+app.post('/api/sms/send-bulk', async (req: Request, res: Response) => {
+  const { recipients, message } = req.body || {};
+  if (!Array.isArray(recipients) || recipients.length === 0 || !message) {
+    res.status(400).json({
+      error: 'Toplu SMS gönderimi için recipients dizisi ve message metni zorunludur.',
+      code: 'INVALID_BULK_SMS_PAYLOAD',
+    });
+    return;
+  }
+
+  const result = await sendMutlucellBulkSms(recipients, message);
+  res.json(result);
+});
+
 const twoFactorRateLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   maxRequests: 20,
@@ -563,7 +607,7 @@ const twoFactorRateLimiter = createRateLimiter({
 app.post(
   '/api/auth/2fa/send-challenge',
   twoFactorRateLimiter,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const { identifier, phone, method } = req.body || {};
     const selectedMethod: 'sms' | 'authenticator' =
       method === 'authenticator' ? 'authenticator' : 'sms';
@@ -590,6 +634,11 @@ app.post(
 
     twoFactorChallengeStore.set(challengeId, record);
 
+    const smsMessage = `SPORTSFLY: Güvenli giriş için tek kullanımlık SMS doğrulama kodunuz: ${smsOtpCode}. Kod 2 dakika geçerlidir. Kimseyle paylaşmayınız. B002`;
+
+    // Dispatch via Mutlucell SMS Gateway if credentials configured
+    const mutlucellDispatch = await sendMutlucellSms(phone || '05321234567', smsMessage);
+
     const totpNow = computeTotpCodeForWindow(DEFAULT_TOTP_SECRET, 0);
 
     res.json({
@@ -597,13 +646,14 @@ app.post(
       method: selectedMethod,
       maskedPhone,
       expiresInSeconds: 120,
-      smsGateway: 'Netgsm / İletimerkezi Kurumsal SMS (Başlık: SPORTSFLY)',
+      smsGateway: 'Mutlucell Kurumsal SMS API (Başlık: SPORTSFLY)',
+      mutlucellDelivery: mutlucellDispatch,
       totpIssuer: 'SportsFly Bulut v2.4',
       totpSecretKey: 'JBSW Y3DP EHPK 3PXP',
       // Dispatched SMS / TOTP preview for immediate verification in preview environment
       sandboxDelivery: {
         smsOtpCode,
-        smsMessage: `SPORTSFLY: Güvenli giriş için tek kullanımlık SMS doğrulama kodunuz: ${smsOtpCode}. Kod 2 dakika geçerlidir. Kimseyle paylaşmayınız. B002`,
+        smsMessage,
         totpCurrentCode: totpNow.code,
         totpRemainingSeconds: totpNow.remainingSeconds,
         backupRecoveryHint: '84921049',
@@ -1082,6 +1132,482 @@ ${(report.motorPerformance || [])
     }
   }
 );
+
+// ============================================================================
+// LAYER 9: EXTERNAL WEBSITE & SUBDOMAIN WEBHOOK ENGINE (/api/demo-requests)
+// Receives instantaneous Demo Reservations & Sports School Applications from
+// https://sportsfly.com.tr -> https://webapp.sportsfly.com.tr/api/demo-requests
+// ============================================================================
+export interface ServerDemoOrClubRequest {
+  id: string;
+  fullName: string;
+  clubName: string;
+  phone: string;
+  email: string;
+  branch: string;
+  studentEstimate: string;
+  selectedPlan: string;
+  submittedAt: string;
+  // Extended & backward-compatible fields for Super Admin panel
+  requestType: 'spor_okulu_basvurusu' | 'demo_rezervasyonu';
+  source: string;
+  managerName: string;
+  city: string;
+  district: string;
+  branches: string[];
+  athleteCount?: string;
+  demoDate?: string;
+  demoTime?: string;
+  createdAt: string;
+  status: 'onay_bekliyor' | 'onaylandi' | 'reddedildi' | 'askida';
+  notes?: string;
+  rejectionReason?: string;
+  approvedAt?: string;
+  smsSentAt?: string;
+}
+
+const DEMO_REQUESTS_DATA_DIR = path.join(process.cwd(), 'data');
+const DEMO_REQUESTS_FILE = path.join(DEMO_REQUESTS_DATA_DIR, 'demo-requests.json');
+
+const INITIAL_SERVER_DEMO_REQUESTS: ServerDemoOrClubRequest[] = [
+  {
+    id: 'demo_101',
+    fullName: 'Selman Utku Marmara',
+    clubName: 'Kadıköy Basketbol Akademisi',
+    phone: '0532 123 45 67',
+    email: 'selman@kadikoybasket.com',
+    branch: 'Basketbol',
+    studentEstimate: '350+',
+    selectedPlan: 'Pro Akademi & Çoklu Şube',
+    submittedAt: '2026-09-28 14:30',
+    requestType: 'demo_rezervasyonu',
+    source: 'sportsfly.com.tr',
+    managerName: 'Selman Utku Marmara',
+    city: 'İstanbul',
+    district: 'Kadıköy',
+    branches: ['Basketbol'],
+    athleteCount: '350+',
+    demoDate: '2026-09-30',
+    demoTime: '14:00',
+    createdAt: '2026-09-28 14:30',
+    status: 'onay_bekliyor',
+    notes: 'sportsfly.com.tr üzerinden canlı demo formu dolduruldu.',
+  },
+  {
+    id: 'demo_102',
+    fullName: 'Elif Zeynep Aydın',
+    clubName: 'Anadolu Voleybol Gençlik Kulübü',
+    phone: '0533 987 65 43',
+    email: 'info@anadoluvoleybol.org',
+    branch: 'Voleybol',
+    studentEstimate: '120-250',
+    selectedPlan: 'Kulüp & Akademi',
+    submittedAt: '2026-09-27 18:15',
+    requestType: 'demo_rezervasyonu',
+    source: 'sportsfly.com.tr',
+    managerName: 'Elif Zeynep Aydın',
+    city: 'Ankara',
+    district: 'Çankaya',
+    branches: ['Voleybol'],
+    athleteCount: '120-250',
+    createdAt: '2026-09-27 18:15',
+    status: 'onay_bekliyor',
+    notes: 'sportsfly.com.tr üzerinden demo talebi iletildi.',
+  },
+  {
+    id: 'demo_103',
+    fullName: 'Murat Kara',
+    clubName: 'İzmir Gelişim Atletizm Spor Kulübü',
+    phone: '0542 555 12 34',
+    email: 'murat@izmiratletizm.com',
+    branch: 'Atletizm, Cimnastik',
+    studentEstimate: '85',
+    selectedPlan: 'Başlangıç Kulübü',
+    submittedAt: '2026-09-26 11:20',
+    requestType: 'demo_rezervasyonu',
+    source: 'sportsfly.com.tr',
+    managerName: 'Murat Kara',
+    city: 'İzmir',
+    district: 'Alsancak',
+    branches: ['Atletizm', 'Cimnastik'],
+    athleteCount: '85',
+    demoDate: '2026-09-27',
+    demoTime: '11:00',
+    createdAt: '2026-09-26 11:20',
+    status: 'onaylandi',
+    approvedAt: '2026-09-26 14:00',
+    notes: 'Demo görüşmesi tamamlandı, tesis onay belgeleri doğrulandı.',
+  },
+  {
+    id: 'req_104',
+    fullName: 'Ahmet Yılmaz',
+    clubName: 'Bursa Yıldızlar Futbol Okulu',
+    phone: '0535 444 88 99',
+    email: 'ahmet@bursayildizlar.com',
+    branch: 'Futbol',
+    studentEstimate: '210',
+    selectedPlan: 'Kulüp & Akademi',
+    submittedAt: '2026-09-25 15:45',
+    requestType: 'spor_okulu_basvurusu',
+    source: 'webapp.sportsfly.com.tr',
+    managerName: 'Ahmet Yılmaz',
+    city: 'Bursa',
+    district: 'Nilüfer',
+    branches: ['Futbol'],
+    athleteCount: '210',
+    createdAt: '2026-09-25 15:45',
+    status: 'onaylandi',
+    approvedAt: '2026-09-25 16:30',
+  },
+  {
+    id: 'req_105',
+    fullName: 'Ceren Demir',
+    clubName: 'Antalya Yüzme Akademisi',
+    phone: '0505 333 22 11',
+    email: 'ceren@antalyayuzme.com',
+    branch: 'Yüzme',
+    studentEstimate: '180',
+    selectedPlan: 'Pro Akademi & Çoklu Şube',
+    submittedAt: '2026-09-24 09:10',
+    requestType: 'spor_okulu_basvurusu',
+    source: 'sportsfly.com.tr',
+    managerName: 'Ceren Demir',
+    city: 'Antalya',
+    district: 'Muratpaşa',
+    branches: ['Yüzme'],
+    athleteCount: '180',
+    createdAt: '2026-09-24 09:10',
+    status: 'reddedildi',
+    rejectionReason: 'Vergi levhası ve yetki belgesi eksik / doğrulanamadı.',
+  },
+];
+
+function normalizeDemoRequestItem(raw: any): ServerDemoOrClubRequest {
+  const fullName = String(raw.fullName || raw.managerName || raw.name || 'Kulüp Yetkilisi').trim();
+  const branchStr =
+    typeof raw.branch === 'string' && raw.branch.trim()
+      ? raw.branch.trim()
+      : Array.isArray(raw.branches) && raw.branches.length > 0
+      ? raw.branches.join(', ')
+      : 'Genel Branş';
+  const branchesArr =
+    Array.isArray(raw.branches) && raw.branches.length > 0
+      ? raw.branches
+      : branchStr
+          .split(/[,;/]+/)
+          .map((b: string) => b.trim())
+          .filter(Boolean);
+  const studentEstimate = String(raw.studentEstimate ?? raw.athleteCount ?? 'Belirtilmedi').trim();
+  const submittedAt = String(raw.submittedAt || raw.createdAt || new Date().toISOString().slice(0, 16).replace('T', ' ')).trim();
+
+  return {
+    ...raw,
+    id: String(raw.id || `demo_${Date.now().toString().slice(-6)}`),
+    fullName,
+    managerName: raw.managerName || fullName,
+    clubName: String(raw.clubName || 'Spor Okulu').trim(),
+    phone: String(raw.phone || '').trim(),
+    email: String(raw.email || '').trim(),
+    branch: branchStr,
+    branches: branchesArr,
+    studentEstimate,
+    athleteCount: raw.athleteCount || studentEstimate,
+    selectedPlan: String(raw.selectedPlan || 'Kulüp & Akademi').trim(),
+    submittedAt,
+    createdAt: raw.createdAt || submittedAt,
+    requestType: raw.requestType || 'demo_rezervasyonu',
+    source: raw.source || 'sportsfly.com.tr',
+    city: raw.city || 'İstanbul',
+    district: raw.district || 'Merkez',
+    status: raw.status || 'onay_bekliyor',
+  };
+}
+
+function loadDemoRequestsFromDisk(): ServerDemoOrClubRequest[] {
+  try {
+    if (fs.existsSync(DEMO_REQUESTS_FILE)) {
+      const raw = fs.readFileSync(DEMO_REQUESTS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(normalizeDemoRequestItem);
+      }
+    }
+  } catch (err) {
+    console.warn('[DemoRequests] Could not read demo-requests.json, using initial seed.');
+  }
+  return INITIAL_SERVER_DEMO_REQUESTS.map(normalizeDemoRequestItem);
+}
+
+let demoRequestsStore: ServerDemoOrClubRequest[] = loadDemoRequestsFromDisk();
+
+function saveDemoRequestsToDisk(list: ServerDemoOrClubRequest[]) {
+  demoRequestsStore = list.map(normalizeDemoRequestItem);
+  try {
+    if (!fs.existsSync(DEMO_REQUESTS_DATA_DIR)) {
+      fs.mkdirSync(DEMO_REQUESTS_DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(DEMO_REQUESTS_FILE, JSON.stringify(demoRequestsStore, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[DemoRequests] Could not write demo-requests.json:', err);
+  }
+}
+
+// Dedicated CORS middleware for /api/demo-requests so sportsfly.com.tr can POST/GET directly
+function applyDemoRequestsCors(req: Request, res: Response, next: NextFunction) {
+  const origin = req.headers.origin;
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Accept, Origin, Authorization, X-Webhook-Secret, X-API-Key, X-CSRF-Token, X-Requested-With'
+  );
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+}
+
+app.options('/api/demo-requests', applyDemoRequestsCors);
+app.use('/api/demo-requests', applyDemoRequestsCors);
+
+// GET /api/demo-requests — Fetch all demo requests & applications for Admin Panel
+app.get('/api/demo-requests', (_req: Request, res: Response) => {
+  const normalizedItems = demoRequestsStore.map(normalizeDemoRequestItem);
+  const total = normalizedItems.length;
+  const pending = normalizedItems.filter((r) => r.status === 'onay_bekliyor').length;
+  const approved = normalizedItems.filter((r) => r.status === 'onaylandi').length;
+  const rejected = normalizedItems.filter(
+    (r) => r.status === 'reddedildi' || r.status === 'askida'
+  ).length;
+  const demoCount = normalizedItems.filter(
+    (r) => r.requestType === 'demo_rezervasyonu'
+  ).length;
+  const registrationCount = normalizedItems.filter(
+    (r) => r.requestType === 'spor_okulu_basvurusu'
+  ).length;
+
+  res.json({
+    success: true,
+    endpoint: '/api/demo-requests',
+    counts: {
+      total,
+      pending,
+      approved,
+      rejected,
+      demoCount,
+      registrationCount,
+    },
+    items: normalizedItems,
+    data: normalizedItems,
+  });
+});
+
+// POST /api/demo-requests — Instant webhook receiver from sportsfly.com.tr
+// Expected JSON fields: id, fullName, clubName, phone, email, branch, studentEstimate, selectedPlan, submittedAt
+app.post('/api/demo-requests', async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {};
+
+    const clubName = String(
+      body.clubName ||
+        body.kulupAdi ||
+        body.schoolName ||
+        body.sporOkuluAdi ||
+        body.organization ||
+        body.company ||
+        body.kurumAdi ||
+        'Yeni Spor Okulu'
+    ).trim();
+
+    const fullName = String(
+      body.fullName ||
+        body.managerName ||
+        body.adSoyad ||
+        body.name ||
+        body.contactName ||
+        body.yetkiliAdi ||
+        (body.firstName ? `${body.firstName || ''} ${body.lastName || ''}`.trim() : '') ||
+        'Kulüp Kurucusu / Yetkilisi'
+    ).trim();
+
+    const email = String(
+      body.email || body.eposta || body.mail || body.contactEmail || 'iletisim@sporokulu.com'
+    ).trim();
+
+    const phone = String(
+      body.phone || body.telefon || body.tel || body.gsm || body.mobile || '0532 000 00 00'
+    ).trim();
+
+    const city = String(body.city || body.sehir || body.il || 'İstanbul').trim();
+    const district = String(body.district || body.ilce || 'Merkez').trim();
+
+    let branches: string[] = ['Genel Branş'];
+    const rawBranches =
+      body.branch || body.branches || body.branslar || body.brans || body.sportBranch || body.sport;
+    if (Array.isArray(rawBranches) && rawBranches.length > 0) {
+      branches = rawBranches.map((b: any) => String(b).trim()).filter(Boolean);
+    } else if (typeof rawBranches === 'string' && rawBranches.trim()) {
+      branches = rawBranches
+        .split(/[,;/]+/)
+        .map((b) => b.trim())
+        .filter(Boolean);
+    }
+    const branch = branches.join(', ');
+
+    const selectedPlan = String(
+      body.selectedPlan || body.plan || body.paket || body.package || 'Kulüp & Akademi'
+    ).trim();
+
+    const studentEstimate = String(
+      body.studentEstimate ??
+        body.athleteCount ??
+        body.sporcuSayisi ??
+        body.studentCount ??
+        body.capacity ??
+        'Belirtilmedi'
+    ).trim();
+
+    const demoDate = body.demoDate || body.preferredDate || body.randevuTarihi || body.date || undefined;
+    const demoTime = body.demoTime || body.preferredTime || body.randevuSaati || body.time || undefined;
+
+    // Default to 'demo_rezervasyonu' for POST /api/demo-requests unless explicitly 'spor_okulu_basvurusu'
+    const rawType = String(body.requestType || body.type || body.tur || body.formType || '').toLowerCase();
+    const requestType: 'spor_okulu_basvurusu' | 'demo_rezervasyonu' =
+      rawType === 'spor_okulu_basvurusu' || rawType === 'kayit'
+        ? 'spor_okulu_basvurusu'
+        : 'demo_rezervasyonu';
+
+    const source = String(
+      body.source ||
+        body.kaynak ||
+        (req.headers.origin?.includes('sportsfly.com.tr')
+          ? new URL(req.headers.origin).hostname
+          : 'sportsfly.com.tr')
+    ).trim();
+
+    const nowFormatted = new Date().toLocaleString('sv-SE', {
+      timeZone: 'Europe/Istanbul',
+    }).slice(0, 16);
+
+    const submittedAt = String(body.submittedAt || body.createdAt || nowFormatted).trim();
+
+    const notes =
+      body.notes || body.message || body.mesaj || body.notlar || body.description
+        ? String(body.notes || body.message || body.mesaj || body.notlar || body.description).trim()
+        : requestType === 'demo_rezervasyonu'
+        ? 'sportsfly.com.tr üzerinden demo talep formu gönderildi.'
+        : 'Web sitesi / kayıt formu üzerinden yeni spor okulu başvurusu yapıldı.';
+
+    const newRecord: ServerDemoOrClubRequest = {
+      id: String(body.id || `demo_${Date.now().toString().slice(-6)}`),
+      fullName,
+      clubName,
+      phone,
+      email,
+      branch,
+      studentEstimate,
+      selectedPlan,
+      submittedAt,
+      requestType,
+      source,
+      managerName: fullName,
+      city,
+      district,
+      branches,
+      athleteCount: studentEstimate,
+      demoDate: demoDate ? String(demoDate) : undefined,
+      demoTime: demoTime ? String(demoTime) : undefined,
+      createdAt: submittedAt,
+      status: 'onay_bekliyor',
+      notes,
+    };
+
+    // Deduplicate if same id is re-sent
+    const filteredExisting = demoRequestsStore.filter((item) => item.id !== newRecord.id);
+    const updatedList = [newRecord, ...filteredExisting];
+    saveDemoRequestsToDisk(updatedList);
+
+    res.status(201).json({
+      success: true,
+      message:
+        'Demo talebi başarıyla kaydedildi ve Admin paneline aktarıldı.',
+      data: newRecord,
+    });
+  } catch (err: any) {
+    console.error('[POST /api/demo-requests Error]:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Demo talebi kaydedilirken sunucu hatası oluştu.',
+    });
+  }
+});
+
+// PATCH /api/demo-requests/:id — Approve, Reject, or Suspend from Super Admin Panel
+app.patch('/api/demo-requests/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, rejectionReason, notes, sendSms } = req.body || {};
+
+  const existingIndex = demoRequestsStore.findIndex((r) => r.id === id);
+  if (existingIndex === -1) {
+    res.status(404).json({
+      success: false,
+      error: 'İlgili başvuru veya demo talebi bulunamadı.',
+    });
+    return;
+  }
+
+  const target = demoRequestsStore[existingIndex];
+  const nowStr = new Date().toLocaleString('sv-SE', {
+    timeZone: 'Europe/Istanbul',
+  }).slice(0, 16);
+
+  const updatedItem: ServerDemoOrClubRequest = {
+    ...target,
+    status: status || target.status,
+    rejectionReason: rejectionReason !== undefined ? rejectionReason : target.rejectionReason,
+    notes: notes !== undefined ? notes : target.notes,
+    approvedAt: status === 'onaylandi' ? nowStr : target.approvedAt,
+    smsSentAt: sendSms ? nowStr : target.smsSentAt,
+  };
+
+  const nextList = [...demoRequestsStore];
+  nextList[existingIndex] = updatedItem;
+  saveDemoRequestsToDisk(nextList);
+
+  let smsResult = null;
+  if (sendSms && updatedItem.phone) {
+    const smsText =
+      updatedItem.status === 'onaylandi'
+        ? updatedItem.requestType === 'demo_rezervasyonu'
+          ? `SPORTSFLY: Sayın ${updatedItem.managerName}, ${updatedItem.clubName} için ${updatedItem.demoDate || ''} ${updatedItem.demoTime || ''} demo rezervasyonunuz onaylanmıştır.`
+          : `SPORTSFLY: Tebrikler! ${updatedItem.clubName} spor okulu başvurunuz onaylanmıştır. webapp.sportsfly.com.tr üzerinden giriş yapabilirsiniz.`
+        : updatedItem.status === 'reddedildi'
+        ? `SPORTSFLY: ${updatedItem.clubName} başvurunuz incelendi. Bilgilendirme: ${updatedItem.rejectionReason || 'Belge doğrulaması tamamlanamadı.'}`
+        : `SPORTSFLY: ${updatedItem.clubName} başvuru durumunuz güncellendi.`;
+
+    smsResult = await sendMutlucellSms(updatedItem.phone, smsText);
+  }
+
+  res.json({
+    success: true,
+    data: updatedItem,
+    smsResult,
+  });
+});
+
+// DELETE /api/demo-requests/:id — Remove a request
+app.delete('/api/demo-requests/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const filtered = demoRequestsStore.filter((r) => r.id !== id);
+  saveDemoRequestsToDisk(filtered);
+  res.json({
+    success: true,
+    deletedId: id,
+  });
+});
 
 // Vite Middleware integration
 const isProduction = process.env.NODE_ENV === 'production';
