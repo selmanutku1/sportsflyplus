@@ -155,6 +155,151 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const PAGE_SEO_MAP: Partial<Record<NavPage, { title: string; description: string }>> = {
+      anasayfa: {
+        title: 'Kontrol Paneli | SportsFly — Spor Okulu & Akademi Yönetimi',
+        description:
+          'Kulübünüzün anlık sporcu sayısı, aidat tahsilat oranı, yoklama istatistikleri ve finansal performans özeti.',
+      },
+      'on-kayit': {
+        title: 'Ön Kayıt & Başvurular | SportsFly Yönetim Sistemi',
+        description:
+          'Online sporcu ön kayıt başvurularını, deneme antrenmanı taleplerini ve kesin kayıt onaylarını yönetin.',
+      },
+      sporcular: {
+        title: 'Sporcu Yönetimi | SportsFly — Spor Okulu & Akademi Yönetimi',
+        description:
+          'Kayıtlı sporcu profilleri, veli iletişim bilgileri, sağlık evrakları, grup atamaları ve aidat durumları.',
+      },
+      'sporcu-karnesi': {
+        title: 'Dijital Sporcu Karnesi & Performans | SportsFly',
+        description:
+          'Antropometrik ölçümler, atletik performans testleri, gelişim grafikleri ve velilere özel dijital sporcu karnesi.',
+      },
+      'egitim-planlama': {
+        title: 'Eğitim Planlama & Antrenman Müfredatı | SportsFly',
+        description:
+          'Branş ve yaş gruplarına özel haftalık antrenman planları, taktik tahtası ve sezonluk gelişim müfredatı.',
+      },
+      subeler: {
+        title: 'Şube & Tesis Yönetimi | SportsFly',
+        description:
+          'Çoklu şube, spor tesisi, saha/salon kapasiteleri ve şube bazlı doluluk oranlarını tek merkezden yönetin.',
+      },
+      'sube-ozet': {
+        title: 'Şube Özet & Karşılaştırmalı Analitik | SportsFly',
+        description:
+          'Şubeler arası sporcu sayısı, tahsilat performansı ve gelir-gider karşılaştırma raporları.',
+      },
+      egitmenler: {
+        title: 'Eğitmen & Antrenör Kadrosu | SportsFly',
+        description:
+          'Antrenör profilleri, uzmanlık branşları, sorumlu olunan gruplar ve ders programı yönetimi.',
+      },
+      gruplar: {
+        title: 'Grup & Takım Yönetimi | SportsFly',
+        description:
+          'Yaş kategorileri ve seviyelere göre antrenman grupları, kontenjan takibi ve sporcu-grup eşleştirmeleri.',
+      },
+      'antrenman-takvimi': {
+        title: 'Antrenman & Ders Takvimi | SportsFly',
+        description:
+          'Haftalık saha ve salon antrenman programı, ders saatleri ve tesis kullanım takvimi.',
+      },
+      yoklama: {
+        title: 'Mobil Yoklama & Katılım Takibi | SportsFly',
+        description:
+          'Hızlı antrenman yoklaması, devamsızlık bildirimleri ve sporcu devamlılık istatistikleri.',
+      },
+      'on-muhasebe': {
+        title: 'Ön Muhasebe & Finans Yönetimi | SportsFly',
+        description:
+          'Aidat tahsilatları, gelir-gider takibi, kasa/banka hareketleri ve ödeme planı kontrolü.',
+      },
+      'gelir-gider-kategori': {
+        title: 'Gelir & Gider Kategorileri | SportsFly Ön Muhasebe',
+        description:
+          'Kulüp muhasebesi için gelir ve gider kalemlerini, maliyet merkezlerini yapılandırın.',
+      },
+      'gelir-gider-yonetimi': {
+        title: 'Gelir & Gider Hareketleri | SportsFly Ön Muhasebe',
+        description:
+          'Fatura, kira, personel ve aidat nakit akışı hareketlerini detaylı olarak takip edin.',
+      },
+      'odeme-plani-kontrol': {
+        title: 'Ödeme Planı & Tahsilat Kontrolü | SportsFly',
+        description:
+          'Vadesi gelen ve geciken sporcu aidatlarını takip edin, otomatik ödeme hatırlatmaları gönderin.',
+      },
+      'odeme-plani': {
+        title: 'Aidat & Ödeme Planları | SportsFly',
+        description:
+          'Sporcu bazlı taksitli aidat planları ve online kredi kartı tahsilat yapılandırması.',
+      },
+      entegrasyonlar: {
+        title: 'Entegrasyonlar & Modüller | SportsFly',
+        description:
+          'Sanal POS, SMS başlığı, WhatsApp bildirimleri ve ek kulüp modüllerini tek tıkla etkinleştirin.',
+      },
+      'spor-okulu-basvurulari': {
+        title: 'Spor Okulu Başvuruları | SportsFly Süper Admin',
+        description:
+          'Web sitesi ve kayıt formlarından gelen kurumsal spor okulu başvurularını anlık inceleyin ve onaylayın.',
+      },
+      yetkilendirmeler: {
+        title: 'Yetkilendirme & Roller | SportsFly',
+        description:
+          'Yönetici, antrenör, veli ve sporcu rollerinin modül erişim ve işlem yetkilerini yapılandırın.',
+      },
+      'kullanici-sozlesmeleri': {
+        title: 'Kulüp Sözleşmeleri & KVKK Metinleri | SportsFly',
+        description:
+          'Kayıt sözleşmeleri, veli muvafakatnameleri ve KVKK aydınlatma metinlerini dijital olarak yönetin.',
+      },
+      paketler: {
+        title: 'Lisans Paketleri & Abonelik | SportsFly',
+        description:
+          'Kulübünüzün büyüklüğüne uygun SportsFly abonelik paketlerini inceleyin ve yükseltin.',
+      },
+      destek: {
+        title: '7/24 Destek & Yardım Merkezi | SportsFly',
+        description:
+          'SportsFly teknik destek ekibiyle iletişime geçin, eğitim rehberlerine ve sıkça sorulan sorulara ulaşın.',
+      },
+    };
+
+    const defaultSeo = {
+      title: 'SportsFly — Spor Okulu, Akademi & Kulüp Yönetim Sistemi',
+      description:
+        'Spor okulları, akademiler ve kulüpler için yeni nesil yönetim yazılımı. Otomatik aidat tahsilatı, mobil yoklama, eğitmen ve veli panelleri, Sporpuan ödül sistemi ve dijital sporcu karneleri.',
+    };
+
+    const activeSeo = !isAuthenticated
+      ? {
+          title: 'Giriş Yap | SportsFly — Spor Okulu, Akademi & Kulüp Yönetim Sistemi',
+          description: defaultSeo.description,
+        }
+      : PAGE_SEO_MAP[currentPage] || defaultSeo;
+
+    document.title = activeSeo.title;
+
+    const setMetaTag = (selector: string, content: string) => {
+      const el = document.querySelector(selector);
+      if (el) {
+        el.setAttribute('content', content);
+      }
+    };
+
+    setMetaTag('meta[name="description"]', activeSeo.description);
+    setMetaTag('meta[property="og:title"]', activeSeo.title);
+    setMetaTag('meta[property="og:description"]', activeSeo.description);
+    setMetaTag('meta[name="twitter:title"]', activeSeo.title);
+    setMetaTag('meta[name="twitter:description"]', activeSeo.description);
+  }, [currentPage, isAuthenticated]);
+
   const renderActiveView = () => {
     // 1. Enforce package-tier access limits (Süper Admin has full access to Sporpuan modules regardless of plan)
     if (!isPageAllowedForPlan(currentPage, currentPlan, userProfile?.role)) {
