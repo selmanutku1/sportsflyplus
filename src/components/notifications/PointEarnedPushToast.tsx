@@ -58,6 +58,9 @@ export const PointEarnedPushToast: React.FC<PointEarnedPushToastProps> = ({
 
       osc.start();
       osc.stop(ctx.currentTime + 0.45);
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 600);
     } catch (e) {
       // Audio autoplay policy fallback
     }

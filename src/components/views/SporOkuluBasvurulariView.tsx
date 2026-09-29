@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Building2,
   CheckCircle2,
@@ -22,6 +22,7 @@ import {
 import { sendMutlucellSms } from '../../services/smsService';
 import { getStoredUserProfile } from '../../data/userProfile';
 import { isSuperAdminUser } from '../../data/packagePermissions';
+import { fetchWithTimeout } from '../../utils/networkResilience';
 
 export interface ClubRegistrationRequest {
   id: string;
@@ -89,18 +90,46 @@ export const SporOkuluBasvurulariView: React.FC = () => {
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
   const [isLiveConnected, setIsLiveConnected] = useState(true);
+  const processingIdsRef = useRef<Set<string>>(new Set());
 
   const [toastMessage, setToastMessage] = useState<{
     text: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = (text: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'success') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToastMessage({ text, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToastMessage(null);
+      toastTimerRef.current = null;
     }, 4000);
-  };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isRejectionModalOpen) {
+          setIsRejectionModalOpen(false);
+        } else if (isDetailModalOpen) {
+          setIsDetailModalOpen(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isRejectionModalOpen, isDetailModalOpen]);
 
   const applyServerItems = useCallback((rawItems: any[]) => {
     if (!Array.isArray(rawItems)) return;
@@ -152,7 +181,7 @@ export const SporOkuluBasvurulariView: React.FC = () => {
         }
       };
 
-      const res = await fetch('/api/demo-requests');
+      const res = await fetchWithTimeout('/api/demo-requests', { timeoutMs: 7000 });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.items)) {
@@ -165,7 +194,10 @@ export const SporOkuluBasvurulariView: React.FC = () => {
         window.location.hostname !== 'webapp.sportsfly.com.tr'
       ) {
         try {
-          const remoteRes = await fetch('https://webapp.sportsfly.com.tr/api/demo-requests');
+          const remoteRes = await fetchWithTimeout(
+            'https://webapp.sportsfly.com.tr/api/demo-requests',
+            { timeoutMs: 5000 }
+          );
           if (remoteRes.ok) {
             const remoteData = await remoteRes.json();
             if (Array.isArray(remoteData.items)) {
@@ -232,125 +264,161 @@ export const SporOkuluBasvurulariView: React.FC = () => {
         } catch {}
       }
     };
+    const handleOnline = () => {
+      setIsLiveConnected(true);
+      fetchLiveRequests();
+    };
     window.addEventListener('storage', handleStorage);
+    window.addEventListener('online', handleOnline);
 
     return () => {
       if (eventSource) eventSource.close();
       if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('online', handleOnline);
     };
   }, [fetchLiveRequests, applyServerItems]);
 
   const handleApprove = async (id: string) => {
+    if (processingIdsRef.current.has(id)) return;
     const target = requests.find((r) => r.id === id);
-    if (!target) return;
-
-    const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
-    const updated = requests.map((r) =>
-      r.id === id
-        ? {
-            ...r,
-            status: 'onaylandi' as const,
-            approvedAt: nowStr,
-            smsSentAt: nowStr,
-          }
-        : r
-    );
-
-    saveRequestsToStorage(updated);
+    if (!target || target.status === 'onaylandi') return;
+    processingIdsRef.current.add(id);
 
     try {
-      await fetch(`/api/demo-requests/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'onaylandi', sendSms: true }),
-      });
-    } catch {}
+      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      const updated = requests.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status: 'onaylandi' as const,
+              approvedAt: nowStr,
+              smsSentAt: nowStr,
+            }
+          : r
+      );
 
-    const smsMsg = `SPORTSFLY: Sayın ${target.managerName}, ${target.clubName} için oluşturduğunuz kurumsal spor okulu başvurunuz onaylanmıştır. Hesabınıza giriş yapabilirsiniz.`;
-    const smsRes = await sendMutlucellSms(target.phone, smsMsg);
+      saveRequestsToStorage(updated);
 
-    if (smsRes.success) {
-      showToast(`${target.clubName} başvurusu onaylandı ve bilgilendirme SMS'i gönderildi.`, 'success');
-    } else {
-      showToast(`${target.clubName} başvurusu onaylandı.`, 'info');
-    }
+      try {
+        await fetchWithTimeout(`/api/demo-requests/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'onaylandi', sendSms: true }),
+          timeoutMs: 7000,
+        });
+      } catch {}
 
-    if (selectedRequest?.id === id) {
-      setSelectedRequest({ ...selectedRequest, status: 'onaylandi', approvedAt: nowStr });
+      const smsMsg = `SPORTSFLY: Sayın ${target.managerName}, ${target.clubName} için oluşturduğunuz kurumsal spor okulu başvurunuz onaylanmıştır. Hesabınıza giriş yapabilirsiniz.`;
+      const smsRes = await sendMutlucellSms(target.phone, smsMsg);
+
+      if (smsRes.success) {
+        showToast(`${target.clubName} başvurusu onaylandı ve bilgilendirme SMS'i gönderildi.`, 'success');
+      } else {
+        showToast(`${target.clubName} başvurusu onaylandı.`, 'info');
+      }
+
+      if (selectedRequest?.id === id) {
+        setSelectedRequest({ ...selectedRequest, status: 'onaylandi', approvedAt: nowStr });
+      }
+    } finally {
+      processingIdsRef.current.delete(id);
     }
   };
 
   const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRequest) return;
-
-    const reason = rejectionReasonInput.trim() || 'Kurumsal başvuru kriterleri doğrulanamadı.';
-    const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
-
-    const updated = requests.map((r) =>
-      r.id === selectedRequest.id
-        ? {
-            ...r,
-            status: 'reddedildi' as const,
-            rejectionReason: reason,
-            smsSentAt: nowStr,
-          }
-        : r
-    );
-
-    saveRequestsToStorage(updated);
-    setIsRejectionModalOpen(false);
+    if (!selectedRequest || processingIdsRef.current.has(selectedRequest.id)) return;
+    const targetId = selectedRequest.id;
+    processingIdsRef.current.add(targetId);
 
     try {
-      await fetch(`/api/demo-requests/${selectedRequest.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'reddedildi',
-          rejectionReason: reason,
-          sendSms: true,
-        }),
-      });
-    } catch {}
+      const reason = rejectionReasonInput.trim() || 'Kurumsal başvuru kriterleri doğrulanamadı.';
+      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
-    const smsMsg = `SPORTSFLY: ${selectedRequest.clubName} kurumsal üyelik başvurunuz değerlendirilmiştir. Açıklama: ${reason}`;
-    await sendMutlucellSms(selectedRequest.phone, smsMsg);
+      const updated = requests.map((r) =>
+        r.id === targetId
+          ? {
+              ...r,
+              status: 'reddedildi' as const,
+              rejectionReason: reason,
+              smsSentAt: nowStr,
+            }
+          : r
+      );
 
-    showToast(`${selectedRequest.clubName} başvurusu reddedildi.`, 'info');
-    setSelectedRequest(null);
+      saveRequestsToStorage(updated);
+      setIsRejectionModalOpen(false);
+
+      try {
+        await fetchWithTimeout(`/api/demo-requests/${targetId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'reddedildi',
+            rejectionReason: reason,
+            sendSms: true,
+          }),
+          timeoutMs: 7000,
+        });
+      } catch {}
+
+      const smsMsg = `SPORTSFLY: ${selectedRequest.clubName} kurumsal üyelik başvurunuz değerlendirilmiştir. Açıklama: ${reason}`;
+      await sendMutlucellSms(selectedRequest.phone, smsMsg);
+
+      showToast(`${selectedRequest.clubName} başvurusu reddedildi.`, 'info');
+      setSelectedRequest(null);
+    } finally {
+      processingIdsRef.current.delete(targetId);
+    }
   };
 
   const handleSuspend = async (id: string) => {
-    const updated = requests.map((r) =>
-      r.id === id ? { ...r, status: 'askida' as const } : r
-    );
-    saveRequestsToStorage(updated);
-
+    if (processingIdsRef.current.has(id)) return;
+    processingIdsRef.current.add(id);
     try {
-      await fetch(`/api/demo-requests/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'askida' }),
-      });
-    } catch {}
+      const updated = requests.map((r) =>
+        r.id === id ? { ...r, status: 'askida' as const } : r
+      );
+      saveRequestsToStorage(updated);
 
-    showToast('Başvuru askıya alındı.', 'info');
+      try {
+        await fetchWithTimeout(`/api/demo-requests/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'askida' }),
+          timeoutMs: 7000,
+        });
+      } catch {}
+
+      showToast('Başvuru askıya alındı.', 'info');
+    } finally {
+      processingIdsRef.current.delete(id);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const updated = requests.filter((r) => r.id !== id);
-    saveRequestsToStorage(updated);
-
+    if (processingIdsRef.current.has(id)) return;
+    processingIdsRef.current.add(id);
     try {
-      await fetch(`/api/demo-requests/${id}`, { method: 'DELETE' });
-    } catch {}
+      const updated = requests.filter((r) => r.id !== id);
+      saveRequestsToStorage(updated);
 
-    if (selectedRequest?.id === id) {
-      setSelectedRequest(null);
-      setIsDetailModalOpen(false);
+      try {
+        await fetchWithTimeout(`/api/demo-requests/${id}`, {
+          method: 'DELETE',
+          timeoutMs: 7000,
+        });
+      } catch {}
+
+      if (selectedRequest?.id === id) {
+        setSelectedRequest(null);
+        setIsDetailModalOpen(false);
+      }
+      showToast('Başvuru kaydı silindi.', 'info');
+    } finally {
+      processingIdsRef.current.delete(id);
     }
-    showToast('Başvuru kaydı silindi.', 'info');
   };
 
   const filteredRequests = requests.filter((r) => {

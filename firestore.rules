@@ -60,6 +60,108 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    function isValidSporcu(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'code', 'name', 'email', 'facility', 'branch', 'groupId', 'trainerId', 'isActive', 'registrationDate', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'ownerId', 'code', 'name', 'email', 'phone', 'birthDate', 'facility', 'branch', 'groupId', 'teamGroup', 'trainerId', 'trainerName', 'isActive', 'avatarUrl', 'registrationDate', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        isValidId(data.code) && data.code.size() >= 4 && data.code.size() <= 32 &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 32)) &&
+        (!('birthDate' in data) || (data.birthDate is string && data.birthDate.size() >= 4 && data.birthDate.size() <= 24)) &&
+        data.facility is string && data.facility.size() >= 2 && data.facility.size() <= 140 &&
+        data.branch is string && data.branch.size() >= 2 && data.branch.size() <= 80 &&
+        isValidId(data.groupId) &&
+        (!('teamGroup' in data) || (data.teamGroup is string && data.teamGroup.size() <= 120)) &&
+        isValidId(data.trainerId) &&
+        (!('trainerName' in data) || (data.trainerName is string && data.trainerName.size() <= 120)) &&
+        data.isActive is bool &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+        data.registrationDate is string && data.registrationDate.size() >= 4 && data.registrationDate.size() <= 32 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidEgitmen(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'code', 'name', 'email', 'phone', 'facility', 'branch', 'assignedGroupIds', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'ownerId', 'code', 'name', 'email', 'phone', 'facility', 'branch', 'assignedGroupIds', 'assignedGroups', 'title', 'licenseLevel', 'status', 'experienceYears', 'rating', 'activeGroupsCount', 'activeAthletesCount', 'weeklyHours', 'hourlyRate', 'monthlySalary', 'city', 'avatarUrl', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        isValidId(data.code) && data.code.size() >= 4 && data.code.size() <= 32 &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 32 &&
+        data.facility is string && data.facility.size() >= 2 && data.facility.size() <= 140 &&
+        data.branch is string && data.branch.size() >= 2 && data.branch.size() <= 80 &&
+        data.assignedGroupIds is list && data.assignedGroupIds.size() <= 20 &&
+        (data.assignedGroupIds.size() == 0 || isValidId(data.assignedGroupIds[0])) &&
+        (!('assignedGroups' in data) || (data.assignedGroups is list && data.assignedGroups.size() <= 20 && (data.assignedGroups.size() == 0 || (data.assignedGroups[0] is string && data.assignedGroups[0].size() <= 140)))) &&
+        (!('title' in data) || (data.title is string && data.title.size() <= 140)) &&
+        (!('licenseLevel' in data) || (data.licenseLevel is string && data.licenseLevel.size() <= 140)) &&
+        data.status is string && data.status in ['Aktif', 'İzinli', 'Ayrıldı'] &&
+        (!('experienceYears' in data) || (data.experienceYears is number && data.experienceYears >= 0 && data.experienceYears <= 60)) &&
+        (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
+        (!('activeGroupsCount' in data) || (data.activeGroupsCount is number && data.activeGroupsCount >= 0 && data.activeGroupsCount <= 100)) &&
+        (!('activeAthletesCount' in data) || (data.activeAthletesCount is number && data.activeAthletesCount >= 0 && data.activeAthletesCount <= 5000)) &&
+        (!('weeklyHours' in data) || (data.weeklyHours is number && data.weeklyHours >= 0 && data.weeklyHours <= 168)) &&
+        (!('hourlyRate' in data) || (data.hourlyRate is number && data.hourlyRate >= 0 && data.hourlyRate <= 100000)) &&
+        (!('monthlySalary' in data) || (data.monthlySalary is number && data.monthlySalary >= 0 && data.monthlySalary <= 1000000)) &&
+        (!('city' in data) || (data.city is string && data.city.size() <= 80)) &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidGrup(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'instructorId', 'instructorName', 'facility', 'branch', 'memberCount', 'maxCapacity', 'monthlyFee', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'ownerId', 'name', 'instructorId', 'instructorName', 'primaryAthleteIds', 'facility', 'branch', 'category', 'ageGroup', 'memberCount', 'maxCapacity', 'monthlyFee', 'status', 'scheduleDays', 'scheduleTime', 'scheduleLocation', 'description', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 140 &&
+        isValidId(data.instructorId) &&
+        data.instructorName is string && data.instructorName.size() >= 2 && data.instructorName.size() <= 120 &&
+        (!('primaryAthleteIds' in data) || (data.primaryAthleteIds is list && data.primaryAthleteIds.size() <= 50 && (data.primaryAthleteIds.size() == 0 || isValidId(data.primaryAthleteIds[0])))) &&
+        data.facility is string && data.facility.size() >= 2 && data.facility.size() <= 140 &&
+        data.branch is string && data.branch.size() >= 2 && data.branch.size() <= 80 &&
+        (!('category' in data) || (data.category is string && data.category.size() <= 80)) &&
+        (!('ageGroup' in data) || (data.ageGroup is string && data.ageGroup.size() <= 64)) &&
+        data.memberCount is number && data.memberCount >= 0 && data.memberCount <= 500 &&
+        data.maxCapacity is number && data.maxCapacity >= 1 && data.maxCapacity <= 500 &&
+        data.monthlyFee is number && data.monthlyFee >= 0 && data.monthlyFee <= 500000 &&
+        data.status is string && data.status in ['Aktif', 'Dolu', 'Askıda'] &&
+        (!('scheduleDays' in data) || (data.scheduleDays is list && data.scheduleDays.size() <= 7 && (data.scheduleDays.size() == 0 || (data.scheduleDays[0] is string && data.scheduleDays[0].size() <= 32)))) &&
+        (!('scheduleTime' in data) || (data.scheduleTime is string && data.scheduleTime.size() <= 64)) &&
+        (!('scheduleLocation' in data) || (data.scheduleLocation is string && data.scheduleLocation.size() <= 140)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 600)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidGrupUyesi(data) {
+      return data.keys().hasAll(['id', 'grupId', 'sporcuId', 'instructorId', 'ownerId', 'name', 'code', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'grupId', 'sporcuId', 'instructorId', 'ownerId', 'name', 'code', 'phone', 'birthYear', 'parentName', 'parentPhone', 'attendanceRate', 'licenseNumber', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.grupId) &&
+        isValidId(data.sporcuId) &&
+        isValidId(data.instructorId) &&
+        isValidId(data.ownerId) &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        isValidId(data.code) && data.code.size() >= 4 && data.code.size() <= 32 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 32)) &&
+        (!('birthYear' in data) || (data.birthYear is number && data.birthYear >= 1950 && data.birthYear <= 2030)) &&
+        (!('parentName' in data) || (data.parentName is string && data.parentName.size() <= 120)) &&
+        (!('parentPhone' in data) || (data.parentPhone is string && data.parentPhone.size() <= 32)) &&
+        (!('attendanceRate' in data) || (data.attendanceRate is number && data.attendanceRate >= 0 && data.attendanceRate <= 100)) &&
+        (!('licenseNumber' in data) || (data.licenseNumber is string && data.licenseNumber.size() <= 64)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     function isValidAthleteLabReport(data) {
       return data.keys().hasAll(['reportId', 'ownerId', 'athleteCode', 'athleteName', 'sportBranch', 'overallScore', 'createdAt', 'updatedAt']) &&
         data.keys().hasOnly(['reportId', 'ownerId', 'athleteCode', 'athleteName', 'sportBranch', 'overallScore', 'createdAt', 'updatedAt']) &&
@@ -153,6 +255,128 @@ service cloud.firestore {
       }
     }
 
+    // /sporcular/{sporcuId} — Club Athletes Collection
+    match /sporcular/{sporcuId} {
+      allow get: if isSignedIn() && isValidId(sporcuId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(sporcuId) &&
+        incoming().id == sporcuId &&
+        isValidSporcu(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(sporcuId) &&
+        isValidSporcu(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().code == existing().code &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (resource.data.ownerId == request.auth.uid &&
+           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'phone', 'birthDate', 'facility', 'branch', 'groupId', 'teamGroup', 'trainerId', 'trainerName', 'isActive', 'avatarUrl', 'updatedAt']))
+        );
+
+      allow delete: if isSignedIn() && isValidId(sporcuId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    // /egitmenler/{egitmenId} — Club Trainers Collection
+    match /egitmenler/{egitmenId} {
+      allow get: if isSignedIn() && isValidId(egitmenId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(egitmenId) &&
+        incoming().id == egitmenId &&
+        isValidEgitmen(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(egitmenId) &&
+        isValidEgitmen(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().code == existing().code &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (resource.data.ownerId == request.auth.uid &&
+           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'phone', 'facility', 'branch', 'assignedGroupIds', 'assignedGroups', 'title', 'licenseLevel', 'status', 'experienceYears', 'rating', 'activeGroupsCount', 'activeAthletesCount', 'weeklyHours', 'hourlyRate', 'monthlySalary', 'city', 'avatarUrl', 'updatedAt']))
+        );
+
+      allow delete: if isSignedIn() && isValidId(egitmenId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    // /gruplar/{grupId} — Training Groups Collection & /uyeler/{uyeId} Subcollection
+    match /gruplar/{grupId} {
+      allow get: if isSignedIn() && isValidId(grupId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(grupId) &&
+        incoming().id == grupId &&
+        isValidGrup(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(grupId) &&
+        isValidGrup(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (resource.data.ownerId == request.auth.uid &&
+           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'instructorId', 'instructorName', 'primaryAthleteIds', 'facility', 'branch', 'category', 'ageGroup', 'memberCount', 'maxCapacity', 'monthlyFee', 'status', 'scheduleDays', 'scheduleTime', 'scheduleLocation', 'description', 'updatedAt']))
+        );
+
+      allow delete: if isSignedIn() && isValidId(grupId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      // Master Gate Subcollection: /gruplar/{grupId}/uyeler/{uyeId}
+      match /uyeler/{uyeId} {
+        allow get: if isSignedIn() && isValidId(grupId) && isValidId(uyeId) &&
+          (resource.data.ownerId == request.auth.uid || isAdmin()) &&
+          get(/databases/$(database)/documents/gruplar/$(grupId)).data.ownerId == resource.data.ownerId;
+
+        allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+        allow create: if isVerifiedUser() &&
+          isValidId(grupId) &&
+          isValidId(uyeId) &&
+          incoming().id == uyeId &&
+          incoming().grupId == grupId &&
+          isValidGrupUyesi(incoming()) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          get(/databases/$(database)/documents/gruplar/$(grupId)).data.ownerId == request.auth.uid;
+
+        allow update: if isVerifiedUser() &&
+          isValidId(grupId) &&
+          isValidId(uyeId) &&
+          isValidGrupUyesi(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().grupId == existing().grupId &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().code == existing().code &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          get(/databases/$(database)/documents/gruplar/$(grupId)).data.ownerId == request.auth.uid && (
+            isAdmin() ||
+            (resource.data.ownerId == request.auth.uid &&
+             incoming().diff(existing()).affectedKeys().hasOnly(['sporcuId', 'instructorId', 'name', 'phone', 'birthYear', 'parentName', 'parentPhone', 'attendanceRate', 'licenseNumber', 'updatedAt']))
+          );
+
+        allow delete: if isSignedIn() && isValidId(grupId) && isValidId(uyeId) &&
+          (resource.data.ownerId == request.auth.uid || isAdmin()) &&
+          exists(/databases/$(database)/documents/gruplar/$(grupId));
+      }
+    }
+
     match /labReports/{reportId} {
       allow get: if isSignedIn() && isValidId(reportId) && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
@@ -184,7 +408,6 @@ service cloud.firestore {
       allow get: if isSignedIn() && isValidId(intentId) && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
 
-      // Clients can only initialize an intent in 'requires_3ds_authorization' state
       allow create: if isVerifiedUser() &&
         isValidId(intentId) &&
         incoming().intentId == intentId &&
@@ -193,8 +416,6 @@ service cloud.firestore {
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
 
-      // Terminal State Lock: Once status is 'succeeded', 'cancelled', or 'refunded', clients CANNOT modify it.
-      // Clients can only cancel a pending 'requires_3ds_authorization' intent; only verified Admin/Server can settle to 'succeeded'.
       allow update: if isVerifiedUser() &&
         isValidId(intentId) &&
         isValidPaymentIntent(incoming()) &&

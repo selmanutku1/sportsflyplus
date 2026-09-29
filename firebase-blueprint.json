@@ -67,6 +67,375 @@
       },
       "required": ["ownerId", "email", "phone", "kvkkConsentAccepted", "updatedAt"]
     },
+    "Sporcu": {
+      "title": "Sporcu",
+      "description": "Athlete record in /sporcular/{sporcuId} with cross-references to groupId (/gruplar/{groupId}) and trainerId (/egitmenler/{trainerId}).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 32
+        },
+        "birthDate": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 24
+        },
+        "facility": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "groupId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Cross-reference ID to /gruplar/{groupId}."
+        },
+        "teamGroup": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Denormalized group name for fast list rendering."
+        },
+        "trainerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Cross-reference ID to /egitmenler/{trainerId}."
+        },
+        "trainerName": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Denormalized trainer name for fast list rendering."
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "registrationDate": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "ownerId", "code", "name", "email", "facility", "branch", "groupId", "trainerId", "isActive", "registrationDate", "createdAt", "updatedAt"]
+    },
+    "Egitmen": {
+      "title": "Egitmen",
+      "description": "Trainer record in /egitmenler/{egitmenId} with cross-references to assignedGroupIds (/gruplar/{grupId}).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 32
+        },
+        "facility": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "assignedGroupIds": {
+          "type": "array",
+          "description": "Bounded list (max 20) of cross-reference IDs to /gruplar/{grupId}."
+        },
+        "assignedGroups": {
+          "type": "array",
+          "description": "Bounded list (max 20) of denormalized group names."
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "licenseLevel": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Aktif", "İzinli", "Ayrıldı"]
+        },
+        "experienceYears": {
+          "type": "number"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "activeGroupsCount": {
+          "type": "number"
+        },
+        "activeAthletesCount": {
+          "type": "number"
+        },
+        "weeklyHours": {
+          "type": "number"
+        },
+        "hourlyRate": {
+          "type": "number"
+        },
+        "monthlySalary": {
+          "type": "number"
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "avatarUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "ownerId", "code", "name", "email", "phone", "facility", "branch", "assignedGroupIds", "status", "createdAt", "updatedAt"]
+    },
+    "Grup": {
+      "title": "Grup",
+      "description": "Training group record in /gruplar/{grupId} with cross-references to instructorId (/egitmenler/{instructorId}) and primaryAthleteIds (/sporcular/{sporcuId}).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "instructorId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Cross-reference ID to /egitmenler/{instructorId}."
+        },
+        "instructorName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "primaryAthleteIds": {
+          "type": "array",
+          "description": "Bounded list (max 50) of enrolled athlete IDs referencing /sporcular/{sporcuId}."
+        },
+        "facility": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "ageGroup": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "memberCount": {
+          "type": "number"
+        },
+        "maxCapacity": {
+          "type": "number"
+        },
+        "monthlyFee": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Aktif", "Dolu", "Askıda"]
+        },
+        "scheduleDays": {
+          "type": "array",
+          "description": "Bounded list of training days (max 7 days)."
+        },
+        "scheduleTime": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "scheduleLocation": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "ownerId", "name", "instructorId", "instructorName", "facility", "branch", "memberCount", "maxCapacity", "monthlyFee", "status", "createdAt", "updatedAt"]
+    },
+    "GrupUyesi": {
+      "title": "GrupUyesi",
+      "description": "Subcollection document in /gruplar/{grupId}/uyeler/{uyeId} cross-referencing grupId, sporcuId, and instructorId.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "grupId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sporcuId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "instructorId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "code": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "birthYear": {
+          "type": "number"
+        },
+        "parentName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "parentPhone": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "attendanceRate": {
+          "type": "number"
+        },
+        "licenseNumber": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "grupId", "sporcuId", "instructorId", "ownerId", "name", "code", "createdAt", "updatedAt"]
+    },
     "AthleteLabReport": {
       "title": "AthleteLabReport",
       "description": "SportsFly Lab 7-page athlete biometric and motor performance report card.",
@@ -171,6 +540,22 @@
     "/users/{userId}/private/{docId}": {
       "schema": { "$ref": "#/entities/UserPrivatePII" },
       "description": "Strict KVKK PII subcollection accessible only by the owner or verified admin."
+    },
+    "/sporcular/{sporcuId}": {
+      "schema": { "$ref": "#/entities/Sporcu" },
+      "description": "Club athletes collection cross-referencing /gruplar/{groupId} and /egitmenler/{trainerId}."
+    },
+    "/egitmenler/{egitmenId}": {
+      "schema": { "$ref": "#/entities/Egitmen" },
+      "description": "Club trainers collection cross-referencing assigned /gruplar/{grupId} documents."
+    },
+    "/gruplar/{grupId}": {
+      "schema": { "$ref": "#/entities/Grup" },
+      "description": "Training groups collection cross-referencing /egitmenler/{instructorId} and /sporcular/{sporcuId}."
+    },
+    "/gruplar/{grupId}/uyeler/{uyeId}": {
+      "schema": { "$ref": "#/entities/GrupUyesi" },
+      "description": "Subcollection of enrolled athletes per training group linking grupId, sporcuId, and instructorId."
     },
     "/labReports/{reportId}": {
       "schema": { "$ref": "#/entities/AthleteLabReport" },

@@ -1,40 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { NavPage, PackagePlanType } from './types';
+import { AppErrorBoundary } from './components/common/AppErrorBoundary';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { DashboardView } from './components/views/DashboardView';
-import { SporsepetiUserView } from './components/views/SporsepetiUserView';
-import { SporcularView } from './components/views/SporcularView';
-import { EgitmenlerView } from './components/views/EgitmenlerView';
-import { AntrenmanTakvimiView } from './components/views/AntrenmanTakvimiView';
-import { YoneticilerView } from './components/views/YoneticilerView';
-import { SporpuanDegerlendirmelerView } from './components/views/sporpuan/SporpuanDegerlendirmelerView';
-import { SporpuanSporcuDegerlendirmeView } from './components/views/sporpuan/SporpuanSporcuDegerlendirmeView';
-import { SporpuanDogrulamalarView } from './components/views/sporpuan/SporpuanDogrulamalarView';
-import { SporpuanRaporlarView } from './components/views/sporpuan/SporpuanRaporlarView';
-import { GruplarView } from './components/views/GruplarView';
-import { OnMuhasebeView } from './components/views/OnMuhasebeView';
-import { YoklamaView } from './components/views/YoklamaView';
-import { AnketYonetimiView } from './components/views/AnketYonetimiView';
-import { SporcuKarnesiView } from './components/views/SporcuKarnesiView';
-import { EgitimPlanlamaView } from './components/views/EgitimPlanlamaView';
-import { KulupSozlesmeleriView } from './components/views/KulupSozlesmeleriView';
-import { SporOkuluBasvurulariView } from './components/views/SporOkuluBasvurulariView';
-import { KulupEvraklariView } from './components/views/sporcu/KulupEvraklariView';
-import { KulupGalerisiView } from './components/views/sporcu/KulupGalerisiView';
-import { TurnuvaYonetimiView } from './components/views/moduller/TurnuvaYonetimiView';
-import { EnvanterYonetimiView } from './components/views/moduller/EnvanterYonetimiView';
-import { ReferralProgramView } from './components/views/moduller/ReferralProgramView';
-import { EntegrasyonlarView } from './components/views/EntegrasyonlarView';
 import { INITIAL_SPORCULAR } from './data/mockData';
-import { PaketlerView } from './components/views/PaketlerView';
-import { OnKayitView } from './components/views/OnKayitView';
-import { YetkilendirmelerView } from './components/views/YetkilendirmelerView';
-import { SubelerView } from './components/views/SubelerView';
-import { SubeOzetView } from './components/views/SubeOzetView';
-import { DestekView } from './components/views/DestekView';
-import { GenericPageView } from './components/views/GenericPageView';
-
 import { PackageAccessRestrictedView } from './components/views/PackageAccessRestrictedView';
 import { LoginView } from './components/LoginView';
 import { PointEarnedPushToast } from './components/notifications/PointEarnedPushToast';
@@ -46,6 +15,134 @@ import {
   isSuperAdminUser,
 } from './data/packagePermissions';
 import { getStoredUserProfile, UserProfileData } from './data/userProfile';
+
+// Lazy-loaded view modules for instant initial load & code splitting
+const DashboardView = lazy(() =>
+  import('./components/views/DashboardView').then((m) => ({ default: m.DashboardView }))
+);
+const SporsepetiUserView = lazy(() =>
+  import('./components/views/SporsepetiUserView').then((m) => ({ default: m.SporsepetiUserView }))
+);
+const SporcularView = lazy(() =>
+  import('./components/views/SporcularView').then((m) => ({ default: m.SporcularView }))
+);
+const EgitmenlerView = lazy(() =>
+  import('./components/views/EgitmenlerView').then((m) => ({ default: m.EgitmenlerView }))
+);
+const AntrenmanTakvimiView = lazy(() =>
+  import('./components/views/AntrenmanTakvimiView').then((m) => ({ default: m.AntrenmanTakvimiView }))
+);
+const YoneticilerView = lazy(() =>
+  import('./components/views/YoneticilerView').then((m) => ({ default: m.YoneticilerView }))
+);
+const SporpuanDegerlendirmelerView = lazy(() =>
+  import('./components/views/sporpuan/SporpuanDegerlendirmelerView').then((m) => ({
+    default: m.SporpuanDegerlendirmelerView,
+  }))
+);
+const SporpuanSporcuDegerlendirmeView = lazy(() =>
+  import('./components/views/sporpuan/SporpuanSporcuDegerlendirmeView').then((m) => ({
+    default: m.SporpuanSporcuDegerlendirmeView,
+  }))
+);
+const SporpuanDogrulamalarView = lazy(() =>
+  import('./components/views/sporpuan/SporpuanDogrulamalarView').then((m) => ({
+    default: m.SporpuanDogrulamalarView,
+  }))
+);
+const SporpuanRaporlarView = lazy(() =>
+  import('./components/views/sporpuan/SporpuanRaporlarView').then((m) => ({
+    default: m.SporpuanRaporlarView,
+  }))
+);
+const GruplarView = lazy(() =>
+  import('./components/views/GruplarView').then((m) => ({ default: m.GruplarView }))
+);
+const OnMuhasebeView = lazy(() =>
+  import('./components/views/OnMuhasebeView').then((m) => ({ default: m.OnMuhasebeView }))
+);
+const YoklamaView = lazy(() =>
+  import('./components/views/YoklamaView').then((m) => ({ default: m.YoklamaView }))
+);
+const AnketYonetimiView = lazy(() =>
+  import('./components/views/AnketYonetimiView').then((m) => ({ default: m.AnketYonetimiView }))
+);
+const SporcuKarnesiView = lazy(() =>
+  import('./components/views/SporcuKarnesiView').then((m) => ({ default: m.SporcuKarnesiView }))
+);
+const EgitimPlanlamaView = lazy(() =>
+  import('./components/views/EgitimPlanlamaView').then((m) => ({ default: m.EgitimPlanlamaView }))
+);
+const KulupSozlesmeleriView = lazy(() =>
+  import('./components/views/KulupSozlesmeleriView').then((m) => ({ default: m.KulupSozlesmeleriView }))
+);
+const SporOkuluBasvurulariView = lazy(() =>
+  import('./components/views/SporOkuluBasvurulariView').then((m) => ({
+    default: m.SporOkuluBasvurulariView,
+  }))
+);
+const KulupEvraklariView = lazy(() =>
+  import('./components/views/sporcu/KulupEvraklariView').then((m) => ({
+    default: m.KulupEvraklariView,
+  }))
+);
+const KulupGalerisiView = lazy(() =>
+  import('./components/views/sporcu/KulupGalerisiView').then((m) => ({
+    default: m.KulupGalerisiView,
+  }))
+);
+const TurnuvaYonetimiView = lazy(() =>
+  import('./components/views/moduller/TurnuvaYonetimiView').then((m) => ({
+    default: m.TurnuvaYonetimiView,
+  }))
+);
+const EnvanterYonetimiView = lazy(() =>
+  import('./components/views/moduller/EnvanterYonetimiView').then((m) => ({
+    default: m.EnvanterYonetimiView,
+  }))
+);
+const ReferralProgramView = lazy(() =>
+  import('./components/views/moduller/ReferralProgramView').then((m) => ({
+    default: m.ReferralProgramView,
+  }))
+);
+const EntegrasyonlarView = lazy(() =>
+  import('./components/views/EntegrasyonlarView').then((m) => ({ default: m.EntegrasyonlarView }))
+);
+const PaketlerView = lazy(() =>
+  import('./components/views/PaketlerView').then((m) => ({ default: m.PaketlerView }))
+);
+const OnKayitView = lazy(() =>
+  import('./components/views/OnKayitView').then((m) => ({ default: m.OnKayitView }))
+);
+const YetkilendirmelerView = lazy(() =>
+  import('./components/views/YetkilendirmelerView').then((m) => ({ default: m.YetkilendirmelerView }))
+);
+const SubelerView = lazy(() =>
+  import('./components/views/SubelerView').then((m) => ({ default: m.SubelerView }))
+);
+const SubeOzetView = lazy(() =>
+  import('./components/views/SubeOzetView').then((m) => ({ default: m.SubeOzetView }))
+);
+const DestekView = lazy(() =>
+  import('./components/views/DestekView').then((m) => ({ default: m.DestekView }))
+);
+const GenericPageView = lazy(() =>
+  import('./components/views/GenericPageView').then((m) => ({ default: m.GenericPageView }))
+);
+
+const ViewLoadingSkeleton: React.FC = () => (
+  <div className="w-full space-y-4 animate-pulse py-2">
+    <div className="h-20 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60 w-full" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="h-24 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60" />
+      <div className="h-24 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60" />
+      <div className="h-24 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60" />
+      <div className="h-24 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60" />
+    </div>
+    <div className="h-80 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60 w-full" />
+  </div>
+);
 
 export default function App() {
   // Authentication State: defaults to false so user immediately sees the identical login page
@@ -71,6 +168,11 @@ export default function App() {
     }
     try {
       sessionStorage.setItem('sportsfly_auth_active', 'true');
+      if (typeof BroadcastChannel !== 'undefined') {
+        const ch = new BroadcastChannel('sportsfly_auth_channel');
+        ch.postMessage({ type: 'LOGIN', role: role || freshProfile?.role });
+        ch.close();
+      }
     } catch (e) {}
   };
 
@@ -78,12 +180,24 @@ export default function App() {
     setIsAuthenticated(false);
     try {
       sessionStorage.setItem('sportsfly_auth_active', 'false');
+      sessionStorage.removeItem('sportsfly_active_page');
+      if (typeof BroadcastChannel !== 'undefined') {
+        const ch = new BroadcastChannel('sportsfly_auth_channel');
+        ch.postMessage({ type: 'LOGOUT' });
+        ch.close();
+      }
     } catch (e) {}
   };
+
+  const mainScrollRef = useRef<HTMLElement | null>(null);
 
   const [currentPage, setCurrentPage] = useState<NavPage>(() => {
     if (typeof window !== 'undefined') {
       try {
+        const activeSessionPage = sessionStorage.getItem('sportsfly_active_page');
+        if (activeSessionPage) {
+          return activeSessionPage as NavPage;
+        }
         const stored = localStorage.getItem('sportsfly_user_profile_v1');
         if (stored) {
           const parsed = JSON.parse(stored);
@@ -99,7 +213,7 @@ export default function App() {
   const [currentPlan, setCurrentPlan] = useState<PackagePlanType>(() => getActiveSessionPlan());
   const [userProfile, setUserProfile] = useState<UserProfileData>(() => getStoredUserProfile());
 
-  // Listen for plan and profile changes across components and storage events
+  // Listen for plan, profile, cross-tab auth, browser back/forward, and Escape key
   useEffect(() => {
     const handlePlanUpdate = () => {
       setCurrentPlan(getActiveSessionPlan());
@@ -109,16 +223,59 @@ export default function App() {
       setUserProfile(getStoredUserProfile());
     };
 
+    const handlePopState = (event: PopStateEvent) => {
+      const targetPage = event.state?.sportsflyPage as NavPage | undefined;
+      if (targetPage) {
+        setCurrentPage(targetPage);
+        try {
+          sessionStorage.setItem('sportsfly_active_page', targetPage);
+        } catch (e) {}
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    let authChannel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        authChannel = new BroadcastChannel('sportsfly_auth_channel');
+        authChannel.onmessage = (ev) => {
+          if (ev.data?.type === 'LOGOUT') {
+            setIsAuthenticated(false);
+            try {
+              sessionStorage.setItem('sportsfly_auth_active', 'false');
+              sessionStorage.removeItem('sportsfly_active_page');
+            } catch (e) {}
+          } else if (ev.data?.type === 'LOGIN') {
+            setUserProfile(getStoredUserProfile());
+            setIsAuthenticated(true);
+            try {
+              sessionStorage.setItem('sportsfly_auth_active', 'true');
+            } catch (e) {}
+          }
+        };
+      } catch (e) {}
+    }
+
     window.addEventListener('storage', handlePlanUpdate);
     window.addEventListener('sportsfly_plan_changed', handlePlanUpdate);
     window.addEventListener('sportsfly_plan_updated', handlePlanUpdate);
     window.addEventListener('sportsfly_profile_updated', handleProfileUpdate);
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      if (authChannel) authChannel.close();
       window.removeEventListener('storage', handlePlanUpdate);
       window.removeEventListener('sportsfly_plan_changed', handlePlanUpdate);
       window.removeEventListener('sportsfly_plan_updated', handlePlanUpdate);
       window.removeEventListener('sportsfly_profile_updated', handleProfileUpdate);
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -150,6 +307,15 @@ export default function App() {
 
   const handlePageSelect = (page: NavPage) => {
     setCurrentPage(page);
+    try {
+      sessionStorage.setItem('sportsfly_active_page', page);
+      if (typeof window !== 'undefined' && window.history?.pushState) {
+        window.history.pushState({ sportsflyPage: page }, '', window.location.pathname);
+      }
+    } catch (e) {}
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    }
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setIsSidebarOpen(false);
     }
@@ -437,8 +603,18 @@ export default function App() {
           />
 
           {/* Body Content - Dedicated scrollable viewport */}
-          <main className="flex-1 p-3.5 sm:p-4 lg:p-6 w-full overflow-y-auto overflow-x-hidden print:p-0 print:overflow-visible print:h-auto">
-            {renderActiveView()}
+          <main
+            ref={mainScrollRef}
+            className="flex-1 p-3.5 sm:p-4 lg:p-6 w-full overflow-y-auto overflow-x-hidden print:p-0 print:overflow-visible print:h-auto"
+          >
+            <AppErrorBoundary
+              key={currentPage}
+              onResetToHome={() => handlePageSelect('anasayfa')}
+            >
+              <Suspense fallback={<ViewLoadingSkeleton />}>
+                {renderActiveView()}
+              </Suspense>
+            </AppErrorBoundary>
           </main>
         </div>
       </div>

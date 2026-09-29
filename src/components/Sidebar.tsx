@@ -934,6 +934,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
+          {/* Spor Okulu Başvuruları (Ayarlar Üstünde, Rozetsiz Tek Seçenek) */}
+          {!isRestricted('spor-okulu-basvurulari') && (
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
+              <button
+                onClick={() => handleNavClick('spor-okulu-basvurulari')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  currentPage === 'spor-okulu-basvurulari'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'bg-amber-50/60 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200/60 dark:border-amber-800/60'
+                }`}
+              >
+                <Building2 className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span>Spor Okulu Başvuruları</span>
+              </button>
+            </div>
+          )}
+
           {/* AYARLAR (Sol Menüde En Altta) */}
           <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 mt-2 space-y-1">
             <div className="px-3 py-1 mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center">
@@ -942,32 +959,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Ayarlar
               </span>
             </div>
-
-            {/* Spor Okulu Başvuruları & Onay Paneli (Süper Admin) */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => handleNavClick('spor-okulu-basvurulari')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  currentPage === 'spor-okulu-basvurulari'
-                    ? 'bg-blue-600 text-white shadow-xs font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Building2 className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                  <span>Spor Okulu Başvuruları</span>
-                </div>
-                <span
-                  className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
-                    currentPage === 'spor-okulu-basvurulari'
-                      ? 'bg-blue-700 text-white'
-                      : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300/60'
-                  }`}
-                >
-                  Onay
-                </span>
-              </button>
-            )}
 
             {/* Yetkilendirme & Roller (Ayarlar Altında En Altta) */}
             {isSuperAdmin && (

@@ -615,9 +615,15 @@ export function isPageAllowedForPlan(
 ): boolean {
   const roleStr = (userRole || '').toLowerCase();
 
-  // Spor Okulu Başvuruları is strictly exclusive to Süper Admin
+  // Spor Okulu Başvuruları is available for Admins and Club Managers
   if (page === 'spor-okulu-basvurulari') {
-    return isSuperAdminUser(userRole);
+    return (
+      isSuperAdminUser(userRole) ||
+      roleStr.includes('yönetici') ||
+      roleStr.includes('yonetici') ||
+      roleStr.includes('admin') ||
+      !roleStr
+    );
   }
 
   // Super Admin / Admin / Kurucu has full access to all modules

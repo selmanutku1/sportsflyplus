@@ -54,6 +54,9 @@ export const ReminderPushToast: React.FC<ReminderPushToastProps> = ({ onNavigate
 
       osc.start();
       osc.stop(ctx.currentTime + 0.5);
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 650);
     } catch (e) {
       // Audio autoplay policy fallback
     }

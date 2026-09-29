@@ -35,6 +35,8 @@ import {
   Sparkles,
   Clock,
 } from 'lucide-react';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth } from '../firebase';
 import { LEGAL_TEXTS, LegalDoc } from '../data/legalTexts';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getStoredUserProfile, saveStoredUserProfile } from '../data/userProfile';
@@ -380,19 +382,50 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     badge: string;
   } | null>(null);
 
-  // Handle Google / Social Login
-  const handleGoogleLogin = () => {
+  // Handle Google / Social Login with Real Firebase Google OAuth Popup
+  const handleGoogleLogin = async () => {
     setLoginError(null);
     setIsLoading(true);
-    setLoadingText('Google hesabınız doğrulanıyor...');
+    setLoadingText('Google doğrulama penceresi açılıyor...');
 
-    setTimeout(() => {
-      setLoadingText('Google Kulüp Yöneticisi oturumu açılıyor...');
-      setTimeout(() => {
-        setIsLoading(false);
-        onLoginSuccess('Google Kulüp Yöneticisi');
-      }, 500);
-    }, 600);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const currentProf = getStoredUserProfile();
+      saveStoredUserProfile({
+        ...currentProf,
+        name: user.displayName || currentProf.name || 'Google Kulüp Yöneticisi',
+        email: user.email || currentProf.email || 'selmanutkumarmara@gmail.com',
+        avatarUrl: user.photoURL || currentProf.avatarUrl,
+        role: 'Süper Admin',
+      });
+
+      recordSecurityAuditEvent(
+        'AUTH',
+        'INFO',
+        'Firebase Google OAuth ile gerçek oturum açıldı',
+        `Google UID: ${user.uid}, Email: ${user.email}`
+      );
+
+      setIsLoading(false);
+      onLoginSuccess('Google Kulüp Yöneticisi');
+    } catch (error: unknown) {
+      setIsLoading(false);
+      console.error('Google Sign-In Error:', error);
+      const err = error as { code?: string; message?: string };
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setLoginError('Google giriş penceresi kapatıldı.');
+      } else if (err?.code === 'auth/popup-blocked') {
+        setLoginError('Tarayıcınız Google giriş açılır penceresini (popup) engelledi. Lütfen pencere engelleyiciyi kapatın.');
+      } else {
+        setLoginError(
+          err?.message || 'Google hesabı doğrulanırken bir hata oluştu. Lütfen tekrar deneyin.'
+        );
+      }
+    }
   };
 
   // Handle Standard Login
