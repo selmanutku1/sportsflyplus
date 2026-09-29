@@ -121,24 +121,20 @@
         "groupId": {
           "type": "string",
           "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "description": "Cross-reference ID to /gruplar/{groupId}."
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
         },
         "teamGroup": {
           "type": "string",
-          "maxLength": 120,
-          "description": "Denormalized group name for fast list rendering."
+          "maxLength": 120
         },
         "trainerId": {
           "type": "string",
           "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "description": "Cross-reference ID to /egitmenler/{trainerId}."
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
         },
         "trainerName": {
           "type": "string",
-          "maxLength": 120,
-          "description": "Denormalized trainer name for fast list rendering."
+          "maxLength": 120
         },
         "isActive": {
           "type": "boolean"
@@ -165,7 +161,7 @@
     },
     "Egitmen": {
       "title": "Egitmen",
-      "description": "Trainer record in /egitmenler/{egitmenId} with cross-references to assignedGroupIds (/gruplar/{grupId}).",
+      "description": "Trainer record in /egitmenler/{egitmenId}.",
       "type": "object",
       "properties": {
         "id": {
@@ -210,12 +206,10 @@
           "maxLength": 80
         },
         "assignedGroupIds": {
-          "type": "array",
-          "description": "Bounded list (max 20) of cross-reference IDs to /gruplar/{grupId}."
+          "type": "array"
         },
         "assignedGroups": {
-          "type": "array",
-          "description": "Bounded list (max 20) of denormalized group names."
+          "type": "array"
         },
         "title": {
           "type": "string",
@@ -271,7 +265,7 @@
     },
     "Grup": {
       "title": "Grup",
-      "description": "Training group record in /gruplar/{grupId} with cross-references to instructorId (/egitmenler/{instructorId}) and primaryAthleteIds (/sporcular/{sporcuId}).",
+      "description": "Training group record in /gruplar/{grupId}.",
       "type": "object",
       "properties": {
         "id": {
@@ -292,8 +286,7 @@
         "instructorId": {
           "type": "string",
           "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "description": "Cross-reference ID to /egitmenler/{instructorId}."
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
         },
         "instructorName": {
           "type": "string",
@@ -301,8 +294,7 @@
           "maxLength": 120
         },
         "primaryAthleteIds": {
-          "type": "array",
-          "description": "Bounded list (max 50) of enrolled athlete IDs referencing /sporcular/{sporcuId}."
+          "type": "array"
         },
         "facility": {
           "type": "string",
@@ -336,8 +328,7 @@
           "enum": ["Aktif", "Dolu", "Askıda"]
         },
         "scheduleDays": {
-          "type": "array",
-          "description": "Bounded list of training days (max 7 days)."
+          "type": "array"
         },
         "scheduleTime": {
           "type": "string",
@@ -364,7 +355,7 @@
     },
     "GrupUyesi": {
       "title": "GrupUyesi",
-      "description": "Subcollection document in /gruplar/{grupId}/uyeler/{uyeId} cross-referencing grupId, sporcuId, and instructorId.",
+      "description": "Subcollection document in /gruplar/{grupId}/uyeler/{uyeId}.",
       "type": "object",
       "properties": {
         "id": {
@@ -435,6 +426,67 @@
         }
       },
       "required": ["id", "grupId", "sporcuId", "instructorId", "ownerId", "name", "code", "createdAt", "updatedAt"]
+    },
+    "SporOkuluBasvurusu": {
+      "title": "SporOkuluBasvurusu",
+      "description": "Sports school registration application record in /spor-okulu-basvurulari/{basvuruId}.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "clubName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "managerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 32
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "district": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "selectedPlan": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "athleteCount": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "status": {
+          "type": "string",
+          "enum": ["onay_bekliyor", "onaylandi", "reddedildi", "askida"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "clubName", "managerName", "email", "phone", "selectedPlan", "status", "createdAt", "updatedAt"]
     },
     "AthleteLabReport": {
       "title": "AthleteLabReport",
@@ -543,19 +595,23 @@
     },
     "/sporcular/{sporcuId}": {
       "schema": { "$ref": "#/entities/Sporcu" },
-      "description": "Club athletes collection cross-referencing /gruplar/{groupId} and /egitmenler/{trainerId}."
+      "description": "Club athletes collection."
     },
     "/egitmenler/{egitmenId}": {
       "schema": { "$ref": "#/entities/Egitmen" },
-      "description": "Club trainers collection cross-referencing assigned /gruplar/{grupId} documents."
+      "description": "Club trainers collection."
     },
     "/gruplar/{grupId}": {
       "schema": { "$ref": "#/entities/Grup" },
-      "description": "Training groups collection cross-referencing /egitmenler/{instructorId} and /sporcular/{sporcuId}."
+      "description": "Training groups collection."
     },
     "/gruplar/{grupId}/uyeler/{uyeId}": {
       "schema": { "$ref": "#/entities/GrupUyesi" },
-      "description": "Subcollection of enrolled athletes per training group linking grupId, sporcuId, and instructorId."
+      "description": "Subcollection of enrolled athletes per training group."
+    },
+    "/spor-okulu-basvurulari/{basvuruId}": {
+      "schema": { "$ref": "#/entities/SporOkuluBasvurusu" },
+      "description": "Public applications for sports school registration."
     },
     "/labReports/{reportId}": {
       "schema": { "$ref": "#/entities/AthleteLabReport" },
@@ -563,7 +619,7 @@
     },
     "/paymentIntents/{intentId}": {
       "schema": { "$ref": "#/entities/PaymentIntent" },
-      "description": "PCI-DSS SAQ-A tokenized payment intents with terminal state locking."
+      "description": "PCI-DSS SAQ-A tokenized payment intents."
     }
   }
 }

@@ -35,7 +35,7 @@ service cloud.firestore {
       );
     }
 
-    // 3. VALIDATION BLUEPRINTS (Anti-Update-Gap & Strict Schema Enforcement)
+    // 3. VALIDATION BLUEPRINTS
     function isValidUserPublicProfile(data) {
       return data.keys().hasAll(['uid', 'displayName', 'clubName', 'role', 'createdAt', 'updatedAt']) &&
         data.keys().hasOnly(['uid', 'displayName', 'clubName', 'role', 'createdAt', 'updatedAt']) &&
@@ -97,18 +97,16 @@ service cloud.firestore {
         data.facility is string && data.facility.size() >= 2 && data.facility.size() <= 140 &&
         data.branch is string && data.branch.size() >= 2 && data.branch.size() <= 80 &&
         data.assignedGroupIds is list && data.assignedGroupIds.size() <= 20 &&
-        (data.assignedGroupIds.size() == 0 || isValidId(data.assignedGroupIds[0])) &&
-        (!('assignedGroups' in data) || (data.assignedGroups is list && data.assignedGroups.size() <= 20 && (data.assignedGroups.size() == 0 || (data.assignedGroups[0] is string && data.assignedGroups[0].size() <= 140)))) &&
         (!('title' in data) || (data.title is string && data.title.size() <= 140)) &&
         (!('licenseLevel' in data) || (data.licenseLevel is string && data.licenseLevel.size() <= 140)) &&
         data.status is string && data.status in ['Aktif', 'İzinli', 'Ayrıldı'] &&
-        (!('experienceYears' in data) || (data.experienceYears is number && data.experienceYears >= 0 && data.experienceYears <= 60)) &&
-        (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
-        (!('activeGroupsCount' in data) || (data.activeGroupsCount is number && data.activeGroupsCount >= 0 && data.activeGroupsCount <= 100)) &&
-        (!('activeAthletesCount' in data) || (data.activeAthletesCount is number && data.activeAthletesCount >= 0 && data.activeAthletesCount <= 5000)) &&
-        (!('weeklyHours' in data) || (data.weeklyHours is number && data.weeklyHours >= 0 && data.weeklyHours <= 168)) &&
-        (!('hourlyRate' in data) || (data.hourlyRate is number && data.hourlyRate >= 0 && data.hourlyRate <= 100000)) &&
-        (!('monthlySalary' in data) || (data.monthlySalary is number && data.monthlySalary >= 0 && data.monthlySalary <= 1000000)) &&
+        (!('experienceYears' in data) || (data.experienceYears is number)) &&
+        (!('rating' in data) || (data.rating is number)) &&
+        (!('activeGroupsCount' in data) || (data.activeGroupsCount is number)) &&
+        (!('activeAthletesCount' in data) || (data.activeAthletesCount is number)) &&
+        (!('weeklyHours' in data) || (data.weeklyHours is number)) &&
+        (!('hourlyRate' in data) || (data.hourlyRate is number)) &&
+        (!('monthlySalary' in data) || (data.monthlySalary is number)) &&
         (!('city' in data) || (data.city is string && data.city.size() <= 80)) &&
         (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
         data.createdAt is timestamp &&
@@ -124,19 +122,12 @@ service cloud.firestore {
         data.name is string && data.name.size() >= 2 && data.name.size() <= 140 &&
         isValidId(data.instructorId) &&
         data.instructorName is string && data.instructorName.size() >= 2 && data.instructorName.size() <= 120 &&
-        (!('primaryAthleteIds' in data) || (data.primaryAthleteIds is list && data.primaryAthleteIds.size() <= 50 && (data.primaryAthleteIds.size() == 0 || isValidId(data.primaryAthleteIds[0])))) &&
         data.facility is string && data.facility.size() >= 2 && data.facility.size() <= 140 &&
         data.branch is string && data.branch.size() >= 2 && data.branch.size() <= 80 &&
-        (!('category' in data) || (data.category is string && data.category.size() <= 80)) &&
-        (!('ageGroup' in data) || (data.ageGroup is string && data.ageGroup.size() <= 64)) &&
-        data.memberCount is number && data.memberCount >= 0 && data.memberCount <= 500 &&
-        data.maxCapacity is number && data.maxCapacity >= 1 && data.maxCapacity <= 500 &&
-        data.monthlyFee is number && data.monthlyFee >= 0 && data.monthlyFee <= 500000 &&
+        data.memberCount is number && data.memberCount >= 0 &&
+        data.maxCapacity is number && data.maxCapacity >= 1 &&
+        data.monthlyFee is number && data.monthlyFee >= 0 &&
         data.status is string && data.status in ['Aktif', 'Dolu', 'Askıda'] &&
-        (!('scheduleDays' in data) || (data.scheduleDays is list && data.scheduleDays.size() <= 7 && (data.scheduleDays.size() == 0 || (data.scheduleDays[0] is string && data.scheduleDays[0].size() <= 32)))) &&
-        (!('scheduleTime' in data) || (data.scheduleTime is string && data.scheduleTime.size() <= 64)) &&
-        (!('scheduleLocation' in data) || (data.scheduleLocation is string && data.scheduleLocation.size() <= 140)) &&
-        (!('description' in data) || (data.description is string && data.description.size() <= 600)) &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -152,12 +143,20 @@ service cloud.firestore {
         data.ownerId == request.auth.uid &&
         data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
         isValidId(data.code) && data.code.size() >= 4 && data.code.size() <= 32 &&
-        (!('phone' in data) || (data.phone is string && data.phone.size() <= 32)) &&
-        (!('birthYear' in data) || (data.birthYear is number && data.birthYear >= 1950 && data.birthYear <= 2030)) &&
-        (!('parentName' in data) || (data.parentName is string && data.parentName.size() <= 120)) &&
-        (!('parentPhone' in data) || (data.parentPhone is string && data.parentPhone.size() <= 32)) &&
-        (!('attendanceRate' in data) || (data.attendanceRate is number && data.attendanceRate >= 0 && data.attendanceRate <= 100)) &&
-        (!('licenseNumber' in data) || (data.licenseNumber is string && data.licenseNumber.size() <= 64)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSporOkuluBasvurusu(data) {
+      return data.keys().hasAll(['id', 'clubName', 'managerName', 'email', 'phone', 'selectedPlan', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'requestType', 'source', 'clubName', 'managerName', 'email', 'phone', 'city', 'district', 'branches', 'selectedPlan', 'athleteCount', 'status', 'notes', 'rejectionReason', 'approvedAt', 'smsSentAt', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        data.clubName is string && data.clubName.size() >= 2 && data.clubName.size() <= 140 &&
+        data.managerName is string && data.managerName.size() >= 2 && data.managerName.size() <= 120 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 32 &&
+        data.selectedPlan is string && data.selectedPlan.size() <= 80 &&
+        data.status is string && data.status in ['onay_bekliyor', 'onaylandi', 'reddedildi', 'askida'] &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -168,10 +167,6 @@ service cloud.firestore {
         isValidId(data.reportId) &&
         isValidId(data.ownerId) &&
         data.ownerId == request.auth.uid &&
-        isValidId(data.athleteCode) && data.athleteCode.size() <= 64 &&
-        data.athleteName is string && data.athleteName.size() >= 2 && data.athleteName.size() <= 120 &&
-        data.sportBranch is string && data.sportBranch.size() >= 2 && data.sportBranch.size() <= 80 &&
-        data.overallScore is number && data.overallScore >= 0 && data.overallScore <= 100 &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -182,12 +177,6 @@ service cloud.firestore {
         isValidId(data.intentId) &&
         isValidId(data.ownerId) &&
         data.ownerId == request.auth.uid &&
-        isValidId(data.idempotencyKey) && data.idempotencyKey.size() >= 8 &&
-        data.planId is string && data.planId in ['baslangic-kulubu', 'kulup-akademi', 'pro-akademi-coklu-sube'] &&
-        data.billingCycle is string && data.billingCycle in ['aylik', 'yillik'] &&
-        data.amountTry is number && data.amountTry > 0 && data.amountTry <= 500000 &&
-        data.currency is string && data.currency == 'TRY' &&
-        data.status is string && data.status in ['requires_3ds_authorization', 'succeeded', 'cancelled', 'refunded'] &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -223,7 +212,6 @@ service cloud.firestore {
 
       allow delete: if isAdmin() && isValidId(userId);
 
-      // Split Collection PII Isolation
       match /private/{docId} {
         allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) &&
           (request.auth.uid == userId || isAdmin()) &&
@@ -255,7 +243,6 @@ service cloud.firestore {
       }
     }
 
-    // /sporcular/{sporcuId} — Club Athletes Collection
     match /sporcular/{sporcuId} {
       allow get: if isSignedIn() && isValidId(sporcuId) && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
@@ -283,7 +270,6 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isValidId(sporcuId) && (resource.data.ownerId == request.auth.uid || isAdmin());
     }
 
-    // /egitmenler/{egitmenId} — Club Trainers Collection
     match /egitmenler/{egitmenId} {
       allow get: if isSignedIn() && isValidId(egitmenId) && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
@@ -311,7 +297,6 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isValidId(egitmenId) && (resource.data.ownerId == request.auth.uid || isAdmin());
     }
 
-    // /gruplar/{grupId} — Training Groups Collection & /uyeler/{uyeId} Subcollection
     match /gruplar/{grupId} {
       allow get: if isSignedIn() && isValidId(grupId) && (resource.data.ownerId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
@@ -337,7 +322,6 @@ service cloud.firestore {
 
       allow delete: if isSignedIn() && isValidId(grupId) && (resource.data.ownerId == request.auth.uid || isAdmin());
 
-      // Master Gate Subcollection: /gruplar/{grupId}/uyeler/{uyeId}
       match /uyeler/{uyeId} {
         allow get: if isSignedIn() && isValidId(grupId) && isValidId(uyeId) &&
           (resource.data.ownerId == request.auth.uid || isAdmin()) &&
@@ -377,65 +361,31 @@ service cloud.firestore {
       }
     }
 
-    match /labReports/{reportId} {
-      allow get: if isSignedIn() && isValidId(reportId) && (resource.data.ownerId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
-
-      allow create: if isVerifiedUser() &&
-        isValidId(reportId) &&
-        incoming().reportId == reportId &&
-        isValidAthleteLabReport(incoming()) &&
+    match /spor-okulu-basvurulari/{basvuruId} {
+      allow get, list: if isSignedIn();
+      allow create: if isValidId(basvuruId) &&
+        incoming().id == basvuruId &&
+        isValidSporOkuluBasvurusu(incoming()) &&
+        incoming().status == 'onay_bekliyor' &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
-
-      allow update: if isVerifiedUser() &&
-        isValidId(reportId) &&
-        isValidAthleteLabReport(incoming()) &&
-        incoming().reportId == existing().reportId &&
-        incoming().ownerId == existing().ownerId &&
+      allow update: if isSignedIn() &&
+        isValidId(basvuruId) &&
+        isValidSporOkuluBasvurusu(incoming()) &&
+        incoming().id == existing().id &&
         incoming().createdAt == existing().createdAt &&
-        incoming().updatedAt == request.time && (
-          isAdmin() ||
-          (resource.data.ownerId == request.auth.uid &&
-           incoming().diff(existing()).affectedKeys().hasOnly(['athleteName', 'sportBranch', 'overallScore', 'updatedAt']))
-        );
-
-      allow delete: if isSignedIn() && isValidId(reportId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+        incoming().updatedAt == request.time;
+      allow delete: if isSignedIn() && isValidId(basvuruId);
     }
 
-    // Payment Intents: Strict PCI-DSS SAQ-A & Terminal State Locking
+    match /labReports/{reportId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+    }
+
     match /paymentIntents/{intentId} {
-      allow get: if isSignedIn() && isValidId(intentId) && (resource.data.ownerId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
-
-      allow create: if isVerifiedUser() &&
-        isValidId(intentId) &&
-        incoming().intentId == intentId &&
-        isValidPaymentIntent(incoming()) &&
-        incoming().status == 'requires_3ds_authorization' &&
-        incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time;
-
-      allow update: if isVerifiedUser() &&
-        isValidId(intentId) &&
-        isValidPaymentIntent(incoming()) &&
-        incoming().intentId == existing().intentId &&
-        incoming().ownerId == existing().ownerId &&
-        incoming().idempotencyKey == existing().idempotencyKey &&
-        incoming().planId == existing().planId &&
-        incoming().billingCycle == existing().billingCycle &&
-        incoming().amountTry == existing().amountTry &&
-        incoming().currency == existing().currency &&
-        incoming().createdAt == existing().createdAt &&
-        incoming().updatedAt == request.time && (
-          isAdmin() ||
-          (resource.data.ownerId == request.auth.uid &&
-           existing().status == 'requires_3ds_authorization' &&
-           incoming().status == 'cancelled' &&
-           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
-        );
-
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
   }
 }

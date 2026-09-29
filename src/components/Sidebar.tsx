@@ -44,6 +44,7 @@ import { NavPage, PackagePlanType } from '../types';
 import { SportsFlyLogo, SportsFlyIcon } from './SportsFlyLogo';
 import { isPageAllowedForPlan, isSuperAdminUser, PACKAGE_DETAILS } from '../data/packagePermissions';
 import { getStoredUserProfile, UserProfileData } from '../data/userProfile';
+import { basvurularService } from '../services/firestoreService';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface SidebarProps {
@@ -63,6 +64,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useLanguage();
   const [userProfile, setUserProfile] = useState<UserProfileData>(() => getStoredUserProfile());
+  const [pendingBasvuruCount, setPendingBasvuruCount] = useState<number>(0);
+
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    try {
+      unsub = basvurularService.subscribeToPending((count) => {
+        setPendingBasvuruCount(count);
+      });
+    } catch (e) {
+      console.error('Realtime pending application badge error:', e);
+    }
+    return () => {
+      if (unsub) unsub();
+    };
+  }, []);
 
   useEffect(() => {
     const handleProfileUpdate = () => {
@@ -934,19 +950,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Spor Okulu Başvuruları (Ayarlar Üstünde, Rozetsiz Tek Seçenek) */}
+          {/* Spor Okulu Başvuruları (Ayarlar Üstünde, Canlı Rozet Mekanizmalı) */}
           {!isRestricted('spor-okulu-basvurulari') && (
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
               <button
                 onClick={() => handleNavClick('spor-okulu-basvurulari')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   currentPage === 'spor-okulu-basvurulari'
                     ? 'bg-amber-500 text-white shadow-xs'
                     : 'bg-amber-50/60 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200/60 dark:border-amber-800/60'
                 }`}
               >
-                <Building2 className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                <span>Spor Okulu Başvuruları</span>
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>Spor Okulu Başvuruları</span>
+                </div>
+                {pendingBasvuruCount > 0 && (
+                  <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600 text-white animate-bounce shadow-xs">
+                    {pendingBasvuruCount} Yeni
+                  </span>
+                )}
               </button>
             </div>
           )}

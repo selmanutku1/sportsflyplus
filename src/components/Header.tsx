@@ -60,6 +60,7 @@ import {
   SportsFlyNotification,
   addSporPuanNotification
 } from '../data/notifications';
+import { basvurularService } from '../services/firestoreService';
 import { ProfileSettingsModal } from './modals/ProfileSettingsModal';
 import { UpdatesModal } from './modals/UpdatesModal';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -125,6 +126,41 @@ export const Header: React.FC<HeaderProps> = ({
     window.addEventListener('sportsfly_notifications_updated', handleNotifsUpdate);
     return () => {
       window.removeEventListener('sportsfly_notifications_updated', handleNotifsUpdate);
+    };
+  }, [userProfile.role]);
+
+  // Real-time Firestore listener for new spor-okulu-basvurulari documents
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    try {
+      unsub = basvurularService.subscribeToPending((pendingCount, items) => {
+        if (pendingCount > 0 && items.length > 0) {
+          const latestItem = items[0];
+          const notifId = `notif-basvuru-${latestItem.id}`;
+
+          setNotifications((prev) => {
+            if (prev.some((n) => n.id === notifId)) return prev;
+            const newNotif: SportsFlyNotification = {
+              id: notifId,
+              title: 'Yeni Spor Okulu Başvurusu!',
+              message: `${latestItem.clubName || 'Yeni Kulüp'} (${latestItem.managerName || 'Yönetici'}) başvuru gönderdi.`,
+              time: 'Şimdi',
+              type: 'system',
+              isUnread: true,
+              targetPage: 'spor-okulu-basvurulari',
+              actionLabel: 'Başvuruyu İncele',
+            };
+            const updated = [newNotif, ...prev];
+            saveStoredNotifications(userProfile.role, updated);
+            return updated;
+          });
+        }
+      });
+    } catch (e) {
+      console.error('Header realtime application notification error:', e);
+    }
+    return () => {
+      if (unsub) unsub();
     };
   }, [userProfile.role]);
 

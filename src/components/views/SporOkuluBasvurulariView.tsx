@@ -23,6 +23,7 @@ import { sendMutlucellSms } from '../../services/smsService';
 import { getStoredUserProfile } from '../../data/userProfile';
 import { isSuperAdminUser } from '../../data/packagePermissions';
 import { fetchWithTimeout } from '../../utils/networkResilience';
+import { basvurularService, FirestoreSporOkuluBasvurusuDoc } from '../../services/firestoreService';
 
 export interface ClubRegistrationRequest {
   id: string;
@@ -271,9 +272,38 @@ export const SporOkuluBasvurulariView: React.FC = () => {
     window.addEventListener('storage', handleStorage);
     window.addEventListener('online', handleOnline);
 
+    // Real-time Firestore Listener for /spor-okulu-basvurulari collection
+    let unsubFirestore: (() => void) | undefined;
+    try {
+      unsubFirestore = basvurularService.subscribeToAll((firestoreDocs) => {
+        if (Array.isArray(firestoreDocs) && firestoreDocs.length > 0) {
+          const mappedDocs: ClubRegistrationRequest[] = firestoreDocs.map((doc) => ({
+            id: doc.id,
+            requestType: 'spor_okulu_basvurusu',
+            source: 'Firestore Realtime',
+            clubName: doc.clubName,
+            managerName: doc.managerName,
+            email: doc.email,
+            phone: doc.phone,
+            city: doc.city || 'İstanbul',
+            district: doc.district || 'Merkez',
+            branches: doc.branches || ['Basketbol', 'Voleybol'],
+            selectedPlan: doc.selectedPlan,
+            athleteCount: doc.athleteCount || '100 - 250 Sporcu',
+            createdAt: typeof doc.createdAt === 'string' ? doc.createdAt : new Date().toISOString(),
+            status: doc.status || 'onay_bekliyor',
+          }));
+          applyServerItems(mappedDocs);
+        }
+      });
+    } catch (e) {
+      console.error('Firestore application subscription error:', e);
+    }
+
     return () => {
       if (eventSource) eventSource.close();
       if (bc) bc.close();
+      if (unsubFirestore) unsubFirestore();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('online', handleOnline);
     };

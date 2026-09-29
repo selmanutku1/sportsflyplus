@@ -386,87 +386,75 @@ export const egitmenlerService = {
   ) => subscribeToCollection('egitmenler', onData, constraints),
 };
 
-export const gruplarService = {
-  add: (data: CreatePayload<'gruplar'>) => addDocument('gruplar', data),
-  getById: (grupId: string) => getDocumentById('gruplar', grupId),
-  getAll: (constraints?: QueryConstraint[]) => getDocuments('gruplar', constraints),
-  /** Çapraz Referans: Belirli bir eğitmenin (`instructorId`) sorumlu olduğu grupları getirir */
-  getByInstructorId: (instructorId: string) =>
-    getDocuments('gruplar', [where('instructorId', '==', ensureValidDocumentId(instructorId))]),
-  update: (grupId: string, data: UpdatePayload<'gruplar'>) =>
-    updateDocument('gruplar', grupId, data),
-  delete: (grupId: string) => deleteDocument('gruplar', grupId),
-  subscribe: (
-    onData: (items: FirestoreGrupDoc[]) => void,
-    constraints?: QueryConstraint[]
-  ) => subscribeToCollection('gruplar', onData, constraints),
+export interface FirestoreSporOkuluBasvurusuDoc {
+  id: string;
+  clubName: string;
+  managerName: string;
+  email: string;
+  phone: string;
+  city?: string;
+  district?: string;
+  branches?: string[];
+  selectedPlan: string;
+  athleteCount?: string;
+  status: 'onay_bekliyor' | 'onaylandi' | 'reddedildi' | 'askida';
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+}
 
-  /**
-   * Alt Koleksiyon (/gruplar/{grupId}/uyeler/{uyeId}) CRUD İşlemleri
-   */
-  async addMember(
-    grupId: string,
-    memberData: Omit<FirestoreGrupUyesiDoc, 'id' | 'grupId' | 'ownerId' | 'createdAt' | 'updatedAt'> & {
-      id?: string;
-      ownerId?: string;
-    }
-  ): Promise<FirestoreGrupUyesiDoc> {
-    const validGrupId = ensureValidDocumentId(grupId);
-    const ownerId = getAuthenticatedOwnerId(memberData.ownerId);
-    const subColPath = `gruplar/${validGrupId}/uyeler`;
-    const subColRef = collection(db, 'gruplar', validGrupId, 'uyeler');
-    const uyeId = ensureValidDocumentId(memberData.id || doc(subColRef).id);
-
+export const basvurularService = {
+  async add(data: Omit<FirestoreSporOkuluBasvurusuDoc, 'createdAt' | 'updatedAt'>) {
+    const docId = ensureValidDocumentId(data.id || doc(collection(db, 'spor-okulu-basvurulari')).id);
     const payload = stripUndefinedFields({
-      ...memberData,
-      id: uyeId,
-      grupId: validGrupId,
-      sporcuId: ensureValidDocumentId(memberData.sporcuId),
-      instructorId: ensureValidDocumentId(memberData.instructorId),
-      ownerId,
-      name: memberData.name.trim().slice(0, FIRESTORE_CONSTRAINTS.MAX_NAME_LENGTH),
-      code: ensureValidDocumentId(memberData.code).slice(0, FIRESTORE_CONSTRAINTS.MAX_CODE_LENGTH),
+      ...data,
+      id: docId,
+      status: data.status || 'onay_bekliyor',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-
     try {
-      await setDoc(doc(db, 'gruplar', validGrupId, 'uyeler', uyeId), payload);
-      return payload as unknown as FirestoreGrupUyesiDoc;
+      await setDoc(doc(db, 'spor-okulu-basvurulari', docId), payload);
+      return payload;
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `${subColPath}/${uyeId}`);
+      handleFirestoreError(error, OperationType.CREATE, `spor-okulu-basvurulari/${docId}`);
     }
   },
 
-  async getMembers(grupId: string, explicitOwnerId?: string): Promise<FirestoreGrupUyesiDoc[]> {
-    const validGrupId = ensureValidDocumentId(grupId);
-    const ownerId = getAuthenticatedOwnerId(explicitOwnerId);
-    const subColPath = `gruplar/${validGrupId}/uyeler`;
-
-    try {
-      const q = query(
-        collection(db, 'gruplar', validGrupId, 'uyeler'),
-        where('ownerId', '==', ownerId)
-      );
-      const snap = await getDocs(q);
-      return snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as FirestoreGrupUyesiDoc)
-      );
-    } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, subColPath);
-    }
+  subscribeToAll(
+    onData: (items: FirestoreSporOkuluBasvurusuDoc[]) => void,
+    onErrorCallback?: (err: unknown) => void
+  ): Unsubscribe {
+    const colRef = collection(db, 'spor-okulu-basvurulari');
+    return onSnapshot(
+      colRef,
+      (snap) => {
+        const items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreSporOkuluBasvurusuDoc));
+        onData(items);
+      },
+      (error) => {
+        if (onErrorCallback) onErrorCallback(error);
+        handleFirestoreError(error, OperationType.LIST, 'spor-okulu-basvurulari');
+      }
+    );
   },
 
-  async deleteMember(grupId: string, uyeId: string): Promise<void> {
-    const validGrupId = ensureValidDocumentId(grupId);
-    const validUyeId = ensureValidDocumentId(uyeId);
-    const docPath = `gruplar/${validGrupId}/uyeler/${validUyeId}`;
-
-    try {
-      await deleteDoc(doc(db, 'gruplar', validGrupId, 'uyeler', validUyeId));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, docPath);
-    }
+  subscribeToPending(
+    onData: (pendingCount: number, items: FirestoreSporOkuluBasvurusuDoc[]) => void
+  ): Unsubscribe {
+    const q = query(
+      collection(db, 'spor-okulu-basvurulari'),
+      where('status', '==', 'onay_bekliyor')
+    );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreSporOkuluBasvurusuDoc));
+        onData(items.length, items);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'spor-okulu-basvurulari');
+      }
+    );
   },
 };
 
