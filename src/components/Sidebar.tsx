@@ -362,18 +362,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="w-2 h-2 rounded-full bg-emerald-500 absolute top-1.5 right-1.5 ring-1 ring-white dark:ring-slate-900" />
               </button>
 
-              {/* Spor Okulu Başvuruları (Süper Admin) */}
-              {isSuperAdmin && (
+              {/* Spor Okulu Başvuruları */}
+              {!isRestricted('spor-okulu-basvurulari') && (
                 <button
                   onClick={() => handleNavClick('spor-okulu-basvurulari')}
-                  title="Spor Okulu Başvuruları & Onay Paneli"
-                  className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+                  title="Spor Okulu Başvuruları"
+                  className={`p-2.5 rounded-xl transition-all relative cursor-pointer ${
                     currentPage === 'spor-okulu-basvurulari'
                       ? 'bg-amber-500 text-white shadow-xs'
                       : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Building2 className="w-4 h-4" />
+                  {pendingBasvuruCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-red-600 absolute top-1.5 right-1.5 ring-1 ring-white dark:ring-slate-900" />
+                  )}
                 </button>
               )}
 
@@ -967,7 +970,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 {pendingBasvuruCount > 0 && (
                   <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600 text-white animate-bounce shadow-xs">
-                    {pendingBasvuruCount} Yeni
+                    {pendingBasvuruCount}
                   </span>
                 )}
               </button>
