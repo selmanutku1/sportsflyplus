@@ -55,6 +55,7 @@ import {
 } from '../../data/rolePermissions';
 import { getStoredUserProfile } from '../../data/userProfile';
 import { isSuperAdminUser } from '../../data/packagePermissions';
+import { GoogleUsersAccessManagerPanel } from '../admin/GoogleUsersAccessManagerPanel';
 import {
   secureFetch,
   encryptSensitivePII,
@@ -470,6 +471,9 @@ export const YetkilendirmelerView: React.FC = () => {
           <span className="flex-1">{toastMessage}</span>
         </div>
       )}
+
+      {/* Google İle Giriş Yapan Kullanıcılar & Aktif Alan Yönetimi */}
+      <GoogleUsersAccessManagerPanel />
 
       {/* Role Switcher Tabs (Mobile Optimized Horizontal Scroll + Desktop Grid) */}
       <div className="space-y-1.5">

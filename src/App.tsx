@@ -13,8 +13,10 @@ import {
   isPageAllowedForPlan,
   getPageRestrictionInfo,
   isSuperAdminUser,
+  isGoogleRestrictedUser,
+  isGoogleUserPageUnlocked,
 } from './data/packagePermissions';
-import { getStoredUserProfile, UserProfileData } from './data/userProfile';
+import { getStoredUserProfile, saveStoredUserProfile, UserProfileData, ADMIN_GOOGLE_EMAIL } from './data/userProfile';
 
 // Lazy-loaded view modules for instant initial load & code splitting
 const DashboardView = lazy(() =>
@@ -161,7 +163,12 @@ export default function App() {
     const freshProfile = getStoredUserProfile();
     setUserProfile(freshProfile);
     setIsAuthenticated(true);
-    if (!isSuperAdminUser(role || freshProfile?.role)) {
+    if (isGoogleRestrictedUser(role || freshProfile?.role, freshProfile?.email)) {
+      setCurrentPage('paketler');
+      try {
+        sessionStorage.setItem('sportsfly_active_page', 'paketler');
+      } catch (e) {}
+    } else if (!isSuperAdminUser(role || freshProfile?.role, freshProfile?.email)) {
       setCurrentPage((prev) =>
         prev === 'spor-okulu-basvurulari' ? 'anasayfa' : prev
       );
@@ -211,7 +218,23 @@ export default function App() {
   });
 
   const [currentPlan, setCurrentPlan] = useState<PackagePlanType>(() => getActiveSessionPlan());
-  const [userProfile, setUserProfile] = useState<UserProfileData>(() => getStoredUserProfile());
+  const [userProfile, setUserProfile] = useState<UserProfileData>(() => {
+    const prof = getStoredUserProfile();
+    if (prof.email === 'kullanici@gmail.com' || prof.email?.toLowerCase() === ADMIN_GOOGLE_EMAIL) {
+      const upgraded: UserProfileData = {
+        ...prof,
+        name: prof.name === 'Google Kullanıcısı' ? 'Selman Utku' : prof.name,
+        email: ADMIN_GOOGLE_EMAIL,
+        role: 'Süper Admin',
+        title: 'SportsFly Kulüp Yöneticisi',
+        club: 'SportsFly Kadıköy Merkez Şube',
+        hasActivePackage: true,
+      };
+      saveStoredUserProfile(upgraded);
+      return upgraded;
+    }
+    return prof;
+  });
 
   // Listen for plan, profile, cross-tab auth, browser back/forward, and Escape key
   useEffect(() => {
@@ -220,6 +243,10 @@ export default function App() {
     };
 
     const handleProfileUpdate = () => {
+      setUserProfile(getStoredUserProfile());
+    };
+
+    const handleGoogleUsersUpdate = () => {
       setUserProfile(getStoredUserProfile());
     };
 
@@ -265,6 +292,7 @@ export default function App() {
     window.addEventListener('sportsfly_plan_changed', handlePlanUpdate);
     window.addEventListener('sportsfly_plan_updated', handlePlanUpdate);
     window.addEventListener('sportsfly_profile_updated', handleProfileUpdate);
+    window.addEventListener('sportsfly_google_users_updated', handleGoogleUsersUpdate);
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('keydown', handleKeyDown);
 
@@ -274,6 +302,7 @@ export default function App() {
       window.removeEventListener('sportsfly_plan_changed', handlePlanUpdate);
       window.removeEventListener('sportsfly_plan_updated', handlePlanUpdate);
       window.removeEventListener('sportsfly_profile_updated', handleProfileUpdate);
+      window.removeEventListener('sportsfly_google_users_updated', handleGoogleUsersUpdate);
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -306,11 +335,16 @@ export default function App() {
   };
 
   const handlePageSelect = (page: NavPage) => {
-    setCurrentPage(page);
+    const isGoogleRestricted = isGoogleRestrictedUser(userProfile?.role, userProfile?.email);
+    const targetPage: NavPage =
+      isGoogleRestricted && !isGoogleUserPageUnlocked(page, userProfile?.email)
+        ? 'paketler'
+        : page;
+    setCurrentPage(targetPage);
     try {
-      sessionStorage.setItem('sportsfly_active_page', page);
+      sessionStorage.setItem('sportsfly_active_page', targetPage);
       if (typeof window !== 'undefined' && window.history?.pushState) {
-        window.history.pushState({ sportsflyPage: page }, '', window.location.pathname);
+        window.history.pushState({ sportsflyPage: targetPage }, '', window.location.pathname);
       }
     } catch (e) {}
     if (mainScrollRef.current) {
@@ -467,6 +501,14 @@ export default function App() {
   }, [currentPage, isAuthenticated]);
 
   const renderActiveView = () => {
+    // 0. Users registered/logged in via Google (except Super Admin selmanutkumarmara@gmail.com) can see Packages + Admin-enabled areas
+    if (
+      isGoogleRestrictedUser(userProfile?.role, userProfile?.email) &&
+      !isGoogleUserPageUnlocked(currentPage, userProfile?.email)
+    ) {
+      return <PaketlerView />;
+    }
+
     // 1. Enforce package-tier access limits (Süper Admin has full access to Sporpuan modules regardless of plan)
     if (!isPageAllowedForPlan(currentPage, currentPlan, userProfile?.role)) {
       const restrictionInfo = getPageRestrictionInfo(currentPage, currentPlan, userProfile?.role);

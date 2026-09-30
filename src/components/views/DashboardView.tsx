@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavPage } from '../../types';
 import { ClubManagerHomeView } from './dashboard/ClubManagerHomeView';
 import { SportsFlyAdminDashboardView } from './dashboard/SportsFlyAdminDashboardView';
-import { getStoredUserProfile } from '../../data/userProfile';
-import { Building2, Shield, Clock, Users } from 'lucide-react';
+import { GoogleUsersAccessManagerPanel } from '../admin/GoogleUsersAccessManagerPanel';
+import { getStoredUserProfile, ADMIN_GOOGLE_EMAIL } from '../../data/userProfile';
+import { Building2, Shield, Users } from 'lucide-react';
 
 interface DashboardViewProps {
   onNavigate?: (page: NavPage) => void;
@@ -11,24 +12,26 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [userProfile] = useState(() => getStoredUserProfile());
-  const isSuperAdmin = userProfile.role.toLowerCase().includes('admin') || userProfile.role.toLowerCase().includes('süper');
+  const isSuperAdmin =
+    userProfile.email?.trim().toLowerCase() === ADMIN_GOOGLE_EMAIL ||
+    userProfile.role.toLowerCase().includes('admin') ||
+    userProfile.role.toLowerCase().includes('süper');
 
-  // Stored active mode: 'club' (Kulüp Yöneticisi Ana Sayfası) or 'platform' (SportsFly Admin Paneli)
-  const [dashboardMode, setDashboardMode] = useState<'club' | 'platform'>(() => {
+  // Stored active mode: 'club' (Kulüp Yöneticisi Ana Sayfası), 'platform' (SportsFly Admin Paneli), or 'google-users'
+  const [dashboardMode, setDashboardMode] = useState<'club' | 'platform' | 'google-users'>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('sportsfly_dashboard_view_mode_v2');
-        if (stored === 'club' || stored === 'platform') return stored;
+        const stored = localStorage.getItem('sportsfly_dashboard_view_mode_v3');
+        if (stored === 'club' || stored === 'platform' || stored === 'google-users') return stored;
       } catch (e) {}
     }
-    // Default to 'club' so club managers see the active athlete count, 10:00 AM logs, and club ops by default
-    return 'club';
+    return isSuperAdmin ? 'platform' : 'club';
   });
 
-  const handleModeChange = (mode: 'club' | 'platform') => {
+  const handleModeChange = (mode: 'club' | 'platform' | 'google-users') => {
     setDashboardMode(mode);
     try {
-      localStorage.setItem('sportsfly_dashboard_view_mode_v2', mode);
+      localStorage.setItem('sportsfly_dashboard_view_mode_v3', mode);
     } catch (e) {}
   };
 
@@ -42,23 +45,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               Görünüm:
             </span>
             <span className="text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-md">
-              {dashboardMode === 'club' ? '🏢 Kulüp Yönetim Masası' : '🌐 SportsFly Sistem Paneli'}
+              {dashboardMode === 'club'
+                ? '🏢 Kulüp Yönetim Masası'
+                : dashboardMode === 'google-users'
+                ? '🔐 Google Girişli Kullanıcılar & Alan Yetkileri'
+                : '🌐 SportsFly Admin Paneli'}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-[#162238] p-1 rounded-xl">
-            <button
-              onClick={() => handleModeChange('club')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                dashboardMode === 'club'
-                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Kulüp Ana Sayfası</span>
-            </button>
-
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-[#162238] p-1 rounded-xl">
             <button
               onClick={() => handleModeChange('platform')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -70,6 +65,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <Shield className="w-3.5 h-3.5" />
               <span>SportsFly Admin Paneli</span>
             </button>
+
+            <button
+              onClick={() => handleModeChange('google-users')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                dashboardMode === 'google-users'
+                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Google Girişli Kullanıcılar &amp; Alanlar</span>
+            </button>
+
+            <button
+              onClick={() => handleModeChange('club')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                dashboardMode === 'club'
+                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Kulüp Ana Sayfası</span>
+            </button>
           </div>
         </div>
       )}
@@ -77,6 +96,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* Render Selected Dashboard View */}
       {dashboardMode === 'club' ? (
         <ClubManagerHomeView onNavigate={onNavigate} />
+      ) : dashboardMode === 'google-users' ? (
+        <GoogleUsersAccessManagerPanel onNavigate={onNavigate} />
       ) : (
         <SportsFlyAdminDashboardView onNavigate={onNavigate} />
       )}

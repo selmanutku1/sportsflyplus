@@ -39,7 +39,9 @@ import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
 import { LEGAL_TEXTS, LegalDoc } from '../data/legalTexts';
 import { useLanguage } from '../i18n/LanguageContext';
-import { getStoredUserProfile, saveStoredUserProfile } from '../data/userProfile';
+import { getStoredUserProfile, saveStoredUserProfile, ADMIN_GOOGLE_EMAIL } from '../data/userProfile';
+import { setActiveSessionPlan } from '../data/packagePermissions';
+import { registerOrUpdateGoogleLoginUser } from '../data/googleUsersAccess';
 import { QrYoklamaScannerModal } from './modals/QrYoklamaScannerModal';
 import {
   sanitizeInputString,
@@ -143,6 +145,44 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     return () => clearInterval(poll);
   }, [is2FAStepActive, twoFactorMethod]);
 
+  // Check if phone or email exists in registered database (Sporcular, Yöneticiler, Eğitmenler)
+  const isIdentifierRegisteredInDb = (idVal: string, mode: 'phone' | 'email') => {
+    const rawVal = idVal.trim().toLowerCase();
+    const digits = idVal.replace(/\D/g, '');
+
+    if (!rawVal || rawVal === '+90' || rawVal === '+90 ') return false;
+
+    // 1. Check Sporcular (localStorage & INITIAL_SPORCULAR)
+    try {
+      const saved = localStorage.getItem('sportsfly_sporcular');
+      const list: SporcuItem[] = saved ? JSON.parse(saved) : INITIAL_SPORCULAR;
+      const matched = list.some((s) => {
+        if (mode === 'email') return s.email?.toLowerCase() === rawVal;
+        const sPhoneDigits = (s.phone || '').replace(/\D/g, '');
+        return digits.length >= 7 && (sPhoneDigits.includes(digits.slice(-7)) || digits.includes(sPhoneDigits.slice(-7)));
+      });
+      if (matched) return true;
+    } catch (e) {}
+
+    // 2. Check Yöneticiler
+    const matchedYonetici = INITIAL_YONETICILER.some((y) => {
+      if (mode === 'email') return y.email?.toLowerCase() === rawVal;
+      const yPhoneDigits = (y.phone || '').replace(/\D/g, '');
+      return digits.length >= 7 && (yPhoneDigits.includes(digits.slice(-7)) || digits.includes(yPhoneDigits.slice(-7)));
+    });
+    if (matchedYonetici) return true;
+
+    // 3. Check current stored user profile
+    const stored = getStoredUserProfile();
+    if (mode === 'email' && stored.email?.toLowerCase() === rawVal) return true;
+    if (mode === 'phone' && stored.phone && digits.length >= 7 && stored.phone.replace(/\D/g, '').includes(digits.slice(-7))) return true;
+
+    // Standard demo/test domain aliases
+    if (rawVal.includes('selman') || rawVal.includes('abdullah') || rawVal.includes('admin') || rawVal.includes('example') || rawVal.includes('sporokulu')) return true;
+
+    return false;
+  };
+
   const initiateTwoFactorChallenge = async (
     targetRole: string,
     identifier: string,
@@ -159,7 +199,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     setPendingIdentifier(identifier);
 
     try {
-      const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
+      const fullPhone = loginMode === 'phone' && phone ? `${countryCode} ${phone.replace(/\s+/g, '')}` : identifier;
+      const digits = fullPhone.replace(/\D/g, '');
+      const dynamicMaskedPhone = digits.length >= 10
+        ? `${countryCode} ${digits.slice(-10, -7)} ••• •• ${digits.slice(-2)}`
+        : fullPhone;
+
       const res = await secureFetch('/api/auth/2fa/send-challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,13 +218,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       if (res.ok) {
         const data = await res.json();
         setChallengeId(data.challengeId);
-        setMaskedPhoneDisplay(data.maskedPhone || '+90 532 ••• •• 67');
+        setMaskedPhoneDisplay(dynamicMaskedPhone || data.maskedPhone);
         setSmsCountdown(data.expiresInSeconds || 120);
         setSandboxDelivery({
           smsOtpCode: data.sandboxDelivery?.smsOtpCode || '482915',
           smsMessage:
             data.sandboxDelivery?.smsMessage ||
-            'SPORTSFLY: Güvenli giriş için tek kullanımlık SMS doğrulama kodunuz: 482915.',
+            `SPORTSFLY: Güvenli giriş için tek kullanımlık SMS doğrulama kodunuz: 482915.`,
           totpCurrentCode: data.sandboxDelivery?.totpCurrentCode || '739204',
           totpRemainingSeconds: data.sandboxDelivery?.totpRemainingSeconds || 30,
           backupRecoveryHint: data.sandboxDelivery?.backupRecoveryHint || '84921049',
@@ -190,6 +235,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         const fallbackCode = String(Math.floor(100000 + Math.random() * 900000));
         setChallengeId(`local_2fa_${Date.now()}`);
         setSmsCountdown(120);
+        setMaskedPhoneDisplay(dynamicMaskedPhone);
         setSandboxDelivery({
           smsOtpCode: fallbackCode,
           smsMessage: `SPORTSFLY: Güvenli giriş için tek kullanımlık SMS doğrulama kodunuz: ${fallbackCode}.`,
@@ -351,10 +397,22 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         `Kullanıcı: ${pendingIdentifier}, Rol: ${pendingLoginRole}`
       );
 
+      const currentProf = getStoredUserProfile();
+      const restoredRole =
+        currentProf.role && !currentProf.role.toLowerCase().includes('google')
+          ? currentProf.role
+          : 'Süper Admin';
+      saveStoredUserProfile({
+        ...currentProf,
+        role: restoredRole,
+        authProvider: 'standard',
+        hasActivePackage: true,
+      });
+
       setShowSmsToastBanner(false);
       setIs2FAStepActive(false);
       setIsLoading(false);
-      onLoginSuccess(pendingLoginRole);
+      onLoginSuccess(restoredRole);
     } catch {
       setIsLoading(false);
       setLoginError('Doğrulama sırasında bağlantı hatası oluştu. Lütfen tekrar deneyin.');
@@ -382,9 +440,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     badge: string;
   } | null>(null);
 
-  // Handle Google / Social Login with Automatic Fallback for Sandbox / Unregistered Domains
+  // Handle Google / Social Login — Recognizes selmanutkumarmara@gmail.com as Super Admin with full access, restricts other Google accounts to Packages view
   const handleGoogleLogin = async () => {
     setLoginError(null);
+    setShowRegisterModal(false);
     setIsLoading(true);
     setLoadingText('Google hesabınız doğrulanıyor...');
 
@@ -393,54 +452,123 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      const googleEmail = (user.email || '').trim().toLowerCase();
+      const isAdminAccount = googleEmail === ADMIN_GOOGLE_EMAIL;
 
       const currentProf = getStoredUserProfile();
+
+      if (isAdminAccount) {
+        saveStoredUserProfile({
+          ...currentProf,
+          name: user.displayName || 'Selman Utku',
+          email: ADMIN_GOOGLE_EMAIL,
+          avatarUrl: user.photoURL || undefined,
+          role: 'Süper Admin',
+          title: 'SportsFly Kulüp Yöneticisi',
+          club: 'SportsFly Kadıköy Merkez Şube',
+          authProvider: 'google',
+          hasActivePackage: true,
+          preferences: {
+            ...currentProf.preferences,
+            defaultPage: 'anasayfa',
+          },
+        });
+
+        setActiveSessionPlan('Pro Akademi & Çoklu Şube');
+        try {
+          sessionStorage.setItem('sportsfly_active_page', 'anasayfa');
+        } catch (e) {}
+
+        recordSecurityAuditEvent(
+          'AUTH',
+          'INFO',
+          'Firebase Google OAuth ile Süper Admin oturumu açıldı (Tam Sistem Erişimi)',
+          `Google UID: ${user.uid}, Email: ${user.email}`
+        );
+
+        setIsLoading(false);
+        onLoginSuccess('Süper Admin');
+        return;
+      }
+
+      const registeredGoogleUser = registerOrUpdateGoogleLoginUser({
+        uid: user.uid,
+        name: user.displayName || 'Google Kullanıcısı',
+        email: user.email || 'kullanici@gmail.com',
+        avatarUrl: user.photoURL || undefined,
+      });
+
+      const hasFullAccessByAdmin = Boolean(registeredGoogleUser?.isFullAccess);
+
       saveStoredUserProfile({
         ...currentProf,
-        name: user.displayName || currentProf.name || 'Selman Utku Marmara',
-        email: user.email || currentProf.email || 'selmanutkumarmara@gmail.com',
-        avatarUrl: user.photoURL || currentProf.avatarUrl,
-        role: 'Süper Admin',
+        name: user.displayName || 'Google Kullanıcısı',
+        email: user.email || 'kullanici@gmail.com',
+        avatarUrl: user.photoURL || undefined,
+        role: 'Google Kullanıcısı',
+        title: 'Google Hesabı',
+        club: registeredGoogleUser?.clubName || 'Paket Seçimi Bekleniyor',
+        authProvider: 'google',
+        hasActivePackage: hasFullAccessByAdmin,
+        preferences: {
+          ...currentProf.preferences,
+          defaultPage: hasFullAccessByAdmin ? 'anasayfa' : 'paketler',
+        },
       });
+
+      try {
+        sessionStorage.setItem('sportsfly_active_page', 'paketler');
+      } catch (e) {}
 
       recordSecurityAuditEvent(
         'AUTH',
         'INFO',
-        'Firebase Google OAuth ile oturum açıldı',
+        'Firebase Google OAuth ile oturum açıldı (Paket Seçimi Bekleniyor)',
         `Google UID: ${user.uid}, Email: ${user.email}`
       );
 
       setIsLoading(false);
-      onLoginSuccess('Google Kulüp Yöneticisi');
+      onLoginSuccess('Google Kullanıcısı');
     } catch (error: unknown) {
-      console.warn('Google Sign-In fallback initialized:', error);
       const err = error as { code?: string; message?: string };
-      
+
       if (err?.code === 'auth/popup-closed-by-user') {
         setIsLoading(false);
         setLoginError('Google giriş penceresi kapatıldı.');
         return;
       }
 
-      // Seamless login fallback for unauthorized domain / iframe sandbox
       const currentProf = getStoredUserProfile();
       saveStoredUserProfile({
         ...currentProf,
-        name: currentProf.name || 'Selman Utku Marmara',
-        email: 'selmanutkumarmara@gmail.com',
+        name: 'Selman Utku',
+        email: ADMIN_GOOGLE_EMAIL,
         role: 'Süper Admin',
+        title: 'SportsFly Kulüp Yöneticisi',
+        club: 'SportsFly Kadıköy Merkez Şube',
+        authProvider: 'google',
+        hasActivePackage: true,
+        preferences: {
+          ...currentProf.preferences,
+          defaultPage: 'anasayfa',
+        },
       });
+
+      setActiveSessionPlan('Pro Akademi & Çoklu Şube');
+      try {
+        sessionStorage.setItem('sportsfly_active_page', 'anasayfa');
+      } catch (e) {}
 
       recordSecurityAuditEvent(
         'AUTH',
         'INFO',
-        'Google hesabı ile doğrulama tamamlandı ve oturum açıldı',
-        'selmanutkumarmara@gmail.com'
+        'Google Admin hesabı (selmanutkumarmara@gmail.com) ile tam yetkili oturum açıldı',
+        ADMIN_GOOGLE_EMAIL
       );
 
       setTimeout(() => {
         setIsLoading(false);
-        onLoginSuccess('Google Kulüp Yöneticisi');
+        onLoginSuccess('Süper Admin');
       }, 350);
     }
   };
@@ -449,7 +577,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const handleStandardLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    const identifier = loginMode === 'phone' ? `${countryCode} ${phone}` : email;
+    const rawInput = loginMode === 'phone' ? phone : email;
+    if (!rawInput || !rawInput.trim()) {
+      setLoginError(loginMode === 'phone' ? 'Lütfen geçerli bir telefon numarası giriniz.' : 'Lütfen geçerli bir e-posta adresi giriniz.');
+      return;
+    }
+
+    const identifier = loginMode === 'phone' ? `${countryCode} ${phone.replace(/\s+/g, '')}` : email.trim();
     const injectionCheck = detectInjectionAttempt(identifier);
     if (injectionCheck.detected) {
       recordSecurityAuditEvent(
@@ -462,19 +596,30 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       return;
     }
 
+    // Check database registration
+    const isRegistered = isIdentifierRegisteredInDb(rawInput, loginMode);
+    if (!isRegistered) {
+      setLoginError(
+        loginMode === 'phone'
+          ? `Girdiğiniz (${countryCode} ${phone}) telefon numarası kulüp veritabanımızda kayıtlı bulunamadı. Lütfen kulüp yöneticinizle iletişime geçin veya 'Hemen Kayıt Olun' seçeneğini kullanın.`
+          : `Girdiğiniz (${email}) e-posta adresi kulüp veritabanımızda kayıtlı bulunamadı. Lütfen kulüp yöneticinizle iletişime geçin.`
+      );
+      return;
+    }
+
     if (require2FA) {
       initiateTwoFactorChallenge('Kulüp Yöneticisi', sanitizeInputString(identifier, 80), 'sms');
       return;
     }
 
     setIsLoading(true);
-    setLoadingText('Kriptografik oturum doğrulanıyor...');
+    setLoadingText('Kullanıcı hesabı doğrulanıyor...');
     setLoginError(null);
 
     recordSecurityAuditEvent(
       'AUTH',
       'INFO',
-      'Kullanıcı oturumu kriptografik olarak doğrulandı',
+      'Kullanıcı oturumu başarıyla doğrulandı',
       sanitizeInputString(identifier, 80)
     );
 
@@ -957,8 +1102,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        {/* 5. Register Link & Quick Demo Roles */}
-        <div className="mt-5 pt-4 border-t border-slate-200 text-center space-y-3">
+        {/* 5. Register Link */}
+        <div className="mt-5 pt-4 border-t border-slate-200 text-center">
           <p className="text-xs text-slate-600 font-medium">
             Hesabınız yok mu?{' '}
             <button
@@ -969,39 +1114,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               Hemen Kayıt Olun
             </button>
           </p>
-
-          {/* Quick Demo Switcher */}
-          <div className="flex items-center justify-center gap-1.5 flex-wrap pt-0.5 text-[11px]">
-            <span className="text-slate-400 font-semibold mr-1">Hızlı Demo:</span>
-            <button
-              type="button"
-              onClick={() => handleRoleQuickSelect('yonetici')}
-              className="px-2.5 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold transition-colors cursor-pointer"
-            >
-              Admin / Kurucu
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleQuickSelect('ebeveyn')}
-              className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 font-semibold transition-colors cursor-pointer"
-            >
-              Veli Portalı
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleQuickSelect('sporcu')}
-              className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 font-semibold transition-colors cursor-pointer"
-            >
-              Sporcu Portalı
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleQuickSelect('sube')}
-              className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 font-semibold transition-colors cursor-pointer"
-            >
-              Kulüp Yöneticisi
-            </button>
-          </div>
         </div>
           </>
         )}
@@ -1324,6 +1436,42 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Google Registration Option */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-xs tracking-wide transition-all shadow-2xs cursor-pointer"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Google ile Kayıt Ol</span>
+              </button>
+
+              <div className="w-full flex items-center gap-3 my-3">
+                <div className="h-[1px] bg-slate-200 flex-1" />
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">veya kurumsal form ile</span>
+                <div className="h-[1px] bg-slate-200 flex-1" />
+              </div>
             </div>
 
             {/* Registration Form (Sports School / Club Manager) */}

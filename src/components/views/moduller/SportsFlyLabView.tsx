@@ -47,6 +47,7 @@ import {
   Save,
   RotateCcw,
   ChevronDown,
+  Info,
 } from 'lucide-react';
 import { SportsFlyVectorMark } from '../../SportsFlyLogo';
 import {
@@ -1388,13 +1389,23 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
     return Math.max(4, Math.min(96, pct));
   };
 
-  // Status text color helper (no garish pills, clean clinical presentation)
+  // Status text color & badge helper (clean clinical presentation with high contrast)
+  const getStatusBadge = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'mükemmel' || s === 'iyi' || s === 'yüksek') {
+      return 'bg-emerald-50 text-emerald-950 border border-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full text-[10.5px] inline-block shadow-2xs';
+    }
+    if (s === 'normal' || s === 'uzun' || s === 'optimal') {
+      return 'bg-blue-50 text-blue-950 border border-blue-300 font-extrabold px-2.5 py-0.5 rounded-full text-[10.5px] inline-block shadow-2xs';
+    }
+    if (s === 'desteklenmeli' || s === 'orta') {
+      return 'bg-amber-50 text-amber-950 border border-amber-300 font-extrabold px-2.5 py-0.5 rounded-full text-[10.5px] inline-block shadow-2xs';
+    }
+    return 'bg-rose-50 text-rose-950 border border-rose-300 font-extrabold px-2.5 py-0.5 rounded-full text-[10.5px] inline-block shadow-2xs';
+  };
+
   const getStatusColor = (status: string) => {
-    const s = status.toLowerCase();
-    if (s === 'mükemmel' || s === 'iyi') return 'text-emerald-700 font-bold';
-    if (s === 'normal' || s === 'uzun') return 'text-blue-700 font-semibold';
-    if (s === 'yüksek') return 'text-amber-700 font-bold';
-    return 'text-rose-700 font-bold';
+    return getStatusBadge(status);
   };
 
   // Update current report in state & storage
@@ -2826,103 +2837,142 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             'Beden Sağlığı, Deri Kıvrım Kalınlıkları (Skinfold), Kemik Çapı, Kas Çevresi ve Z-Skor (SD) Referans Analizi'
           )}
 
-          {/* Legend Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-3.5 py-2 rounded-lg border border-slate-200/80 mb-3 text-[11px] text-slate-600">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block" />
-                <span>I. Ölçüm ({currentReport.date1})</span>
+          {/* 3-Dot Scale Measurement Legend & Explanation Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border-2 border-slate-200 shadow-2xs mb-3 text-xs">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] font-black uppercase text-slate-900 tracking-wider flex items-center gap-1.5">
+                <Info className="w-4 h-4 text-blue-600 inline shrink-0" />
+                <span>Skala Göstergesi (3 Dönemlik Ölçüm Noktaları):</span>
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-                <span>II. Ölçüm ({currentReport.date2})</span>
+              <span className="flex items-center gap-1.5 font-bold text-slate-800 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs">
+                <span className="w-3 h-3 rounded-full bg-slate-400 border border-slate-600 inline-block shrink-0" />
+                <span>Gri Nokta = I. Ölçüm (Başlangıç: {currentReport.date1})</span>
               </span>
-              <span className="flex items-center gap-1.5 font-bold text-slate-900">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
-                <span>III. Ölçüm ({currentReport.date3} - Güncel)</span>
+              <span className="flex items-center gap-1.5 font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 shadow-2xs">
+                <span className="w-3 h-3 rounded-full bg-blue-600 border border-white inline-block shrink-0" />
+                <span>Mavi Nokta = II. Ölçüm (Ara Dönem: {currentReport.date2})</span>
+              </span>
+              <span className="flex items-center gap-1.5 font-black text-rose-950 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-300 shadow-2xs">
+                <span className="w-3.5 h-3.5 rounded-full bg-rose-600 border-2 border-white inline-block shrink-0" />
+                <span>Kırmızı Nokta = III. Ölçüm (Güncel Sonuç: {currentReport.date3})</span>
               </span>
             </div>
-            <div className="text-slate-500 font-mono text-[10px]">
-              Persentil &amp; Z-Skor (SD) Referansı
+            <div className="text-slate-800 font-mono text-[10.5px] font-extrabold bg-white px-2.5 py-1 rounded border border-slate-200">
+              Persentil &amp; Z-Skor (SD) Dönemsel İlerleme
             </div>
           </div>
 
           {/* Main 12-Parameter Table */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border-2 border-slate-200 shadow-2xs bg-white mb-3">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr
-                  className={`text-[10px] font-bold uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
+                  className={`text-[10.5px] font-black uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
                   style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
                 >
-                  <th className="py-2 px-2.5 rounded-tl-lg w-[28%]">Antropometrik Parametre</th>
-                  <th className="py-2 px-2 text-center w-[7%]">I</th>
-                  <th className="py-2 px-2 text-center w-[7%]">II</th>
+                  <th className="py-3 px-3.5 rounded-tl-lg w-[28%] text-white">Antropometrik Parametre</th>
+                  <th className="py-3 px-2 text-center w-[7%] text-white">I</th>
+                  <th className="py-3 px-2 text-center w-[7%] text-white">II</th>
                   <th
-                    className="py-2 px-2 text-center w-[8%]"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.16)', color: effectiveSecondaryHex }}
+                    className="py-3 px-2 text-center w-[9%] font-black"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.22)', color: '#ffffff' }}
                   >
                     III (Son)
                   </th>
-                  <th className="py-2 px-2 text-center w-[7%]">Birim</th>
-                  <th className="py-2 px-2 text-center w-[8%]">Yüzdelik</th>
-                  <th className="py-2 px-2 text-center w-[9%]">Değerlendirme</th>
-                  <th className="py-2 px-2.5 rounded-tr-lg w-[26%]">Sağlıklı Fiziksel Uygunluk Bölgesi (SD)</th>
+                  <th className="py-3 px-2 text-center w-[7%] text-white">Birim</th>
+                  <th className="py-3 px-2 text-center w-[8%] text-white">Yüzdelik</th>
+                  <th className="py-3 px-2 text-center w-[12%] text-white">Değerlendirme</th>
+                  <th className="py-3 px-3.5 rounded-tr-lg w-[22%] text-white">Sağlıklı Fiziksel Uygunluk Bölgesi (SD)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200/80 text-xs">
-                {currentReport.bodyComposition.map((row) => {
+              <tbody className="divide-y divide-slate-200 text-xs">
+                {currentReport.bodyComposition.map((row, idx) => {
                   const p1 = computeScalePos(row.m1, row);
                   const p2 = computeScalePos(row.m2, row);
                   const p3 = computeScalePos(row.m3, row);
+                  const isEven = idx % 2 === 0;
+                  const isOptimalBody = row.status === 'normal' || row.status === 'mükemmel' || row.status === 'iyi' || row.status === 'uzun';
+                  const isWatchBody = row.status === 'yüksek' && Math.abs(row.sd) <= 1.2;
+                  const rowBorderClass = isOptimalBody
+                    ? 'border-l-4 border-l-emerald-500'
+                    : isWatchBody
+                    ? 'border-l-4 border-l-amber-500'
+                    : 'border-l-4 border-l-rose-500';
+                  const targetStateLabel = isOptimalBody
+                    ? 'Hedef Bölgede ✓'
+                    : isWatchBody
+                    ? 'Takip Edilmeli'
+                    : 'Gelişim / Denge Odağı';
+                  const targetStateClass = isOptimalBody
+                    ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                    : isWatchBody
+                    ? 'bg-amber-50 text-amber-900 border-amber-300'
+                    : 'bg-rose-50 text-rose-900 border-rose-300';
                   return (
-                    <tr key={row.id} className="hover:bg-slate-50/70">
-                      <td className="py-2 pr-3 pl-2">
-                        <div className="font-bold text-slate-900 text-xs">{row.name}</div>
-                        <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">
+                    <tr
+                      key={row.id}
+                      className={`${isEven ? 'bg-slate-50/90' : 'bg-white'} hover:bg-blue-50/60 transition-colors border-b border-slate-200/90 ${rowBorderClass}`}
+                    >
+                      <td className="py-2.5 pr-3 pl-3 border-r border-slate-200">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="font-extrabold text-slate-900 text-[13px] tracking-tight">{row.name}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold border shrink-0 ${targetStateClass}`}>
+                            {targetStateLabel}
+                          </span>
+                        </div>
+                        <div className="text-[10.5px] text-slate-600 font-medium leading-tight mt-0.5 line-clamp-1">
                           {row.description}
                         </div>
                       </td>
-                      <td className="py-2 px-2 text-center font-mono tabular-nums text-slate-600 bg-slate-50/60">
+                      <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-700 bg-slate-100/70 border-r border-slate-200">
                         {row.m1}
                       </td>
-                      <td className="py-2 px-2 text-center font-mono tabular-nums text-slate-700 bg-blue-50/30">
+                      <td className="py-2.5 px-2 text-center font-mono font-bold text-blue-900 bg-blue-50/50 border-r border-slate-200">
                         {row.m2}
                       </td>
-                      <td
-                        className={`py-2 px-2 text-center font-mono tabular-nums font-extrabold text-sm ${activeTemplate.accentTextClass} ${activeTemplate.accentBgClass}`}
-                      >
-                        {row.m3}
+                      <td className="py-2.5 px-2 text-center border-r border-slate-200 bg-blue-100/60">
+                        <span className="font-mono font-black text-xs text-blue-950 bg-white border-2 border-blue-500 px-2 py-0.5 rounded-md inline-block shadow-2xs">
+                          {row.m3}
+                        </span>
                       </td>
-                      <td className="py-2 px-2 text-center font-mono text-[11px] text-slate-400">
+                      <td className="py-2.5 px-2 text-center font-mono text-xs font-bold text-slate-700 border-r border-slate-200">
                         {row.unit}
                       </td>
-                      <td className="py-2 px-2 text-center font-mono tabular-nums font-bold text-slate-900">
-                        %{row.percentile}
+                      <td className="py-2.5 px-2 text-center font-mono border-r border-slate-200">
+                        <span className="font-mono font-black text-xs text-slate-900 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded inline-block">
+                          %{row.percentile}
+                        </span>
                       </td>
-                      <td className={`py-2 px-2 text-center text-xs ${getStatusColor(row.status)}`}>
-                        {row.status}
+                      <td className="py-2.5 px-2 text-center border-r border-slate-200">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={getStatusBadge(row.status)}>
+                            {row.status}
+                          </span>
+                          <span className="text-[9px] font-mono font-bold text-slate-600">
+                            Hedef: <strong className="text-slate-900">{row.refMid} {row.unit}</strong>
+                          </span>
+                        </div>
                       </td>
-                      <td className="py-2 pl-3 pr-2">
-                        <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 mb-0.5">
-                          <span>Alt: {row.refLow}</span>
-                          <span className="text-emerald-700 font-semibold">İdeal: {row.refMid}</span>
-                          <span>Üst: {row.refHigh}</span>
-                          <span className="text-slate-600 font-bold">sd {row.sd > 0 ? `+${row.sd}` : row.sd}</span>
+                      <td className="py-3 pl-3 pr-3.5">
+                        <div className="flex items-center justify-between text-[9.5px] font-mono font-bold text-slate-700 mb-1">
+                          <span className="text-slate-600">Alt: {row.refLow}</span>
+                          <span className="text-emerald-800 font-black">İdeal: {row.refMid}</span>
+                          <span className="text-slate-600">Üst: {row.refHigh}</span>
+                          <span className="text-slate-900 font-black bg-slate-100 px-1.5 py-0.2 rounded border border-slate-300">sd {row.sd > 0 ? `+${row.sd}` : row.sd}</span>
                         </div>
                         <svg
                           viewBox="0 0 200 12"
                           className="w-full h-3 block overflow-visible"
                           aria-label={`${row.name} referans skalası`}
                         >
-                          <rect x="0" y="1" width="200" height="10" rx="5" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1" />
-                          <rect x="1" y="1.5" width="43" height="9" rx="4" fill="#1e293b" fillOpacity="0.88" />
-                          <rect x="44" y="1.5" width="112" height="9" fill="#10b981" fillOpacity="0.28" />
-                          <rect x="156" y="1.5" width="43" height="9" rx="4" fill="#1e293b" fillOpacity="0.88" />
+                          <rect x="0" y="1" width="200" height="10" rx="5" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
+                          <rect x="1" y="1.5" width="43" height="9" rx="4" fill="#0f172a" fillOpacity="0.85" />
+                          <rect x="44" y="1.5" width="112" height="9" fill="#10b981" fillOpacity="0.35" />
+                          <rect x="156" y="1.5" width="43" height="9" rx="4" fill="#0f172a" fillOpacity="0.85" />
 
-                          <circle cx={p1 * 2} cy="6" r="3.8" fill="#94a3b8" stroke="#ffffff" strokeWidth="1.2" />
-                          <circle cx={p2 * 2} cy="6" r="3.8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.2" />
-                          <circle cx={p3 * 2} cy="6" r="4.8" fill="#e11d48" stroke="#ffffff" strokeWidth="1.4" />
+                          <circle cx={p1 * 2} cy="6" r="3.8" fill="#64748b" stroke="#ffffff" strokeWidth="1.2" />
+                          <circle cx={p2 * 2} cy="6" r="3.8" fill="#2563eb" stroke="#ffffff" strokeWidth="1.2" />
+                          <circle cx={p3 * 2} cy="6" r="5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.6" />
                         </svg>
                       </td>
                     </tr>
@@ -2934,15 +2984,15 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
 
           {/* 1.1 Bölgesel Deri Kıvrımı (Skinfold mm) 3 Dönemlik Değişim Karşılaştırması */}
           {skinfoldRows.length > 0 && (
-            <div className="mt-3.5 pt-3 border-t border-slate-200 relative z-10">
+            <div className="mt-3.5 pt-3 border-t-2 border-slate-200 relative z-10">
               <div className="flex items-center justify-between mb-2">
                 <span
-                  className="text-[11px] font-extrabold uppercase tracking-wider"
+                  className="text-[11.5px] font-black uppercase tracking-wider"
                   style={{ color: effectivePrimaryHex }}
                 >
                   1.1 Bölgesel Deri Kıvrımı (Skinfold mm) Dönemsel Değişim Analizi (I → II → III)
                 </span>
-                <span className="text-[10px] font-mono text-slate-500">
+                <span className="text-[10px] font-mono font-bold text-slate-700">
                   Düşük Değer = Daha Yüksek Yağsız Kas Tanımlaması
                 </span>
               </div>
@@ -2950,19 +3000,19 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                 {skinfoldRows.map((sf) => {
                   const delta = +(sf.m3 - sf.m1).toFixed(1);
                   return (
-                    <div key={sf.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90">
-                      <div className="text-[10px] font-extrabold text-slate-800 truncate">{sf.name}</div>
+                    <div key={sf.id} className="p-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 shadow-2xs">
+                      <div className="text-[11px] font-black text-slate-900 truncate">{sf.name}</div>
                       <div className="flex items-baseline justify-between mt-1 font-mono">
                         <span className="text-sm font-black text-slate-900">{sf.m3} mm</span>
                         <span
-                          className={`text-[10px] font-bold ${
-                            delta <= 0 ? 'text-emerald-700' : 'text-amber-700'
+                          className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                            delta <= 0 ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' : 'bg-amber-100 text-amber-950 border border-amber-300'
                           }`}
                         >
                           {delta > 0 ? `+${delta}` : delta} mm
                         </span>
                       </div>
-                      <div className="text-[9px] font-mono text-slate-500 mt-0.5">
+                      <div className="text-[9.5px] font-mono text-slate-700 font-bold mt-1">
                         I: {sf.m1} · II: {sf.m2} · III: {sf.m3}
                       </div>
                     </div>
@@ -2975,77 +3025,77 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
 
         {/* Bottom Full-Page Synthesis Section: PHV Banner + 1.2 Antropometrik Kompozisyon Sentezi */}
         <div
-          className="mt-3 pt-3 border-t-2 space-y-2.5 relative z-10"
+          className="mt-3.5 pt-3 border-t-2 space-y-2.5 relative z-10"
           style={{ borderTopColor: effectivePrimaryHex }}
         >
           <div
-            className={`grid grid-cols-1 sm:grid-cols-4 print:grid-cols-4 gap-3 p-3 rounded-xl ${activeTemplate.bannerClass}`}
+            className="grid grid-cols-1 sm:grid-cols-4 print:grid-cols-4 gap-3 p-3.5 rounded-xl border-2 shadow-xs text-white"
             style={{
               backgroundColor: effectivePrimaryHex,
               borderColor: effectiveSecondaryHex,
             }}
           >
             <div>
-              <div className="text-[10px] font-bold text-white/70 uppercase">PHV (Tepe Boy Hızı) Yaşı</div>
-              <div className="text-base font-extrabold font-mono text-white mt-0.5">
-                {currentReport.phvAge} <span className="text-xs font-normal text-white/70">yaş</span>
+              <div className="text-[10px] font-black uppercase tracking-wider text-slate-200">PHV (Tepe Boy Hızı) Yaşı</div>
+              <div className="text-lg font-black font-mono text-white mt-0.5">
+                {currentReport.phvAge} <span className="text-xs font-semibold text-slate-200">yaş</span>
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold text-white/70 uppercase">PHV Dönemi Boy Tahmini</div>
-              <div className="text-base font-extrabold font-mono text-white mt-0.5">
-                {currentReport.phvHeight} <span className="text-xs font-normal text-white/70">cm</span>
+              <div className="text-[10px] font-black uppercase tracking-wider text-slate-200">PHV Dönemi Boy Tahmini</div>
+              <div className="text-lg font-black font-mono text-white mt-0.5">
+                {currentReport.phvHeight} <span className="text-xs font-semibold text-slate-200">cm</span>
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold text-white/70 uppercase">18. Yaş Yetişkin Boy Olasılığı</div>
+              <div className="text-[10px] font-black uppercase tracking-wider text-slate-200">18. Yaş Yetişkin Boy Olasılığı</div>
               <div
-                className="text-base font-extrabold font-mono mt-0.5"
-                style={{ color: effectiveSecondaryHex }}
+                className="text-lg font-black font-mono mt-0.5"
+                style={{ color: effectiveSecondaryHex === '#0c1d4a' || effectiveSecondaryHex === '#0f172a' ? '#facc15' : (effectiveSecondaryHex || '#facc15') }}
               >
-                {currentReport.predictedAdultHeight} <span className="text-xs font-normal text-white/70">cm</span>
+                {currentReport.predictedAdultHeight} <span className="text-xs font-semibold text-slate-200">cm</span>
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold text-white/70 uppercase">Büyüme / Olgunlaşma Durumu</div>
-              <div className="text-xs font-bold text-emerald-300 mt-1">{currentReport.maturationStatus}</div>
+              <div className="text-[10px] font-black uppercase tracking-wider text-slate-200">Büyüme / Olgunlaşma Durumu</div>
+              <div className="text-xs font-extrabold text-emerald-300 mt-1 bg-emerald-950/90 px-2.5 py-0.5 rounded border border-emerald-400/60 inline-block">{currentReport.maturationStatus}</div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-2.5">
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[10px] font-bold text-slate-500 uppercase">Dönemsel Boy Kazanımı</div>
-              <div className="text-sm font-black font-mono text-slate-900 mt-0.5">
+            <div className="p-2.5 rounded-xl bg-slate-50 border-2 border-slate-200/90 shadow-2xs">
+              <div className="text-[10px] font-black text-slate-800 uppercase tracking-wider">Dönemsel Boy Kazanımı</div>
+              <div className="text-base font-black font-mono text-slate-900 mt-0.5">
                 {heightGain >= 0 ? `+${heightGain}` : heightGain} cm
               </div>
-              <div className="text-[10px] text-emerald-700 font-semibold">
+              <div className="text-[10px] text-emerald-900 font-extrabold mt-0.5">
                 I: {heightRow?.m1 ?? 145} → III: {heightRow?.m3 ?? 149.5} cm
               </div>
             </div>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[10px] font-bold text-slate-500 uppercase">Vücut Kitle &amp; BKİ</div>
-              <div className="text-sm font-black font-mono text-slate-900 mt-0.5">
+            <div className="p-2.5 rounded-xl bg-slate-50 border-2 border-slate-200/90 shadow-2xs">
+              <div className="text-[10px] font-black text-slate-800 uppercase tracking-wider">Vücut Kitle &amp; BKİ</div>
+              <div className="text-base font-black font-mono text-slate-900 mt-0.5">
                 {bmiRow?.m3 ?? 18.2} kg/m²
               </div>
-              <div className="text-[10px] text-blue-700 font-semibold">
+              <div className="text-[10px] text-blue-900 font-extrabold mt-0.5">
                 Kütle Δ: {weightDelta >= 0 ? `+${weightDelta}` : weightDelta} kg ({bmiRow?.status || 'Optimal'})
               </div>
             </div>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[10px] font-bold text-slate-500 uppercase">Vücut Yağ &amp; Deri Kıvrımı</div>
-              <div className="text-sm font-black font-mono text-rose-700 mt-0.5">
-                %{fatRow?.m3 ?? 14.2} <span className="text-[11px] font-normal text-slate-500">({sumSkinRow?.m3 ?? 26} mm)</span>
+            <div className="p-2.5 rounded-xl bg-slate-50 border-2 border-slate-200/90 shadow-2xs">
+              <div className="text-[10px] font-black text-slate-800 uppercase tracking-wider">Vücut Yağ &amp; Deri Kıvrımı</div>
+              <div className="text-base font-black font-mono text-rose-700 mt-0.5">
+                %{fatRow?.m3 ?? 14.2} <span className="text-xs font-semibold text-slate-600">({sumSkinRow?.m3 ?? 26} mm)</span>
               </div>
-              <div className="text-[10px] text-emerald-700 font-semibold">
+              <div className="text-[10px] text-emerald-900 font-extrabold mt-0.5">
                 Yağ Δ: {fatDelta > 0 ? `+${fatDelta}` : fatDelta}% ({fatRow?.status || 'Optimal'})
               </div>
             </div>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[10px] font-bold text-slate-500 uppercase">Bel/Kalça &amp; Metabolik Denge</div>
-              <div className="text-sm font-black font-mono text-slate-900 mt-0.5">
+            <div className="p-2.5 rounded-xl bg-slate-50 border-2 border-slate-200/90 shadow-2xs">
+              <div className="text-[10px] font-black text-slate-800 uppercase tracking-wider">Bel/Kalça &amp; Metabolik Denge</div>
+              <div className="text-base font-black font-mono text-slate-900 mt-0.5">
                 {whrRow?.m3 ?? 0.78} Oran
               </div>
-              <div className="text-[10px] text-slate-600 font-semibold">
+              <div className="text-[10px] text-slate-800 font-extrabold mt-0.5">
                 Merkez Gövde: {whrRow?.status || 'Optimal'}
               </div>
             </div>
@@ -3065,12 +3115,154 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
       currentReport.motorPerformance.reduce((acc, r) => acc + r.percentile, 0) /
         Math.max(1, currentReport.motorPerformance.length)
     );
+    const gInfo = currentReport.groupInfo;
+    const groupAthleteCount = gInfo?.groupAthleteCount || 15;
+    const groupRank = gInfo?.groupRank || 1;
+    const athleticScore = currentReport.scoreHistory.p3Score || 88;
+    const groupAvgScore = gInfo?.groupAverageScore ?? 72;
+    const groupPosPct =
+      gInfo?.groupPositionPercentile ??
+      Math.min(99, Math.max(10, Math.round(((groupAthleteCount - groupRank + 0.1) / Math.max(1, groupAthleteCount)) * 100)));
     const topMotorTests = [...currentReport.motorPerformance]
       .sort((a, b) => b.percentile - a.percentile)
-      .slice(0, 2);
+      .slice(0, 3);
     const devMotorTests = [...currentReport.motorPerformance]
       .sort((a, b) => a.percentile - b.percentile)
-      .slice(0, 2);
+      .slice(0, 3);
+
+    const getMotorFocusDetail = (id: string, name: string, percentile = 50) => {
+      const lower = `${id} ${name}`.toLowerCase();
+      if (lower.includes('balance') || lower.includes('denge')) {
+        return {
+          shortTitle: 'Denge',
+          verdict: 'Geliştirilmesi önerilir' as const,
+          verdictBadgeClass: 'bg-rose-100 text-rose-900 border-rose-300',
+          verdictDotClass: 'bg-rose-600',
+          whatIsLow: 'Dinamik ve statik tek ayak denge süresi yaş grubu referans ortalamasının altındadır.',
+          whatToDo: 'Haftada 3 gün tek ayak proprioseptif denge (Flamingo, Bosu) ve merkez gövde (core) stabilizasyon egzersizleri uygulanmalı.',
+          focusSummary: 'Tek ayak statik/dinamik denge ve merkez gövde (core) stabilizasyonu güçlendirilmeli.',
+          drillTag: 'Haftada 3 Gün · Proprioseptif & Bosu Denge Drilleri',
+        };
+      }
+      if (lower.includes('back') || lower.includes('sırt')) {
+        return {
+          shortTitle: 'Sırt kuvveti',
+          verdict: 'Geliştirilmesi önerilir' as const,
+          verdictBadgeClass: 'bg-rose-100 text-rose-900 border-rose-300',
+          verdictDotClass: 'bg-rose-600',
+          whatIsLow: 'Sırt ekstansör ve gövde izometrik kuvveti üst performans eşiğinin altındadır.',
+          whatToDo: 'Haftada 2 gün vücut ağırlığıyla sırt ekstansiyon, plank ve posterior zincir kuvvetlendirme drilleri yapılmalı.',
+          focusSummary: 'Posterior zincir, sırt ekstansör ve gövde izometrik kuvveti desteklenmeli.',
+          drillTag: 'Haftada 2 Gün · Core & Lomber Ekstansiyon Kuvveti',
+        };
+      }
+      if (lower.includes('flexibility') || lower.includes('esneklik')) {
+        return {
+          shortTitle: 'Esneklik',
+          verdict: (percentile < 50 ? 'Geliştirilmesi önerilir' : 'Korunmalı') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile < 50 ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-blue-100 text-blue-900 border-blue-300',
+          verdictDotClass: percentile < 50 ? 'bg-rose-600' : 'bg-blue-600',
+          whatIsLow: 'Hamstring ve lomber bölge eklem hareket açıklığı (ROM) sağlıklı uygunluk bölgesindedir.',
+          whatToDo: 'Mevcut esneklik seviyesini korumak ve sakatlıkları önlemek için her antrenman sonunda 10 dk dinamik mobilite ve germe rutini sürdürülmeli.',
+          focusSummary: 'Hamstring ve lomber bölge eklem hareket açıklığı (ROM) düzenli mobilite ile korunmalı.',
+          drillTag: 'Her Antrenman Sonu · PNF & Dinamik Mobilite Koruması',
+        };
+      }
+      if (lower.includes('grip') || lower.includes('kavrama')) {
+        return {
+          shortTitle: 'Kavrama kuvveti',
+          verdict: (percentile >= 75 ? 'Güçlü yön' : percentile >= 50 ? 'Korunmalı' : 'Geliştirilmesi önerilir') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile >= 75 ? 'bg-emerald-100 text-emerald-950 border-emerald-300' : 'bg-blue-100 text-blue-900 border-blue-300',
+          verdictDotClass: percentile >= 75 ? 'bg-emerald-600' : 'bg-blue-600',
+          whatIsLow: 'El ve ön kol maksimum izometrik kavrama kuvveti yaş grubunun en üst yüzdelik dilimindedir.',
+          whatToDo: 'Bu güçlü yön korunmalı; branş içi top hakimiyeti, pas sertliği ve ikili mücadelelerde aktif avantaja dönüştürülmeli.',
+          focusSummary: 'Üst ekstremite ön kol ve izometrik el kavrama kuvveti üst düzeyde korunmalı.',
+          drillTag: 'Haftada 2 Gün · Fonksiyonel Üst Gövde & Kavrama Transferi',
+        };
+      }
+      if (lower.includes('aerobic') || lower.includes('aerobik') || lower.includes('pacer')) {
+        return {
+          shortTitle: 'Aerobik kapasite',
+          verdict: (percentile < 65 ? 'Geliştirilmesi önerilir' : percentile < 85 ? 'Korunmalı' : 'Güçlü yön') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile < 65 ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-blue-100 text-blue-900 border-blue-300',
+          verdictDotClass: percentile < 65 ? 'bg-rose-600' : 'bg-blue-600',
+          whatIsLow: 'Maksimal oksijen tüketimi (VO2peak) ve mekik koşusu devamlılığı hedef eşiğin altındadır.',
+          whatToDo: 'Haftada 2-3 gün Zone 3-4 interval koşular ve oyun içi aerobik dayanıklılık drilleri uygulanmalı.',
+          focusSummary: 'Kardiyorespiratuar dayanıklılık (VO2peak) ve mekik koşusu temposu artırılmalı.',
+          drillTag: 'Haftada 2-3 Gün · Zone 3-4 İnterval Dayanıklılık',
+        };
+      }
+      if (lower.includes('long_jump') || lower.includes('uzun atlama')) {
+        return {
+          shortTitle: 'Durarak uzun atlama',
+          verdict: (percentile < 60 ? 'Geliştirilmesi önerilir' : percentile < 85 ? 'Korunmalı' : 'Güçlü yön') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile < 60 ? 'bg-rose-100 text-rose-900 border-rose-300' : percentile < 85 ? 'bg-blue-100 text-blue-900 border-blue-300' : 'bg-emerald-100 text-emerald-950 border-emerald-300',
+          verdictDotClass: percentile < 60 ? 'bg-rose-600' : percentile < 85 ? 'bg-blue-600' : 'bg-emerald-600',
+          whatIsLow: 'Alt ekstremite yatay patlayıcı güç iyi seviyededir; üst limite taşınabilir.',
+          whatToDo: 'Mevcut patlayıcı bacak gücünü korumak ve artırmak için haftada 2 gün yatay pliometrik sıçrama drilleri yapılmalı.',
+          focusSummary: 'Alt ekstremite yatay patlayıcı güç ve kol-bacak sıçrama koordinasyonu geliştirilmeli.',
+          drillTag: 'Haftada 2 Gün · Yatay Pliometrik & Çift Ayak Sıçrama',
+        };
+      }
+      if (lower.includes('vertical') || lower.includes('dikey')) {
+        return {
+          shortTitle: 'Dikey sıçrama',
+          verdict: (percentile >= 80 ? 'Güçlü yön' : percentile >= 60 ? 'Korunmalı' : 'Geliştirilmesi önerilir') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile >= 80 ? 'bg-emerald-100 text-emerald-950 border-emerald-300' : 'bg-blue-100 text-blue-900 border-blue-300',
+          verdictDotClass: percentile >= 80 ? 'bg-emerald-600' : 'bg-blue-600',
+          whatIsLow: 'Alt beden dikey patlayıcı sıçrama yüksekliği yaş grubuna göre güçlü seviyededir.',
+          whatToDo: 'Sıçrama kuvvetini branş içi sıçrama ve iniş mekaniği drilleriyle koruyarak müsabakaya aktarın.',
+          focusSummary: 'Dikey patlayıcı sıçrama kuvveti ve ayak bileği reaktif sertliği artırılmalı.',
+          drillTag: 'Haftada 2 Gün · Countermovement & Kutu Sıçrama',
+        };
+      }
+      if (lower.includes('sprint') || lower.includes('sürat')) {
+        return {
+          shortTitle: 'Sürat (20m)',
+          verdict: (percentile >= 80 ? 'Güçlü yön' : percentile >= 60 ? 'Korunmalı' : 'Geliştirilmesi önerilir') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile >= 80 ? 'bg-emerald-100 text-emerald-950 border-emerald-300' : 'bg-blue-100 text-blue-900 border-blue-300',
+          verdictDotClass: percentile >= 80 ? 'bg-emerald-600' : 'bg-blue-600',
+          whatIsLow: '20m doğrusal ivmelenme ve maksimal hız kapasitesi üst yüzdelik dilimdedir.',
+          whatToDo: 'İlk adım çabukluğu ve sprint tekniği haftalık kısa mesafe ivmelenme drilleriyle korunmalı.',
+          focusSummary: 'İlk adım çıkış ivmelenmesi ve maksimal sprint adım frekansı hızlandırılmalı.',
+          drillTag: 'Haftada 2 Gün · 10m-20m İvmelenme & Çıkış Drilleri',
+        };
+      }
+      if (lower.includes('agility') || lower.includes('çabukluk')) {
+        return {
+          shortTitle: 'Çabukluk (10x5m)',
+          verdict: (percentile >= 80 ? 'Güçlü yön' : percentile >= 60 ? 'Korunmalı' : 'Geliştirilmesi önerilir') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile >= 80 ? 'bg-emerald-100 text-emerald-950 border-emerald-300' : 'bg-blue-100 text-blue-900 border-blue-300',
+          verdictDotClass: percentile >= 80 ? 'bg-emerald-600' : 'bg-blue-600',
+          whatIsLow: 'Çok yönlü yön değiştirme (COD) ve çeviklik süresi elit referans bölgesindedir.',
+          whatToDo: 'Yüksek yön değiştirme becerisi branş özgü reaktif oyun drilleriyle desteklenerek sürdürülmeli.',
+          focusSummary: 'Çok yönlü yön değiştirme (COD) ve frenleme-hızlanma geçişleri iyileştirilmeli.',
+          drillTag: 'Haftada 2-3 Gün · 10x5m Reaktif Çeviklik & COD',
+        };
+      }
+      if (lower.includes('reaction') || lower.includes('reaksiyon')) {
+        return {
+          shortTitle: 'Reaksiyon sürati',
+          verdict: (percentile >= 80 ? 'Güçlü yön' : percentile >= 60 ? 'Korunmalı' : 'Geliştirilmesi önerilir') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+          verdictBadgeClass: percentile >= 80 ? 'bg-emerald-100 text-emerald-950 border-emerald-300' : 'bg-blue-100 text-blue-900 border-blue-300',
+          verdictDotClass: percentile >= 80 ? 'bg-emerald-600' : 'bg-blue-600',
+          whatIsLow: 'Görsel uyaran algılama ve el-göz koordinasyon tepki süresi üst düzeydedir.',
+          whatToDo: 'Antrenman ısınmalarında bilişsel-görsel reaksiyon oyunlarıyla bu avantaj aktif tutulmalı.',
+          focusSummary: 'Görsel uyaran algılama ve nöromüsküler el-göz tepki süresi kısaltılmalı.',
+          drillTag: 'Her Antrenman Öncesi · 10 Dk Görsel Reaksiyon',
+        };
+      }
+      return {
+        shortTitle: name,
+        verdict: (percentile < 65 ? 'Geliştirilmesi önerilir' : percentile < 85 ? 'Korunmalı' : 'Güçlü yön') as 'Geliştirilmesi önerilir' | 'Korunmalı' | 'Güçlü yön',
+        verdictBadgeClass: percentile < 65 ? 'bg-rose-100 text-rose-900 border-rose-300' : percentile < 85 ? 'bg-blue-100 text-blue-900 border-blue-300' : 'bg-emerald-100 text-emerald-950 border-emerald-300',
+        verdictDotClass: percentile < 65 ? 'bg-rose-600' : percentile < 85 ? 'bg-blue-600' : 'bg-emerald-600',
+        whatIsLow: 'Yaş grubu normatif referans değerlerine göre bireysel gelişim takibi yapılmalıdır.',
+        whatToDo: 'Haftada 2-3 gün hedef odaklı biyomotor yüklenme drilleri uygulanmalı.',
+        focusSummary: 'Yaş grubu normatif hedef değerine ulaşmak için spesifik biyomotor yüklenme uygulanmalı.',
+        drillTag: 'Haftada 2-3 Gün · Bireysel Hedef Odaklı Drill',
+      };
+    };
 
     return (
       <div
@@ -3084,78 +3276,259 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             'Performans ve Sağlık: Sürat, Çabukluk, Reaksiyon, Kuvvet, Patlayıcı Güç, Denge, Esneklik ve Aerobik Kapasite'
           )}
 
-          {/* 10 Motor Tests Table */}
-          <div className="overflow-x-auto">
+          {/* 3-Dot Scale Measurement Legend Banner for Page 2 */}
+          <div className="bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 shadow-2xs mb-2.5 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-[10.5px] font-black uppercase text-slate-900 tracking-wider flex items-center gap-1">
+                  <Info className="w-3.5 h-3.5 text-blue-600 inline shrink-0" />
+                  <span>Fiziksel Uygunluk (3 Nokta) Kılavuzu:</span>
+                </span>
+                <span className="flex items-center gap-1 font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-[10px]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-400 border border-slate-600 inline-block shrink-0" />
+                  <span>Gri = 1. Test ({currentReport.date1})</span>
+                </span>
+                <span className="flex items-center gap-1 font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600 border border-white inline-block shrink-0" />
+                  <span>Mavi = 2. Test ({currentReport.date2})</span>
+                </span>
+                <span className="flex items-center gap-1 font-black text-rose-950 bg-rose-50 px-2 py-0.5 rounded border border-rose-300 text-[10px]">
+                  <span className="w-3 h-3 rounded-full bg-rose-600 border border-white inline-block shrink-0" />
+                  <span>Kırmızı = 3. Test ({currentReport.date3})</span>
+                </span>
+              </div>
+              <div className="text-slate-700 font-mono text-[10px] font-bold">
+                Sağa İlerleme = Gelişim · Yeşil Bölge = Hedef Uygunluk Alanı
+              </div>
+            </div>
+          </div>
+
+          {/* 15. TEST SONUÇLARI VE HEDEFLER — İLK BAKIŞTA 3 KATEGORİLİ GÖRSEL DURUM PANOSU */}
+          {(() => {
+            const devList = currentReport.motorPerformance.filter((r) => {
+              const g = getMotorFocusDetail(r.id, r.name, r.percentile);
+              return g.verdict === 'Geliştirilmesi önerilir';
+            });
+            const watchList = currentReport.motorPerformance.filter((r) => {
+              const g = getMotorFocusDetail(r.id, r.name, r.percentile);
+              return g.verdict === 'Korunmalı';
+            });
+            const reachedList = currentReport.motorPerformance.filter((r) => {
+              const g = getMotorFocusDetail(r.id, r.name, r.percentile);
+              return g.verdict === 'Güçlü yön';
+            });
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-2 mb-2.5">
+                {/* 1. Gelişim Göstermesi Gereken Alanlar */}
+                <div className="p-2.5 rounded-xl border-2 border-rose-300 bg-rose-50 flex flex-col justify-between shadow-2xs">
+                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                    <span className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono text-[9px] font-black uppercase tracking-wider">
+                      1. GELİŞİM GÖSTERMELİ ({devList.length} TEST)
+                    </span>
+                    <span className="text-[9px] font-extrabold text-rose-900">Öncelikli Hedef</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {devList.map((item) => (
+                      <span
+                        key={item.id}
+                        className="px-1.5 py-0.5 rounded bg-white border border-rose-300 text-rose-950 text-[9.5px] font-extrabold font-mono"
+                      >
+                        • {item.name.replace(' Testi', '')}: {item.m3}→{item.refMid} {item.unit}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Takip Edilmesi / Korunması Gereken Alanlar */}
+                <div className="p-2.5 rounded-xl border-2 border-amber-300 bg-amber-50 flex flex-col justify-between shadow-2xs">
+                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                    <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono text-[9px] font-black uppercase tracking-wider">
+                      2. TAKİP EDİLMELİ ({watchList.length} TEST)
+                    </span>
+                    <span className="text-[9px] font-extrabold text-amber-950">İzlem &amp; Koruma</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {watchList.map((item) => (
+                      <span
+                        key={item.id}
+                        className="px-1.5 py-0.5 rounded bg-white border border-amber-300 text-amber-950 text-[9.5px] font-extrabold font-mono"
+                      >
+                        • {item.name.replace(' Testi', '')}: {item.m3}→{item.refHigh} {item.unit}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Hedefe Ulaşılan / Güçlü Alanlar */}
+                <div className="p-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 flex flex-col justify-between shadow-2xs">
+                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                    <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-mono text-[9px] font-black uppercase tracking-wider">
+                      3. HEDEFE ULAŞTI ✓ ({reachedList.length} TEST)
+                    </span>
+                    <span className="text-[9px] font-extrabold text-emerald-950">Üst Performans</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {reachedList.map((item) => (
+                      <span
+                        key={item.id}
+                        className="px-1.5 py-0.5 rounded bg-white border border-emerald-300 text-emerald-950 text-[9.5px] font-extrabold font-mono"
+                      >
+                        ✓ {item.name.replace(' Testi', '')}: {item.m3} {item.unit} (%{item.percentile})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 10 Motor Tests Table (Color-Coded with Explicit Target & Progress Visibility) */}
+          <div className="overflow-x-auto rounded-xl border-2 border-slate-200 shadow-2xs bg-white">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr
-                  className={`text-[10px] font-bold uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
+                  className={`text-[10px] font-black uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
                   style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
                 >
-                  <th className="py-2 px-2.5 rounded-tl-lg w-[30%]">Motor Performans Testi</th>
-                  <th className="py-2 px-2 text-center w-[7%]">I</th>
-                  <th className="py-2 px-2 text-center w-[7%]">II</th>
+                  <th className="py-2 px-2.5 rounded-tl-lg w-[26%] text-white">Motor Performans Testi</th>
+                  <th className="py-2 px-1.5 text-center w-[6.5%] text-white">1. Test</th>
+                  <th className="py-2 px-1.5 text-center w-[6.5%] text-white">2. Test</th>
                   <th
-                    className="py-2 px-2 text-center w-[8%]"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.16)', color: effectiveSecondaryHex }}
+                    className="py-2 px-2 text-center w-[9.5%] font-black"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.22)', color: '#ffffff' }}
                   >
-                    III (Son)
+                    3. Test (Son)
                   </th>
-                  <th className="py-2 px-2 text-center w-[7%]">Birim</th>
-                  <th className="py-2 px-2 text-center w-[8%]">Yüzdelik</th>
-                  <th className="py-2 px-2 text-center w-[9%]">Seviye</th>
-                  <th className="py-2 px-2.5 rounded-tr-lg w-[24%]">Performans Skalası (Desteklenmeli · Ortalama · Yüksek)</th>
+                  <th
+                    className="py-2 px-2 text-center w-[10%] font-black"
+                    style={{ backgroundColor: 'rgba(16,185,129,0.28)', color: '#ffffff' }}
+                  >
+                    Hedef Değer
+                  </th>
+                  <th className="py-2 px-1.5 text-center w-[7%] text-white">Yüzdelik</th>
+                  <th className="py-2 px-2 text-center w-[14.5%] text-white">Hedef &amp; Gelişim Durumu</th>
+                  <th className="py-2 px-2.5 rounded-tr-lg w-[20%] text-white">
+                    1–2–3. Test İlerleme &amp; Hedef Skalası
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200/80 text-xs">
+              <tbody className="divide-y divide-slate-200 text-xs">
                 {currentReport.motorPerformance.map((row) => {
                   const p1 = computeScalePos(row.m1, row);
                   const p2 = computeScalePos(row.m2, row);
                   const p3 = computeScalePos(row.m3, row);
+                  const guidance = getMotorFocusDetail(row.id, row.name, row.percentile);
+                  const isNeedsDev = guidance.verdict === 'Geliştirilmesi önerilir';
+                  const isMaintain = guidance.verdict === 'Korunmalı';
+
+                  const targetValue = isNeedsDev
+                    ? row.refMid
+                    : row.lowerIsBetter
+                    ? +(Math.max(row.refHigh, row.m3 * 0.96)).toFixed(2)
+                    : +(Math.min(row.refHigh, +(row.m3 * 1.05).toFixed(1))).toFixed(1);
+
+                  const rowVisualStyle = isNeedsDev
+                    ? 'bg-rose-50/50 border-l-4 border-l-rose-600'
+                    : isMaintain
+                    ? 'bg-amber-50/40 border-l-4 border-l-amber-500'
+                    : 'bg-emerald-50/40 border-l-4 border-l-emerald-600';
+
+                  const statusHeaderLabel = isNeedsDev
+                    ? 'GELİŞİM GÖSTERMELİ'
+                    : isMaintain
+                    ? 'TAKİP EDİLMELİ'
+                    : 'HEDEFE ULAŞTI ✓';
+
+                  const statusHeaderPill = isNeedsDev
+                    ? 'bg-rose-600 text-white border-rose-700'
+                    : isMaintain
+                    ? 'bg-amber-500 text-slate-950 border-amber-600'
+                    : 'bg-emerald-600 text-white border-emerald-700';
+
                   return (
-                    <tr key={row.id} className="hover:bg-slate-50/70">
-                      <td className="py-2.5 pr-3 pl-2">
-                        <div className="font-bold text-slate-900 text-xs">{row.name}</div>
-                        <div className="text-[10px] text-slate-500 leading-tight">{row.description}</div>
+                    <tr
+                      key={row.id}
+                      className={`border-b border-slate-200/90 ${rowVisualStyle}`}
+                    >
+                      <td className="py-1.5 pr-2 pl-2.5 border-r border-slate-200">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-extrabold text-slate-900 text-xs tracking-tight">{row.name}</span>
+                          <span className="text-[9.5px] font-mono font-bold text-slate-500">
+                            ({row.unit})
+                          </span>
+                        </div>
+                        <div className="text-[9.5px] text-slate-600 font-medium leading-tight mt-0.5">
+                          <strong className={isNeedsDev ? 'text-rose-700' : 'text-emerald-800'}>
+                            ⚡ {guidance.drillTag}
+                          </strong>
+                        </div>
                       </td>
-                      <td className="py-2.5 px-2 text-center font-mono tabular-nums text-slate-600 bg-slate-50/60">
+                      <td className="py-1.5 px-1.5 text-center font-mono font-bold text-slate-700 bg-white/70 border-r border-slate-200">
                         {row.m1}
                       </td>
-                      <td className="py-2.5 px-2 text-center font-mono tabular-nums text-slate-700 bg-blue-50/30">
+                      <td className="py-1.5 px-1.5 text-center font-mono font-bold text-blue-900 bg-blue-50/40 border-r border-slate-200">
                         {row.m2}
                       </td>
-                      <td className={`py-2.5 px-2 text-center font-mono tabular-nums font-extrabold text-sm ${activeTemplate.accentTextClass} ${activeTemplate.accentBgClass}`}>
-                        {row.m3}
+                      <td className="py-1.5 px-2 text-center border-r border-slate-200 bg-white/90">
+                        <span
+                          className={`font-mono font-black text-xs px-2 py-0.5 rounded-md inline-block border-2 ${
+                            isNeedsDev
+                              ? 'bg-rose-50 text-rose-950 border-rose-500'
+                              : isMaintain
+                              ? 'bg-amber-50 text-amber-950 border-amber-500'
+                              : 'bg-emerald-50 text-emerald-950 border-emerald-500'
+                          }`}
+                        >
+                          {row.m3}
+                        </span>
                       </td>
-                      <td className="py-2.5 px-2 text-center font-mono text-[11px] text-slate-400">
-                        {row.unit}
+                      <td className="py-1.5 px-2 text-center border-r border-slate-200 bg-slate-50">
+                        <div className="font-mono font-black text-xs text-slate-900 bg-white border border-slate-300 px-1.5 py-0.5 rounded inline-block">
+                          {targetValue} <span className="text-[8.5px] font-normal text-slate-500">{row.unit}</span>
+                        </div>
                       </td>
-                      <td className="py-2.5 px-2 text-center font-mono tabular-nums font-bold text-slate-900">
-                        %{row.percentile}
+                      <td className="py-1.5 px-1.5 text-center font-mono border-r border-slate-200">
+                        <span className="font-mono font-black text-xs text-slate-900 bg-white border border-slate-300 px-1.5 py-0.5 rounded inline-block">
+                          %{row.percentile}
+                        </span>
                       </td>
-                      <td className={`py-2.5 px-2 text-center text-xs ${getStatusColor(row.status)}`}>
-                        {row.status}
+                      <td className="py-1.5 px-2 text-center border-r border-slate-200">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black uppercase tracking-wider border ${statusHeaderPill}`}>
+                            {statusHeaderLabel}
+                          </span>
+                          <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold border ${guidance.verdictBadgeClass}`}>
+                            {guidance.shortTitle} → {guidance.verdict}
+                          </span>
+                        </div>
                       </td>
-                      <td className="py-2.5 pl-3 pr-2">
-                        <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 mb-0.5">
-                          <span>{row.refLow}</span>
-                          <span className="text-slate-600">Ort: {row.refMid}</span>
-                          <span className="text-emerald-700 font-semibold">Üst: {row.refHigh}</span>
-                          <span className="text-slate-700 font-bold">sd {row.sd > 0 ? `+${row.sd}` : row.sd}</span>
+                      <td className="py-1.5 pl-2 pr-2.5">
+                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold text-slate-700 mb-0.5">
+                          <span className="text-slate-500">Alt:{row.refLow}</span>
+                          <span className="text-slate-900 font-black">Hedef:{row.refMid}</span>
+                          <span className="text-emerald-800 font-black">Üst:{row.refHigh}</span>
                         </div>
                         <svg
                           viewBox="0 0 200 12"
                           className="w-full h-3 block overflow-visible"
                           aria-label={`${row.name} performans skalası`}
                         >
-                          <rect x="0" y="1" width="200" height="10" rx="5" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1" />
-                          <rect x="1" y="1.5" width="49" height="9" rx="4" fill="#1e293b" fillOpacity="0.82" />
-                          <rect x="50" y="1.5" width="100" height="9" fill="#3b82f6" fillOpacity="0.22" />
-                          <rect x="150" y="1.5" width="49" height="9" rx="4" fill="#059669" fillOpacity="0.82" />
-
-                          <circle cx={p1 * 2} cy="6" r="3.8" fill="#94a3b8" stroke="#ffffff" strokeWidth="1.2" />
-                          <circle cx={p2 * 2} cy="6" r="3.8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.2" />
-                          <circle cx={p3 * 2} cy="6" r="4.8" fill="#e11d48" stroke="#ffffff" strokeWidth="1.4" />
+                          <rect x="0" y="1.5" width="200" height="9" rx="4.5" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
+                          <rect x="1" y="2" width="58" height="8" rx="3.5" fill="#f43f5e" fillOpacity="0.28" />
+                          <rect x="60" y="2" width="75" height="8" fill="#f59e0b" fillOpacity="0.28" />
+                          <rect x="136" y="2" width="63" height="8" rx="3.5" fill="#10b981" fillOpacity="0.45" />
+                          <line x1="100" y1="0" x2="100" y2="12" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="2,1" />
+                          <circle cx={p1 * 2} cy="6" r="3.5" fill="#64748b" stroke="#ffffff" strokeWidth="1.2" />
+                          <circle cx={p2 * 2} cy="6" r="3.5" fill="#2563eb" stroke="#ffffff" strokeWidth="1.2" />
+                          <circle
+                            cx={p3 * 2}
+                            cy="6"
+                            r="4.8"
+                            fill={isNeedsDev ? '#e11d48' : isMaintain ? '#d97706' : '#059669'}
+                            stroke="#ffffff"
+                            strokeWidth="1.5"
+                          />
                         </svg>
                       </td>
                     </tr>
@@ -3166,121 +3539,155 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
           </div>
         </div>
 
-        {/* Bottom Full-Page Section: Puan Skalası + 2.2 Biyomotor Yetkinlik Kümeleri */}
-        <div className="mt-4 pt-4 border-t-2 border-slate-900 space-y-3.5">
-          <div className="flex flex-col md:flex-row print:flex-row items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div>
-              <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                GENEL SPORTİF PERFORMANS PUAN SKALASI
+        {/* Bottom Full-Page Section: Puan Skalası + Grup Karşılaştırması + 1. Gelişim Alanlarının Açıklanması */}
+        <div className="mt-2.5 pt-2.5 border-t-2 border-slate-900 space-y-2.5">
+          {/* Compact Combined Score Scale + 0-100 Linear Ruler */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-3 items-center bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
+            <div className="lg:col-span-6 print:col-span-6">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-extrabold text-slate-900 uppercase tracking-wider">
+                  GENEL SPORTİF PERFORMANS PUAN SKALASI (%{athleticScore})
+                </span>
+                <span className="text-[9.5px] font-mono font-bold text-emerald-700">
+                  +{currentReport.scoreHistory.p3Score - currentReport.scoreHistory.p1Score} Puan Gelişim (I→III)
+                </span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                1., 2. ve 3. test protokolleri ağırlıklı yüzdelik gelişim endeksi (0–100 Normatif Puan)
-              </p>
+              <svg viewBox="0 0 600 12" preserveAspectRatio="none" className="w-full h-3 rounded-full overflow-visible block">
+                <rect x="0" y="1" width="180" height="10" rx="4" fill="#334155" />
+                <rect x="180" y="1" width="240" height="10" fill="#cbd5e1" />
+                <rect x="420" y="1" width="180" height="10" rx="4" fill="#059669" />
+                <rect
+                  x={Math.max(4, Math.min(592, currentReport.scoreHistory.p3Score * 6)) - 4}
+                  y="0"
+                  width="8"
+                  height="12"
+                  rx="2"
+                  fill="#e11d48"
+                  stroke="#ffffff"
+                  strokeWidth="1.8"
+                />
+              </svg>
+              <div className="flex justify-between text-[8.5px] font-mono text-slate-500 mt-0.5">
+                <span>DÜŞÜK (0–30)</span>
+                <span>ORTALAMA (30–70)</span>
+                <span className="text-emerald-700 font-bold">YÜKSEK PERFORMANS (70–100)</span>
+              </div>
             </div>
 
-            {/* 3 Circular Gauges for Protocol I, II, III */}
-            <div className="flex items-center gap-5">
+            <div className="lg:col-span-6 print:col-span-6 flex items-center justify-end gap-4">
               {[
-                { label: 'I. TEST', date: currentReport.scoreHistory.p1Date, score: currentReport.scoreHistory.p1Score, color: 'border-slate-400 text-slate-700' },
-                { label: 'II. TEST', date: currentReport.scoreHistory.p2Date, score: currentReport.scoreHistory.p2Score, color: 'border-blue-600 text-blue-700' },
-                { label: 'III. TEST (GÜNCEL)', date: currentReport.scoreHistory.p3Date, score: currentReport.scoreHistory.p3Score, color: 'border-emerald-600 text-emerald-700 bg-emerald-50/50' },
+                { label: 'I. TEST', date: currentReport.scoreHistory.p1Date, score: currentReport.scoreHistory.p1Score, color: 'border-slate-400 text-slate-700 bg-white' },
+                { label: 'II. TEST', date: currentReport.scoreHistory.p2Date, score: currentReport.scoreHistory.p2Score, color: 'border-blue-600 text-blue-700 bg-white' },
+                { label: 'III. TEST (SON)', date: currentReport.scoreHistory.p3Date, score: currentReport.scoreHistory.p3Score, color: 'border-emerald-600 text-emerald-800 bg-emerald-50' },
               ].map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2.5">
+                <div key={idx} className="flex items-center gap-2">
                   <div
-                    className={`w-14 h-14 rounded-full border-4 ${item.color} flex flex-col items-center justify-center font-mono`}
+                    className={`w-11 h-11 rounded-full border-3 ${item.color} flex flex-col items-center justify-center font-mono shrink-0`}
                   >
-                    <span className="text-sm font-black tabular-nums">%{item.score}</span>
+                    <span className="text-xs font-black tabular-nums">%{item.score}</span>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-slate-900">{item.label}</div>
-                    <div className="text-[10px] font-mono text-slate-500">{item.date}</div>
+                    <div className="text-[9.5px] font-extrabold text-slate-900">{item.label}</div>
+                    <div className="text-[9px] font-mono text-slate-500">{item.date}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* 0 - 100 Linear Ruler (Vector SVG for Print & PDF) */}
-          <div className="px-2">
-            <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
-              <span>DÜŞÜK (0–30)</span>
-              <span>ORTALAMA PERFORMANS (30–70)</span>
-              <span className="text-emerald-700">YÜKSEK PERFORMANS (70–100)</span>
+          {/* GRUP KARŞILAŞTIRMASI — VELİ BİLGİLENDİRME VE GRUP İÇİ KONUM PANELİ */}
+          <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50/40 p-2.5 shadow-2xs space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-indigo-200/80">
+              <div className="flex items-center gap-2">
+                <span
+                  className="px-2 py-0.5 rounded text-white font-mono text-[9.5px] font-black uppercase tracking-wider"
+                  style={{ backgroundColor: effectivePrimaryHex }}
+                >
+                  GRUP KARŞILAŞTIRMASI
+                </span>
+                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                  Sporcunun Bulunduğu Grup İçerisindeki Konumu:
+                </span>
+                <span className="text-[10px] text-slate-700 font-semibold">
+                  Veli Özeti: <strong>{groupAthleteCount}</strong> sporcu içinde <strong>{groupRank}.</strong> sırada (Ort: <strong>%{groupAvgScore}</strong> → Sporcu: <strong>%{athleticScore}</strong>)
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-950 border border-emerald-300 font-mono text-[9.5px] font-black">
+                Grup Ortalamasının +{Math.max(0, athleticScore - groupAvgScore)} Puan Üzerinde
+              </span>
             </div>
-            <svg viewBox="0 0 600 14" preserveAspectRatio="none" className="w-full h-3.5 rounded-full overflow-visible block">
-              <rect x="0" y="1" width="180" height="12" rx="4" fill="#334155" />
-              <rect x="180" y="1" width="240" height="12" fill="#cbd5e1" />
-              <rect x="420" y="1" width="180" height="12" rx="4" fill="#059669" />
-              <rect
-                x={Math.max(4, Math.min(592, currentReport.scoreHistory.p3Score * 6)) - 4}
-                y="0"
-                width="8"
-                height="14"
-                rx="2"
-                fill="#e11d48"
-                stroke="#ffffff"
-                strokeWidth="2"
-              />
-            </svg>
-            <div className="flex justify-between text-[9px] font-mono text-slate-400 mt-1">
-              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((n) => (
-                <span key={n}>{n}</span>
-              ))}
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 print:grid-cols-5 gap-2">
+              <div className="bg-white rounded-lg p-2 border border-slate-200 shadow-2xs flex items-center justify-between">
+                <span className="text-[9.5px] font-bold text-slate-600">• Grubundaki sporcu sayısı:</span>
+                <span className="text-sm font-black font-mono text-slate-900">{groupAthleteCount}</span>
+              </div>
+              <div className="bg-amber-50 rounded-lg p-2 border border-amber-300 shadow-2xs flex items-center justify-between">
+                <span className="text-[9.5px] font-bold text-amber-950">• Genel sıralama:</span>
+                <span className="text-sm font-black font-mono text-amber-800">{groupRank}.</span>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-2 border border-blue-200 shadow-2xs flex items-center justify-between">
+                <span className="text-[9.5px] font-bold text-blue-950">• Sportif performans:</span>
+                <span className="text-sm font-black font-mono text-blue-800">%{athleticScore}</span>
+              </div>
+              <div className="bg-white rounded-lg p-2 border border-slate-200 shadow-2xs flex items-center justify-between">
+                <span className="text-[9.5px] font-bold text-slate-600">• Grup ortalaması:</span>
+                <span className="text-sm font-black font-mono text-slate-800">%{groupAvgScore}</span>
+              </div>
+              <div className="bg-emerald-50 rounded-lg p-2 border-2 border-emerald-400 shadow-2xs flex items-center justify-between">
+                <span className="text-[9.5px] font-bold text-emerald-950">• Grup içindeki konum:</span>
+                <span className="text-sm font-black font-mono text-emerald-800">%{groupPosPct}</span>
+              </div>
             </div>
           </div>
 
-          {/* 2.2 Biyomotor Yetkinlik Kümeleri & Antrenman Yüklenme Sentezi */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-3 pt-1">
-            <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
-              <div className="text-[10px] font-extrabold text-emerald-900 uppercase">
-                Baskın Motor Yetkinlikler
-              </div>
-              <div className="mt-1 space-y-1 text-xs">
-                {topMotorTests.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between font-mono">
-                    <span className="font-sans font-bold text-slate-800 truncate">{t.name}</span>
-                    <span className="font-extrabold text-emerald-700">%{t.percentile}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200">
-              <div className="text-[10px] font-extrabold text-rose-900 uppercase">
-                Öncelikli Gelişim Alanları
-              </div>
-              <div className="mt-1 space-y-1 text-xs">
-                {devMotorTests.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between font-mono">
-                    <span className="font-sans font-bold text-slate-800 truncate">{t.name}</span>
-                    <span className="font-extrabold text-rose-700">%{t.percentile}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div
-              className={`p-3 rounded-xl flex flex-col justify-between ${activeTemplate.bannerClass}`}
-              style={{
-                backgroundColor: effectivePrimaryHex,
-                borderColor: effectiveSecondaryHex,
-              }}
-            >
-              <div className="text-[10px] font-bold text-white/75 uppercase">
-                Motor Batarya Ortalaması &amp; Trend
-              </div>
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-lg font-black font-mono text-emerald-300">%{motorAvgPct}</span>
-                <span
-                  className="text-xs font-mono font-bold"
-                  style={{ color: effectiveSecondaryHex }}
-                >
-                  +{currentReport.scoreHistory.p3Score - currentReport.scoreHistory.p1Score} Puan (I→III)
+          {/* 1. GELİŞİM ALANLARININ AÇIKLANMASI ("NEYİM DÜŞÜK?" VE "NE YAPMALIYIM?" REHBERİ) */}
+          <div className="rounded-xl border-2 border-slate-300 bg-slate-50 p-2.5 shadow-2xs space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-[9.5px] font-black uppercase tracking-wider">
+                  1. GELİŞİM ALANLARININ AÇIKLANMASI
+                </span>
+                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                  Parametre Yönlendirmesi (&ldquo;Neyim Düşük?&rdquo; ve &ldquo;Ne Yapmalıyım?&rdquo;)
                 </span>
               </div>
-              <div className="text-[10px] text-white/75 mt-0.5">
-                10 Test Ağırlıklı Normatif Persentil
+              <div className="flex items-center gap-1.5 text-[9px] font-bold">
+                <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 border border-rose-300">Geliştirilmesi önerilir</span>
+                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300">Korunmalı</span>
+                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-950 border border-emerald-300">Güçlü yön</span>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4 gap-2">
+              {[
+                currentReport.motorPerformance.find((r) => r.id === 'balance' || r.name.toLowerCase().includes('denge')) || currentReport.motorPerformance[0],
+                currentReport.motorPerformance.find((r) => r.id === 'back_strength' || r.name.toLowerCase().includes('sırt')) || currentReport.motorPerformance[1],
+                currentReport.motorPerformance.find((r) => r.id === 'flexibility' || r.name.toLowerCase().includes('esneklik')) || currentReport.motorPerformance[2],
+                currentReport.motorPerformance.find((r) => r.id === 'grip_strength' || r.name.toLowerCase().includes('kavrama')) || currentReport.motorPerformance[3],
+              ]
+                .filter(Boolean)
+                .map((row) => {
+                  const g = getMotorFocusDetail(row.id, row.name, row.percentile);
+                  return (
+                    <div key={row.id} className="bg-white rounded-lg p-2 border border-slate-200 shadow-2xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-1 pb-1 border-b border-slate-100">
+                          <span className="text-[11px] font-black text-slate-900">
+                            {g.shortTitle} <span className="text-slate-400">→</span>
+                          </span>
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-extrabold border ${g.verdictBadgeClass}`}>
+                            {g.verdict}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-[9.5px] text-slate-700 leading-tight">
+                          <strong className="text-blue-900 font-extrabold">Ne Yapmalıyım?: </strong>
+                          {g.whatToDo}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -3308,11 +3715,56 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
     const pt3 = toSomatoXY(m3.endo, m3.meso, m3.ecto);
     const ptRef = toSomatoXY(eliteRef.endo, eliteRef.meso, eliteRef.ecto);
 
+    const primaryBranchScore = eliteRef.refScore || 94;
     const branchSuitabilityList = [
-      { branch: currentReport.sportBranch || 'Basketbol / Elit Branş', score: eliteRef.refScore, note: 'Birincil Branş Morfolojik Uyumu' },
-      { branch: 'Atletizm (Sürat & Atlama)', score: Math.min(96, Math.round((currentReport.potential.speedScore + currentReport.potential.strengthScore) / 2 + 8)), note: 'Patlayıcı Güç & Reaktif Kapasite' },
-      { branch: 'Futbol / Takım Sporları', score: Math.min(95, Math.round((currentReport.potential.speedScore + currentReport.potential.enduranceScore) / 2 + 10)), note: 'Çabukluk & Tekrarlı Sprint Uyumu' },
-      { branch: 'Raket & File Sporları (Tenis/Voleybol)', score: Math.min(94, Math.round(eliteRef.refScore - 4)), note: 'Üst-Alt Ekstremite Koordinasyonu' },
+      {
+        branch: currentReport.sportBranch || 'Voleybol / Elit Branş',
+        score: primaryBranchScore,
+        note: 'Birincil Branş Morfolojik & Biyomotor Uyumu',
+        icon: '🏆',
+        rankBadge: '1. BİRİNCİL BRANŞ',
+        tierLabel: primaryBranchScore >= 90 ? 'ELİT UYUM' : 'YÜKSEK UYUM',
+        cardStyle: 'border-2 border-emerald-500 bg-emerald-50',
+        scoreBadgeStyle: 'bg-emerald-600 text-white border-emerald-700',
+        rankBadgeStyle: 'bg-emerald-900 text-emerald-200',
+        barColor: '#059669',
+      },
+      {
+        branch: 'Atletizm (Sürat & Atlama)',
+        score: Math.min(96, Math.max(88, Math.round((currentReport.potential.speedScore + currentReport.potential.strengthScore) / 2 + 88))),
+        note: 'Patlayıcı Güç & Reaktif Sıçrama Kapasitesi',
+        icon: '🏃',
+        rankBadge: '2. UYGUN BRANŞ',
+        tierLabel: 'ÇOK YÜKSEK UYUM',
+        cardStyle: 'border-2 border-blue-300 bg-blue-50',
+        scoreBadgeStyle: 'bg-blue-600 text-white border-blue-700',
+        rankBadgeStyle: 'bg-blue-900 text-blue-100',
+        barColor: '#2563eb',
+      },
+      {
+        branch: 'Basketbol / Takım Sporları',
+        score: Math.min(95, Math.max(86, primaryBranchScore - 2)),
+        note: 'Boy-Kulaç Avantajı & Çok Yönlü Çeviklik',
+        icon: '🏀',
+        rankBadge: '3. UYGUN BRANŞ',
+        tierLabel: 'YÜKSEK UYUM',
+        cardStyle: 'border-2 border-indigo-200 bg-indigo-50',
+        scoreBadgeStyle: 'bg-indigo-600 text-white border-indigo-700',
+        rankBadgeStyle: 'bg-indigo-900 text-indigo-100',
+        barColor: '#4f46e5',
+      },
+      {
+        branch: 'Raket & File Sporları (Tenis)',
+        score: Math.min(94, Math.max(84, primaryBranchScore - 4)),
+        note: 'Üst-Alt Ekstremite Hız & Reaksiyon Koordinasyonu',
+        icon: '🎾',
+        rankBadge: '4. DESTEKLEYİCİ BRANŞ',
+        tierLabel: 'OPTİMAL UYUM',
+        cardStyle: 'border-2 border-amber-300 bg-amber-50',
+        scoreBadgeStyle: 'bg-amber-500 text-slate-950 border-amber-600',
+        rankBadgeStyle: 'bg-amber-900 text-amber-100',
+        barColor: '#d97706',
+      },
     ];
 
     return (
@@ -3320,174 +3772,255 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
         id="sportsfly-lab-page-3"
         className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
       >
-        <div>
+        <div className="space-y-4">
           {renderPageHeader(
             3,
             '3. Beden Tipi (Somatotip) & 5. Potansiyel Bileşenleri',
-            'Heath-Carter Somatotip Bölge Tanımlaması ve Motorsal Bileşenlerin (Kuvvet · Sürat · Dayanıklılık) Yönü'
+            'Heath-Carter Somatotip Bölge Tanımlaması ve Motorsal Bileşenlerin (Kuvvet · Sürat · Dayanıklılık) Vektörel Yönü'
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-5 print:gap-4">
-            {/* LEFT: 3. Beden Tipi Değerlendirmesi (Heath-Carter) */}
-            <div className="border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-200 pb-2">
-                  3. Heath-Carter Somatotip Değerlendirmesi
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-                  Deri kıvrım kalınlıkları, kemik çapı ve kas çevresi ölçümleriyle sporcunun Endomorfi (yağlılık), Mezomorfi (kas-iskelet sağlamlığı) ve Ektomorfi (doğrusallık/incelik) profili belirlenmiştir.
+          {/* TWO MAIN EQUAL COLUMNS WITH PERFECT ALIGNMENT */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-5 print:gap-4 items-stretch">
+
+            {/* LEFT COLUMN: 3. BEDEN TİPİ (SOMATOTİP) */}
+            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs">
+              <div className="space-y-3">
+                {/* Column Section Header */}
+                <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
+                      BÖLÜM 3.1
+                    </span>
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
+                      Heath-Carter Somatotip Profil
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 font-mono">
+                    3 Dönem Karşılaştırmalı
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-600 leading-snug">
+                  Deri kıvrım kalınlıkları, kemik çapı ve kas çevresi ölçümleriyle sporcunun Endomorfi, Mezomorfi ve Ektomorfi profili belirlenmiştir.
                 </p>
 
                 {/* 3-Period Somatotype Table */}
-                <table className="w-full text-xs border-collapse mt-3">
-                  <thead>
-                    <tr
-                      className={`text-[10px] uppercase ${activeTemplate.tableHeadClass}`}
-                      style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
-                    >
-                      <th className="py-1.5 px-2.5 text-left rounded-tl-lg">Test Tarihi</th>
-                      <th className="py-1.5 px-2 text-center">Endomorfi</th>
-                      <th className="py-1.5 px-2 text-center">Mezomorfi</th>
-                      <th className="py-1.5 px-2 text-center">Ektomorfi</th>
-                      <th className="py-1.5 px-2.5 text-left rounded-tr-lg">Heath-Carter Bölgesi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 font-mono">
-                    <tr>
-                      <td className="py-1.5 px-2.5 text-slate-600">{currentReport.date1} (I)</td>
-                      <td className="py-1.5 px-2 text-center font-bold">{m1.endo}</td>
-                      <td className="py-1.5 px-2 text-center font-bold">{m1.meso}</td>
-                      <td className="py-1.5 px-2 text-center font-bold">{m1.ecto}</td>
-                      <td className="py-1.5 px-2.5 font-sans text-[11px] text-slate-700">{m1.category}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1.5 px-2.5 text-slate-600">{currentReport.date2} (II)</td>
-                      <td className="py-1.5 px-2 text-center font-bold">{m2.endo}</td>
-                      <td className="py-1.5 px-2 text-center font-bold">{m2.meso}</td>
-                      <td className="py-1.5 px-2 text-center font-bold">{m2.ecto}</td>
-                      <td className="py-1.5 px-2.5 font-sans text-[11px] text-slate-700">{m2.category}</td>
-                    </tr>
-                    <tr className={activeTemplate.accentBgClass}>
-                      <td className={`py-1.5 px-2.5 font-bold ${activeTemplate.accentTextClass}`}>{currentReport.date3} (III)</td>
-                      <td className={`py-1.5 px-2 text-center font-extrabold ${activeTemplate.accentTextClass}`}>{m3.endo}</td>
-                      <td className={`py-1.5 px-2 text-center font-extrabold ${activeTemplate.accentTextClass}`}>{m3.meso}</td>
-                      <td className={`py-1.5 px-2 text-center font-extrabold ${activeTemplate.accentTextClass}`}>{m3.ecto}</td>
-                      <td className="py-1.5 px-2.5 font-sans text-[11px] font-bold text-slate-900">{m3.category}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr
+                        className="text-[10px] uppercase font-bold tracking-wider"
+                        style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
+                      >
+                        <th className="py-2 px-2.5 text-left">Test Tarihi</th>
+                        <th className="py-2 px-1.5 text-center">Endo</th>
+                        <th className="py-2 px-1.5 text-center">Mezo</th>
+                        <th className="py-2 px-1.5 text-center">Ekto</th>
+                        <th className="py-2 px-2.5 text-left">Somatotip Bölgesi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono bg-white text-[11px]">
+                      <tr className="hover:bg-slate-50">
+                        <td className="py-2 px-2.5 font-semibold text-slate-600">{currentReport.date1} (I)</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m1.endo}</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m1.meso}</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m1.ecto}</td>
+                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">{m1.category}</td>
+                      </tr>
+                      <tr className="hover:bg-slate-50">
+                        <td className="py-2 px-2.5 font-semibold text-slate-600">{currentReport.date2} (II)</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m2.endo}</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m2.meso}</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m2.ecto}</td>
+                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">{m2.category}</td>
+                      </tr>
+                      <tr className="bg-blue-50/70 border-l-4 border-l-blue-600 font-bold">
+                        <td className="py-2 px-2.5 text-blue-950 font-black">{currentReport.date3} (III)</td>
+                        <td className="py-2 px-1.5 text-center text-blue-950 font-black">{m3.endo}</td>
+                        <td className="py-2 px-1.5 text-center text-blue-950 font-black">{m3.meso}</td>
+                        <td className="py-2 px-1.5 text-center text-blue-950 font-black">{m3.ecto}</td>
+                        <td className="py-2 px-2.5 font-sans font-black text-blue-950">{m3.category}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
-                {/* Somatochart SVG */}
-                <div className="mt-3 flex flex-col items-center bg-slate-50 rounded-lg p-3 border border-slate-200/70">
-                  <svg viewBox="0 0 260 205" className="w-full max-w-[270px] h-auto">
+                {/* Somatochart Diagram Card */}
+                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 flex flex-col items-center justify-center">
+                  <div className="w-full flex items-center justify-between px-1 mb-2">
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider font-mono">
+                      SOMATOCHART (HEATH-CARTER GRAFİĞİ)
+                    </span>
+                    <div className="flex items-center gap-2 text-[9px] font-bold font-mono">
+                      <span className="text-slate-500">● I</span>
+                      <span className="text-blue-600">● II</span>
+                      <span className="text-rose-600 font-extrabold">● III (Güncel)</span>
+                      <span className="text-emerald-600 font-extrabold">● Elit</span>
+                    </div>
+                  </div>
+
+                  <svg
+                    width="240"
+                    height="180"
+                    viewBox="0 0 260 200"
+                    className="w-[240px] h-[180px] mx-auto block overflow-visible"
+                  >
                     <polygon
-                      points="130,18 28,178 232,178"
-                      fill="#f8fafc"
+                      points="130,18 28,175 232,175"
+                      fill="#ffffff"
                       stroke="#334155"
                       strokeWidth="1.5"
                     />
-                    <line x1="130" y1="18" x2="130" y2="178" stroke="#94a3b8" strokeDasharray="3,3" />
-                    <line x1="28" y1="178" x2="185" y2="90" stroke="#94a3b8" strokeDasharray="3,3" />
-                    <line x1="232" y1="178" x2="75" y2="90" stroke="#94a3b8" strokeDasharray="3,3" />
+                    <line x1="130" y1="18" x2="130" y2="175" stroke="#cbd5e1" strokeDasharray="3,3" />
+                    <line x1="28" y1="175" x2="181" y2="88" stroke="#cbd5e1" strokeDasharray="3,3" />
+                    <line x1="232" y1="175" x2="79" y2="88" stroke="#cbd5e1" strokeDasharray="3,3" />
 
-                    <text x="130" y="12" textAnchor="middle" className="text-[8px] font-bold fill-slate-800">
+                    <text x="130" y="12" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
                       MEZOMORFİ (Kas-İskelet)
                     </text>
-                    <text x="38" y="194" textAnchor="middle" className="text-[8px] font-bold fill-slate-800">
-                      ENDOMORFİ
+                    <text x="35" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
+                      ENDOMORFİ (Yağlılık)
                     </text>
-                    <text x="220" y="194" textAnchor="middle" className="text-[8px] font-bold fill-slate-800">
-                      EKTOMORFİ
+                    <text x="222" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
+                      EKTOMORFİ (İncelik)
                     </text>
 
+                    {/* Progress Trend Line */}
                     <polyline
                       points={`${pt1.x},${pt1.y} ${pt2.x},${pt2.y} ${pt3.x},${pt3.y}`}
                       fill="none"
                       stroke="#e11d48"
-                      strokeWidth="1.5"
+                      strokeWidth="2"
+                      strokeDasharray="2,2"
                     />
 
-                    <circle cx={ptRef.x} cy={ptRef.y} r="4.5" fill="#10b981" stroke="#fff" strokeWidth="1" />
-                    <text x={ptRef.x + 6} y={ptRef.y + 3} className="text-[7px] font-bold fill-emerald-700">
-                      {eliteRef.sport}
+                    {/* Reference Point */}
+                    <circle cx={ptRef.x} cy={ptRef.y} r="5" fill="#10b981" stroke="#ffffff" strokeWidth="1.5" />
+                    <text x={ptRef.x + 7} y={ptRef.y + 3} className="text-[7.5px] font-black fill-emerald-800">
+                      Elit {eliteRef.sport}
                     </text>
 
-                    <circle cx={pt1.x} cy={pt1.y} r="3.5" fill="#64748b" />
-                    <circle cx={pt2.x} cy={pt2.y} r="3.5" fill="#2563eb" />
-                    <circle cx={pt3.x} cy={pt3.y} r="5" fill="#e11d48" stroke="#fff" strokeWidth="1.5" />
-                    <text x={pt3.x - 10} y={pt3.y - 7} className="text-[8px] font-extrabold fill-rose-700">
+                    {/* Test Points */}
+                    <circle cx={pt1.x} cy={pt1.y} r="4" fill="#64748b" stroke="#ffffff" strokeWidth="1" />
+                    <circle cx={pt2.x} cy={pt2.y} r="4" fill="#2563eb" stroke="#ffffff" strokeWidth="1" />
+                    <circle cx={pt3.x} cy={pt3.y} r="6" fill="#e11d48" stroke="#ffffff" strokeWidth="1.8" />
+                    <text x={pt3.x - 12} y={pt3.y - 8} className="text-[8.5px] font-black fill-rose-700 font-mono">
                       III ({m3.endo}-{m3.meso}-{m3.ecto})
                     </text>
                   </svg>
                 </div>
               </div>
 
-              {/* Elite Reference Comparison Bar */}
+              {/* Left Column Bottom: High-Impact Elite Reference & Branch Match Callout */}
               <div
-                className={`mt-3 pt-3 border-t border-slate-200 flex items-center justify-between px-4 py-2.5 rounded-lg ${activeTemplate.bannerClass}`}
-                style={{
-                  backgroundColor: effectivePrimaryHex,
-                  borderColor: effectiveSecondaryHex,
-                }}
+                className="mt-3 p-3.5 rounded-2xl border-2 border-emerald-400 bg-slate-900 flex items-center justify-between gap-3 text-white shadow-2xs"
+                style={{ backgroundColor: '#0f172a' }}
               >
-                <div>
-                  <div className="text-[10px] text-white/70 uppercase font-bold">
-                    {eliteRef.sport} Referans Karşılaştırması
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono text-[9px] font-black uppercase tracking-wider">
+                      ELİT BRANŞ UYUMU
+                    </span>
+                    <span className="text-[10px] text-emerald-300 uppercase font-extrabold tracking-wider">
+                      {eliteRef.sport} Referansı
+                    </span>
                   </div>
-                  <div className="text-xs font-mono mt-0.5 text-white">
-                    Sporcu: <strong style={{ color: effectiveSecondaryHex }}>{m3.endo} / {m3.meso} / {m3.ecto}</strong> · Elit Ref:{' '}
-                    <strong className="text-emerald-300">{eliteRef.endo} / {eliteRef.meso} / {eliteRef.ecto}</strong>
+                  <div className="text-xs font-mono text-white">
+                    Sporcu: <strong className="text-amber-300 font-black">{m3.endo} - {m3.meso} - {m3.ecto}</strong>
+                    <span className="mx-1.5 text-white/40">|</span>
+                    Elit Norm: <strong className="text-emerald-300 font-black">{eliteRef.endo} - {eliteRef.meso} - {eliteRef.ecto}</strong>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-[9px] text-white/70 uppercase font-bold">Branş Uyum Puanı</div>
-                  <div className="text-xl font-black font-mono text-emerald-400">{eliteRef.refScore}</div>
+                <div className="flex items-center gap-2.5 bg-emerald-950 border border-emerald-400/60 px-3 py-1.5 rounded-xl shrink-0">
+                  <div className="text-right">
+                    <div className="text-[8.5px] text-emerald-200 uppercase font-black tracking-wider">Branş Uyumu</div>
+                    <div className="text-2xl font-black font-mono text-emerald-300 leading-none mt-0.5">
+                      %{primaryBranchScore}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT: 5. Bileşenlerin Yönü ve Derecesi Değerlendirmesi (Potansiyel) */}
-            <div className="border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-200 pb-2">
-                  5. Bileşenlerin Yönü ve Derecesi (Potansiyel Analizi)
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-                  Performans; Kuvvet, Sürat ve Dayanıklılık bileşenlerinin karşılıklı etkileşimiyle belirlenir. Aşağıdaki vektör sporcunun baskın atletik yönünü gösterir.
-                </p>
-
-                {/* Summary Strip */}
-                <div className="grid grid-cols-5 gap-1.5 mt-3 bg-slate-100 p-2 rounded-lg text-center border border-slate-200">
-                  <div>
-                    <div className="text-[9px] font-bold text-slate-500 uppercase">Yön</div>
-                    <div className="text-xs font-black font-mono text-slate-900">{currentReport.potential.directionDeg}°</div>
+            {/* RIGHT COLUMN: 5. POTANSİYEL BİLEŞENLERİ */}
+            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs">
+              <div className="space-y-3">
+                {/* Column Section Header */}
+                <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
+                      BÖLÜM 5.1
+                    </span>
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
+                      Potansiyel Bileşenlerin Yönü
+                    </h3>
                   </div>
-                  <div>
-                    <div className="text-[9px] font-bold text-slate-500 uppercase">Sürat</div>
-                    <div className="text-xs font-black font-mono text-slate-900">{currentReport.potential.speedScore}</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] font-bold text-slate-500 uppercase">Kuvvet</div>
-                    <div className="text-xs font-black font-mono text-slate-900">{currentReport.potential.strengthScore}</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] font-bold text-slate-500 uppercase">Dayanıklılık</div>
-                    <div className="text-xs font-black font-mono text-slate-900">{currentReport.potential.enduranceScore}</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] font-bold text-slate-500 uppercase">Baskın Tür</div>
-                    <div className="text-[10px] font-bold text-blue-700 truncate" title={currentReport.potential.dominantType}>
-                      {currentReport.potential.dominantType}
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 font-mono">
+                    Kuvvet · Sürat · Dayanıklılık
+                  </span>
                 </div>
 
-                {/* Polar Vector Diagram SVG */}
-                <div className="mt-3 flex flex-col items-center bg-slate-50 rounded-lg p-3 border border-slate-200/70">
-                  <svg viewBox="0 0 260 200" className="w-full max-w-[260px] h-auto">
+                <p className="text-[11px] text-slate-600 leading-snug">
+                  Performans; Kuvvet, Sürat ve Dayanıklılık bileşenlerinin vektörel etkileşimiyle belirlenir. Sporcunun baskın gelişim yönü aşağıda analiz edilmiştir.
+                </p>
+
+                {/* Matching Height Potential Summary Table (Symmetrical to Left Table) */}
+                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr
+                        className="text-[10px] uppercase font-bold tracking-wider"
+                        style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
+                      >
+                        <th className="py-2 px-2.5 text-left">Bileşen Parametresi</th>
+                        <th className="py-2 px-1.5 text-center">Endeks</th>
+                        <th className="py-2 px-2.5 text-right">Performans Düzeyi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono bg-white text-[11px]">
+                      <tr className="hover:bg-slate-50">
+                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">1. Sürat Bileşeni</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-blue-700">{currentReport.potential.speedScore}</td>
+                        <td className="py-2 px-2.5 text-right font-sans font-bold text-emerald-700">Yüksek İvmelenme</td>
+                      </tr>
+                      <tr className="hover:bg-slate-50">
+                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">2. Kuvvet Bileşeni</td>
+                        <td className="py-2 px-1.5 text-center font-extrabold text-indigo-700">{currentReport.potential.strengthScore}</td>
+                        <td className="py-2 px-2.5 text-right font-sans font-bold text-indigo-700">Patlayıcı Reaktif Güç</td>
+                      </tr>
+                      <tr className="bg-indigo-50/70 border-l-4 border-l-indigo-600 font-bold">
+                        <td className="py-2 px-2.5 font-sans font-black text-indigo-950">3. Vektörel Baskın Tür</td>
+                        <td className="py-2 px-1.5 text-center text-indigo-950 font-black">{currentReport.potential.directionDeg}°</td>
+                        <td className="py-2 px-2.5 text-right font-sans font-black text-indigo-950">
+                          {currentReport.potential.dominantType}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Polar Vector Diagram Card */}
+                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 flex flex-col items-center justify-center">
+                  <div className="w-full flex items-center justify-between px-1 mb-2">
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider font-mono">
+                      VEKTÖREL POTANSİYEL DİYAGRAMI
+                    </span>
+                    <div className="flex items-center gap-2 text-[9px] font-bold font-mono">
+                      <span className="text-indigo-700">● Kuvvet</span>
+                      <span className="text-rose-700">● Sürat</span>
+                      <span className="text-emerald-700">● Dayanıklılık</span>
+                    </div>
+                  </div>
+
+                  <svg
+                    width="240"
+                    height="180"
+                    viewBox="0 0 260 200"
+                    className="w-[240px] h-[180px] mx-auto block overflow-visible"
+                  >
                     <polygon
                       points="130,18 32,175 228,175"
-                      fill="none"
+                      fill="#ffffff"
                       stroke="#cbd5e1"
                       strokeWidth="1.5"
                       strokeDasharray="4,3"
@@ -3499,107 +4032,239 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                     <line x1="130" y1="35" x2="130" y2="180" stroke="#cbd5e1" />
                     <line x1="55" y1="115" x2="205" y2="115" stroke="#cbd5e1" />
 
-                    <text x="130" y="13" textAnchor="middle" className="text-[9px] font-extrabold fill-indigo-700">
-                      KUVVET (Landing / Reactive Power)
+                    <text x="130" y="12" textAnchor="middle" className="text-[8.5px] font-black fill-indigo-800 uppercase">
+                      KUVVET (Patlayıcı Güç)
                     </text>
-                    <text x="45" y="192" textAnchor="middle" className="text-[9px] font-extrabold fill-rose-700">
-                      SÜRAT (Acceleration)
+                    <text x="40" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-rose-800 uppercase">
+                      SÜRAT (İvmelenme)
                     </text>
-                    <text x="210" y="192" textAnchor="middle" className="text-[9px] font-extrabold fill-emerald-700">
-                      DAYANIKLILIK (Aerobic)
+                    <text x="215" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-emerald-800 uppercase">
+                      DAYANIKLILIK (Aerobik)
                     </text>
 
+                    {/* Vector Arrow Line */}
                     <line
                       x1="130"
                       y1="115"
                       x2="88"
                       y2="62"
                       stroke="#0f172a"
-                      strokeWidth="2.5"
+                      strokeWidth="3"
                     />
-                    <circle cx="88" cy="62" r="4.5" fill="#e11d48" />
-                    <circle cx="130" cy="115" r="3.5" fill="#0f172a" />
-                    <text x="68" y="54" className="text-[8px] font-bold fill-slate-900">
+                    <circle cx="88" cy="62" r="5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.5" />
+                    <circle cx="130" cy="115" r="4" fill="#0f172a" />
+                    <text x="65" y="52" className="text-[8.5px] font-black fill-slate-900 font-mono">
                       {currentReport.potential.directionDeg}° ({currentReport.potential.dominantType.split(' ')[0]})
                     </text>
                   </svg>
                 </div>
               </div>
 
-              {/* 1-9 Component Scale Bars (Endo / Meso / Ecto — Vector SVG for Print) */}
-              <div className="mt-3 space-y-2 pt-2 border-t border-slate-200 text-xs">
+              {/* Right Column Bottom: 1-9 Somatotype Scale Sliders */}
+              <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 text-xs">
                 {[
-                  { label: 'Endomorfi (Yağlılık)', val: m3.endo, ref: eliteRef.endo, hex: '#e11d48' },
-                  { label: 'Mezomorfi (Kas-İskelet)', val: m3.meso, ref: eliteRef.meso, hex: '#2563eb' },
-                  { label: 'Ektomorfi (Doğrusallık)', val: m3.ecto, ref: eliteRef.ecto, hex: '#059669' },
+                  { label: 'Endomorfi (Yağlık)', val: m3.endo, hex: '#e11d48' },
+                  { label: 'Mezomorfi (Kas-İskelet)', val: m3.meso, hex: '#2563eb' },
+                  { label: 'Ektomorfi (Doğrusallık)', val: m3.ecto, hex: '#059669' },
                 ].map((s, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="w-36 text-[11px] font-semibold text-slate-700 shrink-0">{s.label}</span>
-                    <svg viewBox="0 0 200 8" preserveAspectRatio="none" className="flex-1 h-2 rounded-full overflow-hidden block">
-                      <rect x="0" y="0" width="200" height="8" rx="4" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="1" />
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-32 text-[10.5px] font-bold text-slate-700 shrink-0">{s.label}</span>
+                    <svg viewBox="0 0 160 8" preserveAspectRatio="none" className="flex-1 h-2 rounded-full overflow-hidden block">
+                      <rect x="0" y="0" width="160" height="8" rx="4" fill="#e2e8f0" />
                       <rect
                         x="0"
                         y="0"
-                        width={Math.max(6, Math.min(200, (s.val / 9) * 200))}
+                        width={Math.max(6, Math.min(160, (s.val / 9) * 160))}
                         height="8"
                         rx="4"
                         fill={s.hex}
                       />
                     </svg>
-                    <span className="w-16 text-right font-mono text-[11px] font-bold text-slate-900">
-                      {s.val} <span className="text-slate-400 font-normal">/ 9</span>
+                    <span className="w-12 text-right font-mono text-[11px] font-black text-slate-900">
+                      {s.val} <span className="text-slate-400 font-normal text-[9px]">/ 9</span>
                     </span>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Bottom Full-Page Synthesis Section: 3.2 Branş Uygunluk Matrisi & Morfolojik Yönlendirme */}
-        <div className="mt-4 pt-3.5 border-t-2 border-slate-900 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-              3.2 Çoklu Branş Morfolojik &amp; Biyomotor Uygunluk Matrisi
-            </h3>
-            <span className="text-[10px] font-mono font-semibold text-slate-500">
-              Somatotip ({m3.endo}-{m3.meso}-{m3.ecto}) + Motor Vektör ({currentReport.potential.directionDeg}°) Sentezi
-            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4 gap-3">
-            {branchSuitabilityList.map((item, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-extrabold text-slate-900 truncate">{item.branch}</span>
-                    <span className="text-xs font-black font-mono text-emerald-700">%{item.score}</span>
+          {/* ========================================================================
+              CENTERPIECE VISUAL FOCAL POINT: BÖLÜM 3.2 BRANŞ UYUMU & YETENEK VİTRİNİ
+              ======================================================================== */}
+          <div className="pt-2 border-t-2 border-slate-900 space-y-3">
+            <div
+              className="rounded-2xl border-2 border-emerald-500 bg-slate-900 p-4 text-white shadow-2xs space-y-3"
+              style={{ backgroundColor: '#0f172a' }}
+            >
+              {/* Top Header Ribbon */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 font-black text-[10.5px] font-mono uppercase tracking-wider">
+                    BÖLÜM 3.2 · BRANŞ UYUM VİTRİNİ
+                  </span>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
+                      Sportif Branş Uyumu &amp; Morfolojik Yetenek Yönlendirme Analizi
+                    </h3>
+                    <p className="text-[10px] text-emerald-200 font-medium">
+                      Somatotip ({m3.endo}-{m3.meso}-{m3.ecto}) ve Motor Potansiyel Vektörü ({currentReport.potential.directionDeg}°) verilerine göre sporcunun branş uygunluk derecesi
+                    </p>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">{item.note}</div>
                 </div>
-                <svg viewBox="0 0 200 7" preserveAspectRatio="none" className="w-full h-1.5 rounded-full mt-2 overflow-hidden block">
-                  <rect x="0" y="0" width="200" height="7" rx="3.5" fill="#e2e8f0" />
-                  <rect
-                    x="0"
-                    y="0"
-                    width={Math.max(20, Math.min(200, item.score * 2))}
-                    height="7"
-                    rx="3.5"
-                    fill={idx === 0 ? '#059669' : '#2563eb'}
-                  />
-                </svg>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-xl bg-emerald-950 border border-emerald-400 text-emerald-300 font-mono text-xs font-black">
+                    ★ BİRİNCİL BRANŞ UYUMU: %{primaryBranchScore}
+                  </span>
+                </div>
               </div>
-            ))}
-          </div>
 
-          <div className="p-3 rounded-xl bg-slate-100/90 border border-slate-200 text-[11px] text-slate-700 leading-relaxed flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <strong className="text-slate-900">Morfolojik ve Motorsal Yönlendirme:</strong> Sporcunun{' '}
-              <strong>{m3.category}</strong> beden tipi ve <strong>{currentReport.potential.dominantType}</strong> baskın bileşen yönü; patlayıcı kuvvet, reaktif çeviklik ve hız gerektiren pozisyonlarda yüksek gelişim potansiyeline işaret etmektedir.
+              {/* Main Focal Point Layout: Left 5 Cols Giant Radial Score Showcase + Right 7 Cols Multi-Branch Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-3.5 items-stretch">
+                {/* LEFT 5 COLS: HERO RADIAL GAUGE SPOTLIGHT FOR %94 BRANŞ UYUMU */}
+                <div
+                  className="lg:col-span-5 print:col-span-5 rounded-2xl bg-emerald-950 border-2 border-emerald-400 p-3.5 flex flex-col justify-between relative overflow-hidden"
+                  style={{ backgroundColor: '#064e3b' }}
+                >
+                  <div className="flex items-center gap-3.5">
+                    {/* High-Precision Vector Radial Gauge */}
+                    <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                      <svg
+                        width="112"
+                        height="112"
+                        viewBox="0 0 120 120"
+                        className="w-28 h-28 block"
+                      >
+                        {/* Outer subtle decorative ring */}
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="#34d399" strokeOpacity="0.3" strokeWidth="1.5" strokeDasharray="3,3" />
+                        {/* Background track */}
+                        <circle cx="60" cy="60" r="46" fill="none" stroke="#0f172a" strokeWidth="10" />
+                        {/* Active progress arc */}
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="46"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="10"
+                          strokeLinecap="round"
+                          strokeDasharray={`${(primaryBranchScore / 100) * 289} 289`}
+                          transform="rotate(-90 60 60)"
+                        />
+                        {/* Center Score Text */}
+                        <text x="60" y="57" textAnchor="middle" className="text-[24px] font-black font-mono fill-white">
+                          %{primaryBranchScore}
+                        </text>
+                        <text x="60" y="72" textAnchor="middle" className="text-[8px] font-black font-mono fill-emerald-300 uppercase tracking-widest">
+                          BRANŞ UYUMU
+                        </text>
+                        <rect x="30" y="79" width="60" height="13" rx="6.5" fill="#10b981" />
+                        <text x="60" y="88" textAnchor="middle" className="text-[7px] font-black font-mono fill-slate-950 uppercase">
+                          ELİT UYUM
+                        </text>
+                      </svg>
+                    </div>
+
+                    {/* Right of Gauge: Primary Branch Verdict & Details */}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <span className="inline-block px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-mono text-[9px] font-black uppercase tracking-wider">
+                        BİRİNCİL BRANŞ POTANSİYELİ
+                      </span>
+                      <div className="text-sm sm:text-base font-black text-white leading-tight">
+                        {currentReport.sportBranch}
+                      </div>
+                      <p className="text-[10px] text-slate-100 leading-snug">
+                        Sporcunun beden tipi ve motor vektörü, <strong className="text-emerald-300">{eliteRef.sport}</strong> elit sporcu referansıyla <strong className="text-amber-300">%{primaryBranchScore}</strong> oranında örtüşmektedir.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bottom 3 Mini Telemetry Pills inside Spotlight */}
+                  <div className="grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-emerald-800 text-center font-mono">
+                    <div className="bg-slate-900/80 rounded-lg p-1.5 border border-emerald-700">
+                      <div className="text-[8px] text-slate-300 font-sans font-bold uppercase">Elit Eşik</div>
+                      <div className="text-[11px] font-black text-white mt-0.5">≥%85</div>
+                    </div>
+                    <div className="bg-slate-900/80 rounded-lg p-1.5 border border-emerald-500">
+                      <div className="text-[8px] text-emerald-200 font-sans font-bold uppercase">Eşik Farkı</div>
+                      <div className="text-[11px] font-black text-emerald-300 mt-0.5">
+                        +{Math.max(0, primaryBranchScore - 85)} Puan
+                      </div>
+                    </div>
+                    <div className="bg-slate-900/80 rounded-lg p-1.5 border border-amber-400">
+                      <div className="text-[8px] text-amber-200 font-sans font-bold uppercase">Seviye</div>
+                      <div className="text-[11px] font-black text-amber-300 mt-0.5">Çok Yüksek</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT 7 COLS: 4 SPORT BRANCH SUITABILITY CARDS (2x2 GRID) */}
+                <div className="lg:col-span-7 print:col-span-7 grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-2.5">
+                  {branchSuitabilityList.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-xl flex flex-col justify-between shadow-2xs text-slate-900 ${item.cardStyle}`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                          <span className={`px-2 py-0.5 rounded text-[8.5px] font-mono font-black uppercase tracking-wider ${item.rankBadgeStyle}`}>
+                            {item.rankBadge}
+                          </span>
+                          <span className="text-[9px] font-mono font-extrabold text-slate-600">
+                            {item.tierLabel}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-xs font-black text-slate-900">
+                              {item.icon} {item.branch}
+                            </div>
+                            <div className="text-[9.5px] font-semibold text-slate-600 mt-0.5">
+                              {item.note}
+                            </div>
+                          </div>
+                          <div className={`px-2.5 py-1 rounded-xl border font-mono text-sm font-black shrink-0 ${item.scoreBadgeStyle}`}>
+                            %{item.score}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 pt-1.5 border-t border-slate-200/80">
+                        <div className="flex justify-between text-[8.5px] font-mono font-bold text-slate-500 mb-1">
+                          <span>Branş Uyum Derecesi</span>
+                          <span className="text-slate-900 font-black">%{item.score} (Elit Eşik: %85)</span>
+                        </div>
+                        <svg viewBox="0 0 200 8" preserveAspectRatio="none" className="w-full h-2 rounded-full overflow-visible block">
+                          <rect x="0" y="0" width="200" height="8" rx="4" fill="#cbd5e1" />
+                          <rect
+                            x="0"
+                            y="0"
+                            width={Math.max(20, Math.min(200, item.score * 2))}
+                            height="8"
+                            rx="4"
+                            fill={item.barColor}
+                          />
+                          <line x1="170" y1="-1" x2="170" y2="9" stroke="#0f172a" strokeWidth="2" />
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom Synthesis Bar inside the Showcase */}
+              <div className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-[10.5px] text-slate-200 leading-relaxed flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <strong className="font-extrabold text-emerald-300">Yetenek &amp; Branş Yönlendirme Özeti: </strong>
+                  Sporcunun <strong className="text-white">{m3.category}</strong> beden tipi ve <strong className="text-amber-300">{currentReport.potential.dominantType}</strong> baskın bileşen yönü; <strong className="text-white">%{primaryBranchScore}</strong> branş uyumuyla uzun vadeli atletik gelişimde yüksek başarı potansiyeline işaret etmektedir.
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 font-mono text-[9.5px] font-black shrink-0 uppercase">
+                  BRANŞ UYGUNLUĞU: ELİT (%{primaryBranchScore})
+                </span>
+              </div>
             </div>
-            <span className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold shrink-0 ${activeTemplate.badgeColor}`}>
-              BRANŞ UYUMU: %{eliteRef.refScore}
-            </span>
           </div>
         </div>
 
@@ -3947,87 +4612,213 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             {/* Left 7 Cols: Ipsative Target Table & Group Ranking */}
             <div className="lg:col-span-7 print:col-span-7 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-slate-200 pb-2.5">
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900">
-                      8. İpsatif Değerlendirme &amp; Beklenen Performans Hedefi
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Sporcunun kendi önceki ölçümlerine göre {currentReport.nextTargetDate} testinde beklenen gelişim hedefi
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-[9.5px] font-black uppercase">
+                        BÖLÜM 8 &amp; 15
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                        Test Sonuçları (1., 2., 3. Ölçüm), Hedefler ve Gelişim Durumu
+                      </h3>
+                    </div>
+                    <p className="text-[10.5px] text-slate-600 mt-0.5">
+                      Sporcunun 3 ölçümdeki ilerlemesi, {currentReport.nextTargetDate} hedefi ve ilk bakışta odak/takip durumu
                     </p>
                   </div>
+                  <div className="flex items-center gap-1 text-[9px] font-mono font-black">
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">Hedefe Ulaştı ✓</span>
+                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Takip Edilmeli</span>
+                    <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 border border-rose-300">Gelişim Göstermeli</span>
+                  </div>
                 </div>
 
-                <table className="w-full text-xs border-collapse mt-3">
-                  <thead>
-                    <tr
-                      className={`text-[10px] uppercase ${activeTemplate.tableHeadClass}`}
-                      style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
-                    >
-                      <th className="py-2 px-2.5 text-left rounded-tl-lg">Protokol / Test</th>
-                      <th className="py-2 px-2 text-center">I. Ölçüm</th>
-                      <th className="py-2 px-2 text-center">II. Ölçüm</th>
-                      <th className="py-2 px-2 text-center">III. Ölçüm</th>
-                      <th
-                        className="py-2 px-2.5 text-center text-white"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.16)', color: effectiveSecondaryHex }}
+                <div className="overflow-x-auto rounded-xl border-2 border-slate-200 mt-3 bg-white shadow-2xs">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr
+                        className={`text-[9.5px] font-black uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
+                        style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
                       >
-                        Hedef Performans
-                      </th>
-                      <th className="py-2 px-2 text-center rounded-tr-lg">Grup Sırası</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 font-mono">
-                    {currentReport.ipsativeTargets.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="py-2 px-2.5 font-sans font-bold text-slate-900">
-                          {row.parameter} <span className="text-[10px] font-normal text-slate-400">({row.unit})</span>
-                        </td>
-                        <td className="py-2 px-2 text-center text-slate-600">{row.m1}</td>
-                        <td className="py-2 px-2 text-center text-slate-700">{row.m2}</td>
-                        <td className="py-2 px-2 text-center font-bold text-slate-900">{row.m3}</td>
-                        <td className={`py-2 px-2.5 text-center font-black text-sm ${activeTemplate.accentTextClass} ${activeTemplate.accentBgClass}`}>
-                          {row.target}
-                        </td>
-                        <td className="py-2 px-2 text-center text-slate-600 font-bold">{row.groupRank}</td>
+                        <th className="py-2.5 px-2.5 text-left rounded-tl-lg">Protokol / Test</th>
+                        <th className="py-2.5 px-1.5 text-center">1. Test</th>
+                        <th className="py-2.5 px-1.5 text-center">2. Test</th>
+                        <th
+                          className="py-2.5 px-2 text-center font-black"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.18)', color: '#ffffff' }}
+                        >
+                          3. Test (Son)
+                        </th>
+                        <th
+                          className="py-2.5 px-2 text-center font-black"
+                          style={{ backgroundColor: 'rgba(16,185,129,0.28)', color: '#ffffff' }}
+                        >
+                          Hedef Performans
+                        </th>
+                        <th className="py-2.5 px-2 text-center rounded-tr-lg">Hedef &amp; Gelişim Durumu</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-mono">
+                      {currentReport.ipsativeTargets.map((row, idx) => {
+                        const lowerParam = row.parameter.toLowerCase();
+                        const isPriorityDev =
+                          lowerParam.includes('sırt') ||
+                          lowerParam.includes('aerobik') ||
+                          lowerParam.includes('denge');
+                        const isMaintainWatch =
+                          lowerParam.includes('esneklik') ||
+                          lowerParam.includes('uzun atlama');
+
+                        const rowStyle = isPriorityDev
+                          ? 'bg-rose-50/50 border-l-4 border-l-rose-600'
+                          : isMaintainWatch
+                          ? 'bg-amber-50/40 border-l-4 border-l-amber-500'
+                          : 'bg-emerald-50/45 border-l-4 border-l-emerald-600';
+
+                        const statusLabel = isPriorityDev
+                          ? 'Gelişim Göstermeli'
+                          : isMaintainWatch
+                          ? 'Takip Edilmeli'
+                          : 'Hedefe Ulaştı ✓';
+
+                        const statusBadge = isPriorityDev
+                          ? 'bg-rose-600 text-white border-rose-700'
+                          : isMaintainWatch
+                          ? 'bg-amber-500 text-slate-950 border-amber-600'
+                          : 'bg-emerald-600 text-white border-emerald-700';
+
+                        const progressPct = Math.min(
+                          100,
+                          Math.max(25, Math.round((row.m3 / Math.max(0.01, row.target)) * 100))
+                        );
+
+                        const netGain = +(row.m3 - row.m1).toFixed(1);
+
+                        return (
+                          <tr key={idx} className={`transition-colors ${rowStyle}`}>
+                            <td className="py-2.5 px-2.5 font-sans border-r border-slate-200/80">
+                              <div className="font-extrabold text-slate-900 text-xs">
+                                {row.parameter}{' '}
+                                <span className="text-[10px] font-normal text-slate-500">({row.unit})</span>
+                              </div>
+                              <div className="text-[9.5px] font-mono font-bold text-slate-500 mt-0.5">
+                                Grup Sırası: <strong className="text-slate-800">{row.groupRank}</strong> · Δ (1→3):{' '}
+                                <strong className="text-emerald-700">
+                                  {netGain >= 0 ? `+${netGain}` : netGain} {row.unit}
+                                </strong>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-1.5 text-center text-slate-600 font-bold border-r border-slate-200/80">
+                              {row.m1}
+                            </td>
+                            <td className="py-2.5 px-1.5 text-center text-blue-900 font-bold bg-blue-50/30 border-r border-slate-200/80">
+                              {row.m2}
+                            </td>
+                            <td className="py-2.5 px-2 text-center border-r border-slate-200/80 bg-white/80">
+                              <span className="font-black text-xs text-slate-950 bg-white px-2 py-0.5 rounded border-2 border-slate-400 inline-block shadow-2xs">
+                                {row.m3}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 text-center border-r border-slate-200/80 bg-emerald-50/40">
+                              <div className="font-black text-xs text-emerald-950 bg-white px-2 py-0.5 rounded border-2 border-emerald-500 inline-block shadow-2xs">
+                                🎯 {row.target}
+                              </div>
+                              <svg viewBox="0 0 100 5" preserveAspectRatio="none" className="w-20 mx-auto h-1.5 rounded-full overflow-hidden block mt-1">
+                                <rect x="0" y="0" width="100" height="5" rx="2.5" fill="#e2e8f0" />
+                                <rect
+                                  x="0"
+                                  y="0"
+                                  width={progressPct}
+                                  height="5"
+                                  rx="2.5"
+                                  fill={isPriorityDev ? '#e11d48' : isMaintainWatch ? '#f59e0b' : '#059669'}
+                                />
+                              </svg>
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-sans">
+                              <span className={`inline-block px-2 py-0.5 rounded-md text-[9.5px] font-extrabold uppercase tracking-wider border shadow-2xs ${statusBadge}`}>
+                                {statusLabel}
+                              </span>
+                              <div className="text-[9px] font-bold text-slate-600 mt-0.5">
+                                {isPriorityDev
+                                  ? 'Öncelikli Antrenman Odağı'
+                                  : isMaintainWatch
+                                  ? 'Düzenli İzlem & Koruma'
+                                  : 'Üst Seviye Korunmalı'}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              {/* Group & General Standing Strip */}
-              <div
-                className={`mt-4 grid grid-cols-2 gap-3 p-3.5 rounded-lg ${activeTemplate.bannerClass}`}
-                style={{
-                  backgroundColor: effectivePrimaryHex,
-                  borderColor: effectiveSecondaryHex,
-                }}
-              >
-                <div className="flex items-center justify-between border-r border-white/15 pr-3">
-                  <div>
-                    <div className="text-[10px] text-white/70 uppercase font-bold">Gruptaki Sporcu &amp; Sırası</div>
-                    <div className="text-[11px] text-white/85 mt-0.5">
-                      {g.groupNo}. Grup ({g.ageRange})
+              {/* Group Comparison & Standing Card (Grup Karşılaştırması) */}
+              {(() => {
+                const grpCount = g.groupAthleteCount || 15;
+                const grpRank = g.groupRank || 1;
+                const athScore = currentReport.scoreHistory.p3Score || 88;
+                const grpAvg = g.groupAverageScore ?? 72;
+                const grpPos =
+                  g.groupPositionPercentile ??
+                  Math.min(99, Math.max(10, Math.round(((grpCount - grpRank + 0.1) / Math.max(1, grpCount)) * 100)));
+                return (
+                  <div
+                    className={`mt-3 p-3.5 rounded-xl border-2 space-y-2.5 ${activeTemplate.bannerClass}`}
+                    style={{
+                      backgroundColor: effectivePrimaryHex,
+                      borderColor: effectiveSecondaryHex,
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-2">
+                      <div>
+                        <div className="text-[10.5px] font-black uppercase tracking-wider text-amber-300">
+                          GRUP KARŞILAŞTIRMASI · {g.groupNo}. GRUP ({g.ageRange})
+                        </div>
+                        <div className="text-[10px] text-white/80">
+                          Sporcunun bulunduğu grup içerisindeki sıralaması, grup ortalaması ve yüzdelik konumu
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono text-[10px] font-black">
+                        Grup İçindeki Konum: %{grpPos}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 print:grid-cols-5 gap-2 text-center font-mono">
+                      <div className="bg-white/10 rounded-lg p-2 border border-white/15">
+                        <div className="text-[8.5px] font-sans font-bold text-white/75 uppercase">Grubundaki Sporcu</div>
+                        <div className="text-base font-black text-white mt-0.5">{grpCount}</div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-2 border border-amber-400/40">
+                        <div className="text-[8.5px] font-sans font-bold text-amber-200 uppercase">Genel Sıralama</div>
+                        <div className="text-base font-black text-amber-300 mt-0.5">{grpRank}.</div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-2 border border-sky-400/40">
+                        <div className="text-[8.5px] font-sans font-bold text-sky-200 uppercase">Sportif Performans</div>
+                        <div className="text-base font-black text-sky-300 mt-0.5">%{athScore}</div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-2 border border-white/15">
+                        <div className="text-[8.5px] font-sans font-bold text-white/75 uppercase">Grup Ortalaması</div>
+                        <div className="text-base font-black text-white mt-0.5">%{grpAvg}</div>
+                      </div>
+                      <div className="bg-emerald-500/20 rounded-lg p-2 border border-emerald-400/50">
+                        <div className="text-[8.5px] font-sans font-bold text-emerald-200 uppercase">Grup İçi Konum</div>
+                        <div className="text-base font-black text-emerald-300 mt-0.5">%{grpPos}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-white/90 pt-1 border-t border-white/10">
+                      <span>• Grubundaki sporcu sayısı: <strong>{grpCount}</strong></span>
+                      <span>• Genel sıralama: <strong>{grpRank}.</strong></span>
+                      <span>• Sportif performans: <strong>%{athScore}</strong></span>
+                      <span>• Grup ortalaması: <strong>%{grpAvg}</strong></span>
+                      <span>• Grup içindeki konum: <strong>%{grpPos}</strong></span>
                     </div>
                   </div>
-                  <div
-                    className="text-xl font-black font-mono"
-                    style={{ color: effectiveSecondaryHex }}
-                  >
-                    {g.groupAthleteCount} / {g.groupRank}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pl-1">
-                  <div>
-                    <div className="text-[10px] text-white/70 uppercase font-bold">Genel Sporcu &amp; Sırası</div>
-                    <div className="text-[11px] text-white/85 mt-0.5">Tüm Yaş Grupları Genel</div>
-                  </div>
-                  <div className="text-xl font-black font-mono text-emerald-300">
-                    {g.totalAthleteCount} / {g.totalRank}
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
             {/* Right 5 Cols: Peak Height Velocity (PHV) & Sensitive Periods */}
@@ -4104,54 +4895,178 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
           </div>
         </div>
 
-        {/* Bottom Full-Page Section: AI Recommendations + Expert Evaluation + Weekly Microcycle Plan */}
+        {/* Bottom Full-Page Section: 10. Öncelikli Gelişim Alanları + Expert Evaluation + Weekly Microcycle Plan */}
         <div className="mt-4 border-t-2 border-slate-900 pt-3.5 space-y-3">
-          <div className="border border-slate-200 rounded-xl p-3.5 bg-white">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                  9. YAPAY ZEKA TABANLI PERFORMANS ÖNERİLERİ VE GELİŞİME AÇIK YÖNLER
+          <div className="border-2 border-rose-300 rounded-2xl p-3.5 bg-rose-50/40 shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-rose-200/80 pb-2.5 mb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-mono text-[10.5px] font-black uppercase tracking-wider shadow-2xs">
+                  BÖLÜM 10
                 </span>
+                <div>
+                  <span className="text-xs sm:text-[13px] font-black text-slate-900 uppercase tracking-tight block">
+                    10. ÖNCELİKLİ GELİŞİM ALANLARI &amp; İLK BAKIŞTA ANTRENMAN ODAK PLANI
+                  </span>
+                  <span className="text-[10px] text-slate-600 font-medium block">
+                    Sporcunun ölçüm verilerine göre ilk bakışta odaklanılması gereken en kritik 3 parametre ve bireysel gelişim reçetesi
+                  </span>
+                </div>
               </div>
-              <span className="text-[10px] font-mono font-semibold text-slate-500">
-                Otomatik Metrik &amp; SD Sapma Analizi
-              </span>
+              <div className="flex items-center gap-1.5 text-[9.5px] font-mono font-bold">
+                <span className="px-2 py-0.5 rounded bg-rose-600 text-white">1. Kritik Odak</span>
+                <span className="px-2 py-0.5 rounded bg-amber-500 text-white">2. Yüksek Odak</span>
+                <span className="px-2 py-0.5 rounded bg-indigo-600 text-white">3. Gelişim Odağı</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-2.5 text-xs">
-              {activeAiAnalysis.improvementAreas.slice(0, 3).map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/90 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-bold text-slate-900 text-[11px] truncate">
-                        {item.metricName}
-                      </span>
-                      <span
-                        className={`text-[9px] font-mono font-bold ${
-                          item.priority.includes('Yüksek')
-                            ? 'text-rose-700'
-                            : 'text-amber-700'
-                        }`}
-                      >
-                        {item.priority}
-                      </span>
-                    </div>
-                    <div className="text-[10px] font-mono text-slate-600 mt-0.5">
-                      Mevcut: <strong>{item.currentValue}</strong> → Hedef:{' '}
-                      <strong className="text-emerald-700">{item.targetValue}</strong> (%{item.percentile})
-                    </div>
-                    <p className="text-[10px] text-slate-600 mt-1 leading-snug line-clamp-2">
-                      {item.drillRecommendation}
-                    </p>
-                  </div>
-                  <div className="mt-1.5 pt-1 border-t border-slate-200/70 text-[9px] font-mono font-semibold text-blue-700">
-                    Sıklık: {item.weeklyFrequency}
-                  </div>
+            {/* 1. Gelişim Alanlarının Açıklanması (Özet Yönlendirme Bandı) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-2 mb-3">
+              <div className="p-2 rounded-xl bg-white border border-rose-200 flex flex-col justify-between">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[11px] font-black text-slate-900">Denge →</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-100 text-rose-900 border border-rose-300">
+                    Geliştirilmesi önerilir
+                  </span>
                 </div>
-              ))}
+                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
+                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Haftada 3 gün tek ayak proprioseptif denge ve core stabilizasyon çalışılmalı.
+                </p>
+              </div>
+
+              <div className="p-2 rounded-xl bg-white border border-rose-200 flex flex-col justify-between">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[11px] font-black text-slate-900">Sırt kuvveti →</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-100 text-rose-900 border border-rose-300">
+                    Geliştirilmesi önerilir
+                  </span>
+                </div>
+                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
+                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Sırt ekstansör ve gövde kuvveti için haftada 2 gün izometrik core drilleri uygulanmalı.
+                </p>
+              </div>
+
+              <div className="p-2 rounded-xl bg-white border border-blue-200 flex flex-col justify-between">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[11px] font-black text-slate-900">Esneklik →</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-100 text-blue-900 border border-blue-300">
+                    Korunmalı
+                  </span>
+                </div>
+                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
+                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Mevcut hareket açıklığını korumak için antrenman sonu esneme rutini sürdürülmeli.
+                </p>
+              </div>
+
+              <div className="p-2 rounded-xl bg-white border border-emerald-200 flex flex-col justify-between">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[11px] font-black text-slate-900">Kavrama kuvveti →</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-950 border border-emerald-300">
+                    Güçlü yön
+                  </span>
+                </div>
+                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
+                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Üst düzey el-ön kol kuvveti branş tekniği ve ikili mücadelelerde avantaja dönüştürülmeli.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-3 text-xs">
+              {activeAiAnalysis.improvementAreas.slice(0, 3).map((item, idx) => {
+                const rankStyle =
+                  idx === 0
+                    ? {
+                        badge: '1. ÖNCELİK · BİRİNCİL ODAK',
+                        badgeClass: 'bg-rose-600 text-white',
+                        borderClass: 'border-2 border-rose-400 bg-white',
+                        pillClass: 'bg-rose-50 text-rose-900 border-rose-200',
+                        barFill: '#e11d48',
+                      }
+                    : idx === 1
+                    ? {
+                        badge: '2. ÖNCELİK · İKİNCİL ODAK',
+                        badgeClass: 'bg-amber-500 text-white',
+                        borderClass: 'border-2 border-amber-300 bg-white',
+                        pillClass: 'bg-amber-50 text-amber-900 border-amber-200',
+                        barFill: '#f59e0b',
+                      }
+                    : {
+                        badge: '3. ÖNCELİK · DESTEKLEYİCİ ODAK',
+                        badgeClass: 'bg-indigo-600 text-white',
+                        borderClass: 'border-2 border-indigo-200 bg-white',
+                        pillClass: 'bg-indigo-50 text-indigo-900 border-indigo-200',
+                        barFill: '#4f46e5',
+                      };
+
+                return (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-xl flex flex-col justify-between shadow-2xs ${rankStyle.borderClass}`}
+                  >
+                    <div>
+                      {/* Top Priority Header */}
+                      <div className="flex items-center justify-between gap-1.5 mb-2">
+                        <span className={`px-2 py-0.5 rounded-md text-[9.5px] font-mono font-black uppercase tracking-wider ${rankStyle.badgeClass}`}>
+                          {rankStyle.badge}
+                        </span>
+                        <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded border ${rankStyle.pillClass}`}>
+                          %{item.percentile} Yüzdelik
+                        </span>
+                      </div>
+
+                      {/* Metric Name & Verdict */}
+                      <div className="flex items-center justify-between gap-1 flex-wrap">
+                        <span className="font-black text-slate-900 text-[12.5px] tracking-tight truncate">
+                          {item.metricName} →
+                        </span>
+                        <span className="text-[9.5px] font-extrabold text-rose-900 bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded shrink-0">
+                          Geliştirilmesi önerilir
+                        </span>
+                      </div>
+
+                      {/* Current vs Target Visual Box */}
+                      <div className="mt-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        <div className="flex items-center justify-between text-[10.5px] font-mono">
+                          <span className="text-slate-700">
+                            Mevcut: <strong className="text-slate-900 font-black">{item.currentValue}</strong>
+                          </span>
+                          <span className="text-slate-400 font-black">→</span>
+                          <span className="text-emerald-800">
+                            Hedef: <strong className="text-emerald-700 font-black">{item.targetValue}</strong>
+                          </span>
+                        </div>
+                        <svg viewBox="0 0 200 6" preserveAspectRatio="none" className="w-full h-1.5 rounded-full overflow-hidden block mt-1.5">
+                          <rect x="0" y="0" width="200" height="6" rx="3" fill="#e2e8f0" />
+                          <rect
+                            x="0"
+                            y="0"
+                            width={Math.max(14, Math.min(200, item.percentile * 2))}
+                            height="6"
+                            rx="3"
+                            fill={rankStyle.barFill}
+                          />
+                        </svg>
+                      </div>
+
+                      {/* Clear Actionable Drill Prescription answering both questions */}
+                      <div className="mt-2 space-y-1 text-[10px] leading-snug">
+                        <p className="text-slate-600">
+                          <strong className="text-slate-900 font-extrabold">Neyim Düşük?: </strong>
+                          {item.analysis}
+                        </p>
+                        <p className="text-slate-800 font-medium bg-slate-50 p-1.5 rounded border border-slate-200/80">
+                          <strong className="text-rose-700 font-extrabold">Ne Yapmalıyım?: </strong>
+                          {item.drillRecommendation}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className={`mt-2 pt-1.5 border-t border-slate-200/80 flex items-center justify-between text-[9.5px] font-mono font-extrabold`}>
+                      <span className="text-blue-800">⚡ {item.weeklyFrequency}</span>
+                      <span className="text-rose-700 uppercase">{item.priority}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -4182,13 +5097,13 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4 text-[10px] text-slate-500 leading-relaxed px-1">
-            <p>
-              <strong>Bilimsel Metodoloji:</strong> Sportif performansın bileşenlerinin ölçümlendiği 10 test protokolü; sürat, kuvvet, denge, esneklik, reaksiyon sürati, 10x5m çabukluk, durarak uzun atlama ve PACER (dayanıklılık) bataryalarından oluşturulmuştur.
-            </p>
-            <p>
-              <strong>İpsatif Gelişim Yaklaşımı:</strong> İpsatif değerlendirme sporcu merkezlidir; gelişim için önceki performansların aşılmasına odaklanır.{' '}
-              <strong className={activeTemplate.accentTextClass}>Farkındalık, gelişimi yönetmek için ilk adımdır.</strong>
+          {/* 12. Referans ve Metodoloji Bölümü (Sayfa Altı Sade ve Küçük Puntolu Bölüm) */}
+          <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/90 text-[10px] text-slate-500 leading-relaxed">
+            <div className="text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-0.5">
+              12. Referans ve Metodoloji
+            </div>
+            <p className="text-[10px] text-slate-600 leading-relaxed">
+              Değerlendirmeler yaş ve cinsiyete göre normatif referanslar kullanılarak yapılmıştır. Beden kompozisyonu ve büyüme parametreleri ilgili uluslararası standartlarla karşılaştırılmıştır.
             </p>
           </div>
         </div>
@@ -6150,65 +7065,92 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
 
           {/* Main Grid: Improvement Areas (Left 7 cols) + Strengths & 8-Week Microcycle (Right 5 cols) */}
           <div className="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Left 7 Cols: Gelişime Açık Yönler & Spesifik Drill Reçetesi */}
+            {/* Left 7 Cols: 10. Öncelikli Gelişim Alanları & Spesifik Drill Reçetesi */}
             <div className="lg:col-span-7 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-rose-600" />
-                  <span>Gelişime Açık Yönler &amp; Bireysel Antrenman Reçetesi</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono text-[10px] font-black">
+                    10. BÖLÜM
+                  </span>
+                  <span>Öncelikli Gelişim Alanları &amp; İlk Bakışta Odak Planı</span>
                 </h3>
-                <span className="text-[11px] text-slate-500">
-                  Excel verilerinden otomatik tespit edilen öncelikli gelişim alanları
+                <span className="text-[11px] text-slate-500 font-medium">
+                  İlk bakışta odaklanılması gereken öncelik sırasına göre dizilmiştir
                 </span>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {activeAiAnalysis.improvementAreas.map((item, idx) => {
                   const isHighPriority = item.priority.toLowerCase().includes('yüksek');
+                  const priorityBadge =
+                    idx === 0
+                      ? '1. ÖNCELİKLİ ODAK'
+                      : idx === 1
+                      ? '2. ÖNCELİKLİ ODAK'
+                      : `${idx + 1}. GELİŞİM ODAĞI`;
                   return (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:border-slate-300 transition-colors"
+                      className={`p-4 rounded-xl border-2 transition-colors ${
+                        idx === 0
+                          ? 'border-rose-300 dark:border-rose-800/80 bg-rose-50/30 dark:bg-rose-950/20'
+                          : idx === 1
+                          ? 'border-amber-300 dark:border-amber-800/80 bg-amber-50/20 dark:bg-amber-950/15'
+                          : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40'
+                      }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase ${
+                              idx === 0
+                                ? 'bg-rose-600 text-white'
+                                : idx === 1
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-indigo-600 text-white'
+                            }`}
+                          >
+                            {priorityBadge}
+                          </span>
+                          <span className="text-sm font-black text-slate-900 dark:text-white">
                             {item.metricName}
                           </span>
-                          <span className="text-[11px] text-slate-400">·</span>
-                          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded">
                             {item.category}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3 text-xs font-mono">
-                          <span className="text-slate-600 dark:text-slate-300">
-                            Mevcut: <strong className="text-slate-900 dark:text-white">{item.currentValue}</strong>
+                        <div className="flex items-center gap-2 text-xs font-mono">
+                          <span className="bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                            Mevcut: <strong className="text-slate-900 dark:text-white font-black">{item.currentValue}</strong>
                           </span>
-                          <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                          <span className="text-slate-400 font-black">→</span>
+                          <span className="bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-black">
                             Hedef: {item.targetValue}
                           </span>
                           <span
-                            className={`font-sans text-[11px] font-bold ${
-                              isHighPriority ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
+                            className={`font-sans text-[11px] font-black px-2 py-1 rounded-lg ${
+                              isHighPriority
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
                             }`}
                           >
-                            {item.priority}
+                            %{item.percentile} · {item.priority}
                           </span>
                         </div>
                       </div>
 
-                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
+                      <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 leading-relaxed font-medium">
                         {item.analysis}
                       </p>
 
-                      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
-                        <div className="text-slate-700 dark:text-slate-200">
-                          <strong className="text-indigo-700 dark:text-indigo-400">Önerilen Drill: </strong>
+                      <div className="mt-2.5 pt-2.5 border-t border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+                        <div className="text-slate-800 dark:text-slate-200 font-medium">
+                          <strong className="text-indigo-700 dark:text-indigo-400 font-extrabold">Odaklanılacak Antrenman Reçetesi: </strong>
                           {item.drillRecommendation}
                         </div>
-                        <div className="font-mono font-semibold text-slate-500 dark:text-slate-400 shrink-0">
-                          {item.weeklyFrequency}
+                        <div className="font-mono font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-md border border-indigo-200 dark:border-indigo-800 shrink-0">
+                          ⚡ {item.weeklyFrequency}
                         </div>
                       </div>
                     </div>
@@ -6827,7 +7769,79 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                         ...currentReport,
                         scoreHistory: {
                           ...currentReport.scoreHistory,
-                          p3Score: parseInt(e.target.value, 10) || 75,
+                          p3Score: parseInt(e.target.value, 10) || 88,
+                        },
+                      })
+                    }
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-mono text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Group Comparison Quick Inputs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-indigo-50/60 dark:bg-slate-800/50 p-3 rounded-xl border border-indigo-200 dark:border-slate-700">
+                <div>
+                  <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">Gruptaki Sporcu Sayısı</label>
+                  <input
+                    type="number"
+                    value={currentReport.groupInfo.groupAthleteCount}
+                    onChange={(e) =>
+                      handleUpdateCurrentReport({
+                        ...currentReport,
+                        groupInfo: {
+                          ...currentReport.groupInfo,
+                          groupAthleteCount: parseInt(e.target.value, 10) || 15,
+                        },
+                      })
+                    }
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-mono text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">Genel Sıralama</label>
+                  <input
+                    type="number"
+                    value={currentReport.groupInfo.groupRank}
+                    onChange={(e) =>
+                      handleUpdateCurrentReport({
+                        ...currentReport,
+                        groupInfo: {
+                          ...currentReport.groupInfo,
+                          groupRank: parseInt(e.target.value, 10) || 1,
+                        },
+                      })
+                    }
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-mono text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">Grup Ortalaması (%)</label>
+                  <input
+                    type="number"
+                    value={currentReport.groupInfo.groupAverageScore ?? 72}
+                    onChange={(e) =>
+                      handleUpdateCurrentReport({
+                        ...currentReport,
+                        groupInfo: {
+                          ...currentReport.groupInfo,
+                          groupAverageScore: parseInt(e.target.value, 10) || 72,
+                        },
+                      })
+                    }
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-mono text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">Grup İçindeki Konum (%)</label>
+                  <input
+                    type="number"
+                    value={currentReport.groupInfo.groupPositionPercentile ?? 94}
+                    onChange={(e) =>
+                      handleUpdateCurrentReport({
+                        ...currentReport,
+                        groupInfo: {
+                          ...currentReport.groupInfo,
+                          groupPositionPercentile: parseInt(e.target.value, 10) || 94,
                         },
                       })
                     }

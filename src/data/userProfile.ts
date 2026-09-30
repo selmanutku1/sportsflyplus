@@ -17,6 +17,8 @@ export interface UserProfileData {
   avatarUrl?: string;
   bio: string;
   twoFactorEnabled: boolean;
+  authProvider?: 'google' | 'standard';
+  hasActivePackage?: boolean;
   notifications: {
     newRegistrationEmail: boolean;
     newRegistrationSms: boolean;
@@ -44,6 +46,8 @@ export const DEFAULT_USER_PROFILE: UserProfileData = {
   avatarColor: 'from-blue-600 to-indigo-600',
   bio: 'SportsFly Kulüp ve Spor Okulu Yönetim Koordinatörü.',
   twoFactorEnabled: true,
+  authProvider: 'standard',
+  hasActivePackage: true,
   notifications: {
     newRegistrationEmail: true,
     newRegistrationSms: true,
@@ -62,6 +66,8 @@ export const DEFAULT_USER_PROFILE: UserProfileData = {
 
 const STORAGE_KEY = 'sportsfly_user_profile_v1';
 
+export const ADMIN_GOOGLE_EMAIL = 'selmanutkumarmara@gmail.com';
+
 export function getStoredUserProfile(): UserProfileData {
   if (typeof window === 'undefined') {
     return DEFAULT_USER_PROFILE;
@@ -69,15 +75,27 @@ export function getStoredUserProfile(): UserProfileData {
   try {
     const stored = secureStorageGet<Partial<UserProfileData> | null>(STORAGE_KEY, null);
     if (stored && typeof stored === 'object') {
+      const cleanEmail = sanitizeInputString(stored.email || DEFAULT_USER_PROFILE.email, 160);
+      const isAdminEmail = cleanEmail.trim().toLowerCase() === ADMIN_GOOGLE_EMAIL;
+      const rawRole = sanitizeInputString(stored.role || DEFAULT_USER_PROFILE.role, 60);
+      const resolvedRole = isAdminEmail && (rawRole.toLowerCase().includes('google') || !rawRole)
+        ? 'Süper Admin'
+        : rawRole;
+
       return {
         ...DEFAULT_USER_PROFILE,
         ...stored,
         name: sanitizeInputString(stored.name || DEFAULT_USER_PROFILE.name, 100),
-        email: sanitizeInputString(stored.email || DEFAULT_USER_PROFILE.email, 160),
+        email: cleanEmail,
         phone: sanitizeInputString(stored.phone || DEFAULT_USER_PROFILE.phone, 32),
-        role: sanitizeInputString(stored.role || DEFAULT_USER_PROFILE.role, 60),
-        title: sanitizeInputString(stored.title || DEFAULT_USER_PROFILE.title, 100),
-        club: sanitizeInputString(stored.club || DEFAULT_USER_PROFILE.club, 140),
+        role: resolvedRole,
+        title: isAdminEmail && (stored.title || '').includes('Paket Seçilmedi')
+          ? DEFAULT_USER_PROFILE.title
+          : sanitizeInputString(stored.title || DEFAULT_USER_PROFILE.title, 100),
+        club: isAdminEmail && (stored.club || '').includes('Paket Seçimi')
+          ? DEFAULT_USER_PROFILE.club
+          : sanitizeInputString(stored.club || DEFAULT_USER_PROFILE.club, 140),
+        hasActivePackage: isAdminEmail ? true : stored.hasActivePackage,
       };
     }
   } catch (err) {

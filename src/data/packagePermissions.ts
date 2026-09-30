@@ -1,5 +1,6 @@
 import { NavPage, PackagePlanType, PackageLimits } from '../types';
 import { getStoredRoleDefinitions, UserRoleKey } from './rolePermissions';
+import { getGoogleUserAccessByEmail, isPageAllowedForGoogleUser } from './googleUsersAccess';
 
 export interface PackageDetail {
   id: string;
@@ -581,10 +582,101 @@ export function setActiveSessionPlan(plan: PackagePlanType) {
   } catch (e) {}
 }
 
+export const SUPER_ADMIN_EMAIL = 'selmanutkumarmara@gmail.com';
+
+export function resolveActiveUserEmail(email?: string): string {
+  if (email && email.trim()) return email.trim().toLowerCase();
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('sportsfly_user_profile_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.email) {
+          return String(parsed.email).trim().toLowerCase();
+        }
+      }
+    } catch (e) {}
+  }
+  return '';
+}
+
+/**
+ * Helper to determine if current session user signed up / logged in via Google and is subject to Google user area restrictions.
+ * Note: selmanutkumarmara@gmail.com is the Super Admin account and always has full system access.
+ */
+export function isGoogleRestrictedUser(role?: string, email?: string): boolean {
+  const activeEmail = resolveActiveUserEmail(email);
+  if (activeEmail === SUPER_ADMIN_EMAIL) {
+    return false;
+  }
+
+  // Check if Admin granted full system access to this Google user
+  if (activeEmail) {
+    const googleRecord = getGoogleUserAccessByEmail(activeEmail);
+    if (googleRecord && googleRecord.isFullAccess) {
+      return false;
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('sportsfly_user_profile_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const storedEmail = (parsed?.email || '').trim().toLowerCase();
+        if (storedEmail === SUPER_ADMIN_EMAIL) {
+          return false;
+        }
+        const r = (parsed?.role || '').toLowerCase();
+        if (r.includes('google') && parsed?.hasActivePackage !== true) {
+          return true;
+        }
+        if (parsed?.authProvider === 'google' && parsed?.hasActivePackage !== true) {
+          return true;
+        }
+      }
+    } catch (e) {}
+  }
+  if (role) {
+    const r = role.toLowerCase();
+    if (r.includes('google')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if a specific page is unlocked for a Google-restricted user (either Paketler or explicitly enabled by Admin)
+ */
+export function isGoogleUserPageUnlocked(page: NavPage, email?: string): boolean {
+  const activeEmail = resolveActiveUserEmail(email);
+  if (activeEmail === SUPER_ADMIN_EMAIL) return true;
+  return isPageAllowedForGoogleUser(page, activeEmail);
+}
+
 /**
  * Helper to determine if current session user or passed role has Super Admin privileges
  */
-export function isSuperAdminUser(role?: string): boolean {
+export function isSuperAdminUser(role?: string, email?: string): boolean {
+  if (email && email.trim().toLowerCase() === SUPER_ADMIN_EMAIL) {
+    return true;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('sportsfly_user_profile_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const storedEmail = (parsed?.email || '').trim().toLowerCase();
+        if (storedEmail === SUPER_ADMIN_EMAIL) {
+          return true;
+        }
+      }
+    } catch (e) {}
+  }
+  if (isGoogleRestrictedUser(role, email)) {
+    return false;
+  }
   if (role) {
     const r = role.toLowerCase();
     return r.includes('süper') || r.includes('super') || r.includes('admin') || r.includes('kurucu');
@@ -596,6 +688,9 @@ export function isSuperAdminUser(role?: string): boolean {
         const parsed = JSON.parse(stored);
         if (parsed?.role) {
           const r = parsed.role.toLowerCase();
+          if (r.includes('google') || parsed?.authProvider === 'google') {
+            return false;
+          }
           return r.includes('süper') || r.includes('super') || r.includes('admin') || r.includes('kurucu');
         }
       }
@@ -611,8 +706,14 @@ export function isSuperAdminUser(role?: string): boolean {
 export function isPageAllowedForPlan(
   page: NavPage,
   plan: PackagePlanType,
-  userRole?: string
+  userRole?: string,
+  userEmail?: string
 ): boolean {
+  // Users who registered / logged in via Google can see Packages page + any areas explicitly activated by Admin
+  if (isGoogleRestrictedUser(userRole, userEmail)) {
+    return isGoogleUserPageUnlocked(page, userEmail);
+  }
+
   const roleStr = (userRole || '').toLowerCase();
 
   // Spor Okulu Başvuruları is available for Admins and Club Managers
@@ -716,8 +817,22 @@ export function isPageAllowedForPlan(
 export function getPageRestrictionInfo(
   page: NavPage,
   plan?: PackagePlanType,
-  userRole?: string
+  userRole?: string,
+  userEmail?: string
 ): PageRestrictionRule | null {
+  if (isGoogleRestrictedUser(userRole, userEmail)) {
+    if (isGoogleUserPageUnlocked(page, userEmail)) {
+      return null;
+    }
+    return {
+      minPlan: 'Başlangıç Kulübü',
+      minLevel: 1,
+      featureTitle: 'Google Hesabı — Paket Seçimi veya Admin Yetkisi Gerekli',
+      description:
+        'Google girişi ile kayıt olan kullanıcılar yalnızca Paketler sayfasını ve sistem yöneticisi tarafından aktif edilen alanları görüntüleyebilir.',
+    };
+  }
+
   const isSuper = isSuperAdminUser(userRole);
 
   if (isSuper && (!plan || plan === 'Pro Akademi & Çoklu Şube')) {

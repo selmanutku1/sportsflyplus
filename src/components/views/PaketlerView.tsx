@@ -59,6 +59,7 @@ import {
   setActiveSessionPlan,
   normalizePlanName,
   isSuperAdminUser,
+  isGoogleRestrictedUser,
 } from '../../data/packagePermissions';
 
 export interface PlanFeature {
@@ -161,7 +162,7 @@ export const PaketlerView: React.FC = () => {
     return OFFICIAL_PACKAGES;
   });
 
-  const [activeTab, setActiveTab] = useState<'kartlar' | 'yetki-matrisi' | 'kota-analiz' | 'odeme-guvenligi'>('kartlar');
+  const [activeTab, setActiveTab] = useState<'kartlar' | 'yetki-matrisi' | 'kota-analiz'>('kartlar');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedPlanModal, setSelectedPlanModal] = useState<PackagePlanItem | null>(null);
   const [actionType, setActionType] = useState<'trial' | 'upgrade' | 'contact' | null>(null);
@@ -192,7 +193,8 @@ export const PaketlerView: React.FC = () => {
     facilityCount: 2,
   };
 
-  const isSuperAdmin = isSuperAdminUser(userProfile?.role);
+  const isGoogleRestricted = isGoogleRestrictedUser(userProfile?.role, userProfile?.email);
+  const isSuperAdmin = !isGoogleRestricted && isSuperAdminUser(userProfile?.role, userProfile?.email);
 
   // Sync profile & active plan
   useEffect(() => {
@@ -282,7 +284,13 @@ export const PaketlerView: React.FC = () => {
         'İmzalı 3D Secure 2.2 ödeme oturumu onaylandı',
         `Paket: ${selectedPlanModal.name}, Intent: ${checkoutSession?.intentId || 'LOCAL'}`
       );
-      handleApplyActivePlan(selectedPlanModal.name);
+      if (isGoogleRestricted) {
+        triggerToast(
+          `"${selectedPlanModal.name}" paketi için başvurunuz alınmıştır. Onay sürecinin ardından kilitli kategorileriniz açılacaktır.`
+        );
+      } else {
+        handleApplyActivePlan(selectedPlanModal.name);
+      }
       setSelectedPlanModal(null);
       setActionType(null);
       setCheckoutSession(null);
@@ -339,6 +347,30 @@ export const PaketlerView: React.FC = () => {
         </div>
       )}
 
+      {/* Google Restricted Account Banner */}
+      {isGoogleRestricted && (
+        <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0 mt-0.5">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100">
+                  Google Girişi ile Kayıt Oldunuz — Sistem Özellikleri Kilitli
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200/80 text-amber-900 uppercase tracking-wider">
+                  Paket Seçimi Gerekli
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                Google girişi ile kayıt olan kullanıcılar yalnızca <strong>Paketler</strong> bölümünü görüntüleyebilir ve sol menüdeki tüm kategoriler kilitlidir. Sistemdeki tüm özellikleri kullanabilmek için aşağıdan kulübünüze uygun paketi seçebilirsiniz.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Header & Overview */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -347,13 +379,17 @@ export const PaketlerView: React.FC = () => {
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/60">
                 Abonelik &amp; Paket Mimarisi
               </span>
-              <span className="text-xs text-slate-500 font-medium">
-                Aktif Paketiniz:{' '}
-                <strong className="text-blue-700 font-bold px-2 py-0.5 bg-blue-50/80 rounded-md">
-                  {activePlan}
-                </strong>
-              </span>
-              <span className="text-xs text-slate-400">• Seviye {PACKAGE_DETAILS[activePlan]?.level || 2} / 3</span>
+              {!isGoogleRestricted && (
+                <>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Aktif Paketiniz:{' '}
+                    <strong className="text-blue-700 font-bold px-2 py-0.5 bg-blue-50/80 rounded-md">
+                      {activePlan}
+                    </strong>
+                  </span>
+                  <span className="text-xs text-slate-400">• Seviye {PACKAGE_DETAILS[activePlan]?.level || 2} / 3</span>
+                </>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Spor Kulübü &amp; Akademi Paketleri
@@ -443,18 +479,6 @@ export const PaketlerView: React.FC = () => {
             <Sliders className="w-4 h-4" />
             <span>Kulüp Kota &amp; Kaynak Kullanımı</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab('odeme-guvenligi')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'odeme-guvenligi'
-                ? 'bg-emerald-700 text-white shadow-xs'
-                : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/70'
-            }`}
-          >
-            <Lock className="w-4 h-4" />
-            <span>PCI-DSS 4.0 &amp; 3D Secure Ödeme Güvenliği</span>
-          </button>
         </div>
       </div>
 
@@ -492,18 +516,10 @@ export const PaketlerView: React.FC = () => {
                         {pkg.name}
                       </h3>
 
-                      {isCurrent ? (
+                      {!isGoogleRestricted && isCurrent && (
                         <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
                           Aktif Paket
                         </span>
-                      ) : (
-                        <button
-                          onClick={() => handleApplyActivePlan(pkg.name)}
-                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer shrink-0"
-                          title="Sistem genelinde bu paketi simüle et"
-                        >
-                          Simüle Et
-                        </button>
                       )}
                     </div>
 
@@ -572,37 +588,6 @@ export const PaketlerView: React.FC = () => {
                 </div>
               );
             })}
-          </div>
-
-          {/* Quick Simulation Banner */}
-          <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shrink-0">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold">Hızlı Yetkilendirme Simülasyonu</h4>
-                <p className="text-xs text-slate-300">
-                  Paketler arasında geçiş yaparak sol menüdeki kilitli modülleri ve yetki kısıtlamalarını anında canlı test edebilirsiniz.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {CANONICAL_PACKAGES.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => handleApplyActivePlan(p)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activePlan === p
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'bg-white/10 hover:bg-white/20 text-slate-200'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -920,137 +905,6 @@ export const PaketlerView: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 4: PCI-DSS 4.0 & 3D SECURE 2.2 PAYMENT SECURITY ARCHITECTURE */}
-      {activeTab === 'odeme-guvenligi' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 rounded-2xl p-6 text-white border border-emerald-500/30 shadow-lg">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  PCI-DSS v4.0 SAQ-A &amp; 3D SECURE 2.2 HAZIR ALTYAPI
-                </div>
-                <h3 className="text-xl font-extrabold tracking-tight">
-                  Uçtan Uca Kriptografik Ödeme &amp; Sanal POS Güvenlik Mimarisi
-                </h3>
-                <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
-                  Sisteme eklenecek sanal POS (iyzico, PayTR, Stripe, Param) ve aidat tahsilat işlemleri için sunucu taraflı fiyat doğrulama, HMAC-SHA256 sipariş imzalama, mükerrer çekim önleyici Idempotency-Key ve ham kart verisi sızıntısını engelleyen Zero-PAN koruma katmanları aktiftir.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => handleCtaClick(packages[1])}
-                  className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-2 shadow-md cursor-pointer"
-                >
-                  <KeyRound className="w-4 h-4" />
-                  <span>Canlı İmzalı Ödeme Oturumu Test Et</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-2.5 shadow-2xs">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Lock className="w-5 h-5" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900">
-                1. Sunucu Taraflı Fiyat Kilidi (Zero Client Trust)
-              </h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                İstemciden (tarayıcıdan) gelen fiyat, indirim veya para birimi parametreleri sunucu tarafından <strong>kesinlikle yok sayılır</strong>. Ödeme tutarı yalnızca <code className="text-[11px] bg-slate-100 px-1.5 py-0.5 rounded">SERVER_CANONICAL_PLANS</code> tablosundan hesaplanır ve HMAC-SHA256 ile imzalanır.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-2.5 shadow-2xs">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <Fingerprint className="w-5 h-5" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900">
-                2. Mükerrer Çekim Önleyici (Idempotency-Key)
-              </h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Her ödeme talebi benzersiz bir kriptografik <code className="text-[11px] bg-slate-100 px-1.5 py-0.5 rounded">Idempotency-Key</code> başlığı taşır. Bağlantı kopması veya çift tıklama durumunda karttan ikinci kez çekim yapılması sunucu belleğinde engellenir.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-2.5 shadow-2xs">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900">
-                3. Zero-PAN &amp; 3D Secure 2.2 Tokenizasyon
-              </h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Ham kredi kartı numarası (PAN) ve CVV/CVC verileri veritabanına veya <code className="text-[11px] bg-slate-100 px-1.5 py-0.5 rounded">localStorage</code> alanına asla kaydedilmez. Güvenlik duvarı (WAF) API gövdesinde ham kart verisi tespit ederse işlemi anında reddeder.
-              </p>
-            </div>
-          </div>
-
-          {/* Interactive Luhn & PAN Masking Sandbox */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-              <div>
-                <h4 className="text-sm font-bold text-slate-900">
-                  PCI-DSS Kart Doğrulama (Luhn Algoritması) &amp; Maskeleme Simülatörü
-                </h4>
-                <p className="text-xs text-slate-500">
-                  Ödeme formuna girilen kart numaralarının sunucuya gönderilmeden önce Luhn kontrolü ve PCI-DSS maskeleme davranışını test edin.
-                </p>
-              </div>
-              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
-                Kart Şeması: {detectCardBrand(testCardInput)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Test Kart Numarası (Sadece Bellekte İşlenir)
-                </label>
-                <input
-                  type="text"
-                  value={testCardInput}
-                  onChange={(e) => setTestCardInput(e.target.value)}
-                  maxLength={23}
-                  className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-mono text-slate-900"
-                  placeholder="4543 6000 0000 0000"
-                />
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="text-[10px] font-bold text-slate-400 uppercase">
-                  PCI-DSS Maskelenmiş Format (Log / DB)
-                </div>
-                <div className="text-sm font-mono font-bold text-slate-900 mt-0.5">
-                  {maskCardNumber(testCardInput)}
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">
-                    Luhn Mod-10 Bütünlük Kontrolü
-                  </div>
-                  <div className="text-xs font-bold mt-0.5">
-                    {validateLuhn(testCardInput) ? (
-                      <span className="text-emerald-700">Geçerli Kart Dizilimi (Luhn OK)</span>
-                    ) : (
-                      <span className="text-rose-600">Geçersiz Kart Numarası (Reddedildi)</span>
-                    )}
-                  </div>
-                </div>
-                {validateLuhn(testCardInput) ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modal: Plan Action Confirmation */}
       {selectedPlanModal && actionType && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
@@ -1082,7 +936,7 @@ export const PaketlerView: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 mb-4 space-y-2">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 mb-6 space-y-2">
               <p className="text-xs font-bold text-slate-800">Paketle Birlikte Aktifleşecek Haklar:</p>
               <ul className="space-y-1.5 text-xs text-slate-600">
                 {selectedPlanModal.features.slice(0, 4).map((f, i) => (
@@ -1092,43 +946,6 @@ export const PaketlerView: React.FC = () => {
                   </li>
                 ))}
               </ul>
-            </div>
-
-            {/* Server-Side Signed 3D Secure 2.2 Payment Intent Verification Block */}
-            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 mb-6 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                  3D Secure 2.2 &amp; Sunucu İmzalı Ödeme Oturumu
-                </span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  {isCreatingSession ? 'İmzalanıyor...' : checkoutSession?.pciComplianceMode || 'PCI-DSS-SAQ-A'}
-                </span>
-              </div>
-              {checkoutSession ? (
-                <div className="text-[11px] text-emerald-800 space-y-1 font-mono bg-white/80 p-2.5 rounded-xl border border-emerald-200/60">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Intent ID:</span>
-                    <span className="font-bold text-slate-900">{checkoutSession.intentId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Sunucu Onaylı Tutar:</span>
-                    <span className="font-bold text-emerald-700">
-                      {checkoutSession.amountTRY.toLocaleString('tr-TR')} ₺ ({billingCycle === 'yillik' ? 'Yıllık' : 'Aylık'})
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">HMAC-SHA256 İmza:</span>
-                    <span className="text-slate-700 truncate max-w-[210px]" title={checkoutSession.orderHmacSignature}>
-                      {checkoutSession.orderHmacSignature.slice(0, 24)}...
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[11px] text-emerald-700">
-                  Sunucu taraflı fiyat doğrulaması ve mükerrer çekim koruması (Idempotency-Key) devrede.
-                </p>
-              )}
             </div>
 
             <div className="flex items-center gap-3">

@@ -85,6 +85,10 @@ async function prepareCloneForPdfCapture(
     clonedRoot.style.display = 'flex';
     clonedRoot.style.flexDirection = 'column';
     clonedRoot.style.justifyContent = 'space-between';
+    clonedRoot.style.padding = '14px 18px';
+    clonedRoot.style.border = 'none';
+    clonedRoot.style.borderRadius = '0px';
+    clonedRoot.style.boxShadow = 'none';
   }
   clonedRoot.style.margin = '0';
   clonedRoot.style.boxSizing = 'border-box';
@@ -118,9 +122,12 @@ async function prepareCloneForPdfCapture(
   const images = Array.from(clonedRoot.querySelectorAll('img'));
   await Promise.all(images.map((img) => inlineImageAsDataUrl(img)));
 
-  // Lock explicit pixel dimensions on all SVG elements so SVG-inside-SVG foreignObject never distorts aspect ratios
+  // Lock explicit pixel dimensions and namespace on all SVG elements so SVG-inside-SVG foreignObject never distorts aspect ratios
   const svgs = Array.from(clonedRoot.querySelectorAll('svg'));
   svgs.forEach((svg) => {
+    if (!svg.getAttribute('xmlns')) {
+      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    }
     const rect = svg.getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) {
       const w = Math.round(rect.width);

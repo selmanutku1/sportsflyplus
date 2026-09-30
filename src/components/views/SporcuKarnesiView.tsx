@@ -1438,6 +1438,43 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                   </div>
                 </div>
 
+                {/* Grup Karşılaştırması (Grup İçi Konum) */}
+                <div className="bg-indigo-50/50 border border-indigo-200 rounded-xl p-5 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h4 className="font-bold text-indigo-950 text-sm">Grup Karşılaştırması</h4>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Sporcunun bulunduğu grup içerisindeki performansı ve genel konumu
+                      </p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-extrabold">
+                      Grup İçindeki Konum: %94
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                    <div className="bg-white p-3 rounded-xl border border-indigo-100">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase">Grubundaki Sporcu Sayısı</div>
+                      <div className="text-lg font-black font-mono text-slate-900 mt-0.5">15</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-amber-200">
+                      <div className="text-[10px] font-bold text-amber-800 uppercase">Genel Sıralama</div>
+                      <div className="text-lg font-black font-mono text-amber-600 mt-0.5">1.</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-blue-200">
+                      <div className="text-[10px] font-bold text-blue-800 uppercase">Sportif Performans</div>
+                      <div className="text-lg font-black font-mono text-blue-600 mt-0.5">%88</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase">Grup Ortalaması</div>
+                      <div className="text-lg font-black font-mono text-slate-700 mt-0.5">%72</div>
+                    </div>
+                    <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-300">
+                      <div className="text-[10px] font-bold text-emerald-900 uppercase">Grup İçindeki Konum</div>
+                      <div className="text-lg font-black font-mono text-emerald-700 mt-0.5">%94</div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Trainer Notes */}
                 <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5">
                   <h4 className="font-bold text-blue-900 mb-2 text-sm flex items-center gap-2">
@@ -1462,6 +1499,16 @@ export const SporcuKarnesiView: React.FC<SporcuKarnesiViewProps> = ({ onNavigate
                       </span>
                     ))}
                   </div>
+                </div>
+
+                {/* 12. Referans ve Metodoloji Bölümü */}
+                <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5 text-[11px] text-slate-500 leading-relaxed">
+                  <div className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider mb-0.5">
+                    12. Referans ve Metodoloji
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Değerlendirmeler yaş ve cinsiyete göre normatif referanslar kullanılarak yapılmıştır. Beden kompozisyonu ve büyüme parametreleri ilgili uluslararası standartlarla karşılaştırılmıştır.
+                  </p>
                 </div>
 
               </div>

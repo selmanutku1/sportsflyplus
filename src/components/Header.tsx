@@ -34,6 +34,7 @@ import {
   Sparkles,
   QrCode,
   Camera,
+  ShieldCheck,
 } from 'lucide-react';
 import { QrYoklamaScannerModal } from './modals/QrYoklamaScannerModal';
 import { SportsFlyIcon } from './SportsFlyLogo';
@@ -53,6 +54,7 @@ import {
   PACKAGE_DETAILS,
   getActiveSessionPlan,
   setActiveSessionPlan,
+  isGoogleRestrictedUser,
 } from '../data/packagePermissions';
 import {
   getStoredNotifications,
@@ -336,7 +338,12 @@ export const Header: React.FC<HeaderProps> = ({
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const isSuperAdmin = userProfile.role.toLowerCase().includes('admin') || userProfile.role.toLowerCase().includes('süper');
+  const isGoogleRestricted = isGoogleRestrictedUser(userProfile.role, userProfile.email);
+  const isSuperAdmin =
+    !isGoogleRestricted &&
+    (userProfile.email?.trim().toLowerCase() === 'selmanutkumarmara@gmail.com' ||
+      userProfile.role.toLowerCase().includes('admin') ||
+      userProfile.role.toLowerCase().includes('süper'));
 
   // Force non-admins to Kadıköy Merkez branch
   useEffect(() => {
@@ -582,7 +589,29 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Multi-Branch Quick Switcher */}
           <div className="relative" ref={branchMenuRef}>
-            {isSuperAdmin ? (
+            {isGoogleRestricted ? (
+              <button
+                onClick={() => {
+                  const updated = {
+                    ...userProfile,
+                    name: 'Selman Utku',
+                    email: 'selmanutkumarmara@gmail.com',
+                    role: 'Süper Admin',
+                    title: 'SportsFly Kulüp Yöneticisi',
+                    club: 'SportsFly Kadıköy Merkez Şube',
+                    hasActivePackage: true,
+                  };
+                  saveStoredUserProfile(updated);
+                  setUserProfile(updated);
+                  onNavigate?.('anasayfa');
+                }}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                title="Süper Admin (selmanutkumarmara@gmail.com) Görünümüne Dön"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Admin Paneline Dön</span>
+              </button>
+            ) : isSuperAdmin ? (
               <button
                 onClick={() => {
                   setShowBranchMenu(!showBranchMenu);
@@ -700,6 +729,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Minimal Package Plan Quick Switcher in Header */}
+          {!isGoogleRestricted && (
           <div className="relative hidden sm:block" ref={planMenuRef}>
             <button
               id="header-package-plan-btn"
@@ -806,6 +836,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* THEME TOGGLE (Açık / Koyu / Sistem Modu) */}
           <div className="relative" ref={themeMenuRef}>
@@ -1310,6 +1341,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 {/* Minimal Active Package Switcher in Profile Menu */}
+                {!isGoogleRestricted && (
                 <div className="mx-2 my-2 p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100/90 dark:border-indigo-900/40">
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <div className="flex items-center gap-1.5 text-indigo-950 dark:text-indigo-200 font-bold">
@@ -1351,6 +1383,7 @@ export const Header: React.FC<HeaderProps> = ({
                     })}
                   </div>
                 </div>
+                )}
 
                 <div className="py-1.5 px-1 space-y-0.5">
                   <button

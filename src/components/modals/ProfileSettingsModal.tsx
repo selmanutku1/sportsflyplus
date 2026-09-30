@@ -349,16 +349,25 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Yetki Düzeyi (Rol)</label>
                   <div className="relative">
                     <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400 absolute left-3 top-2.5 pointer-events-none" />
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-[#0b1320] text-slate-900 dark:text-slate-100 font-semibold cursor-pointer"
-                    >
-                      <option value="Kulüp Yöneticisi">Kulüp Yöneticisi</option>
-                      <option value="Süper Admin">Süper Admin</option>
-                      <option value="Baş Antrenör">Baş Antrenör</option>
-                      <option value="Şube Yöneticisi">Şube Yöneticisi</option>
-                    </select>
+                    {formData.authProvider === 'google' || formData.role.toLowerCase().includes('google') ? (
+                      <input
+                        type="text"
+                        disabled
+                        value="Google Kullanıcısı (Paket Seçilmedi)"
+                        className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold cursor-not-allowed"
+                      />
+                    ) : (
+                      <select
+                        value={formData.role}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                        className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-[#0b1320] text-slate-900 dark:text-slate-100 font-semibold cursor-pointer"
+                      >
+                        <option value="Kulüp Yöneticisi">Kulüp Yöneticisi</option>
+                        <option value="Süper Admin">Süper Admin</option>
+                        <option value="Baş Antrenör">Baş Antrenör</option>
+                        <option value="Şube Yöneticisi">Şube Yöneticisi</option>
+                      </select>
+                    )}
                   </div>
                 </div>
 

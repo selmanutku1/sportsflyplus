@@ -582,6 +582,29 @@
         }
       },
       "required": ["intentId", "ownerId", "idempotencyKey", "planId", "billingCycle", "amountTry", "currency", "status", "createdAt", "updatedAt"]
+    },
+    "GoogleUserAccessRecord": {
+      "title": "GoogleUserAccessRecord",
+      "description": "Google OAuth login users and their Admin-configured active system areas.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "clubName": { "type": "string" },
+        "phone": { "type": "string" },
+        "assignedPlan": { "type": "string" },
+        "allowedPages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "isFullAccess": { "type": "boolean" },
+        "firstLoginAt": { "type": "string" },
+        "lastLoginAt": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "name", "email", "allowedPages", "isFullAccess"]
     }
   },
   "firestore": {
@@ -620,6 +643,10 @@
     "/paymentIntents/{intentId}": {
       "schema": { "$ref": "#/entities/PaymentIntent" },
       "description": "PCI-DSS SAQ-A tokenized payment intents."
+    },
+    "/googleUsers/{userId}": {
+      "schema": { "$ref": "#/entities/GoogleUserAccessRecord" },
+      "description": "Google login users and their active module permissions managed by Admin."
     }
   }
 }

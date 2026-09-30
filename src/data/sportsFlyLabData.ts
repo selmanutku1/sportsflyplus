@@ -165,6 +165,8 @@ export interface SportsFlyLabReport {
     groupRank: number;
     totalAthleteCount: number;
     totalRank: number;
+    groupAverageScore?: number;
+    groupPositionPercentile?: number;
   };
   expertComment: string;
   aiRecommendations?: LabAiPerformanceAnalysis;
@@ -529,17 +531,17 @@ export const DEFAULT_LAB_REPORTS: SportsFlyLabReport[] = [
     ],
     scoreHistory: {
       p1Date: '01.02.2026',
-      p1Score: 50,
+      p1Score: 64,
       p2Date: '10.05.2026',
-      p2Score: 64,
+      p2Score: 76,
       p3Date: '10.08.2026',
-      p3Score: 75,
+      p3Score: 88,
     },
     somatotype: {
       m1: { endo: 6.8, meso: 4.4, ecto: 1.9, category: 'Mezomorfik Endomorfi' },
       m2: { endo: 6.3, meso: 4.7, ecto: 2.4, category: 'Mezomorfik Endomorfi' },
       m3: { endo: 5.5, meso: 4.1, ecto: 2.6, category: 'Mezomorfik Endomorfi' },
-      eliteRef: { sport: 'Elit Voleybol', endo: 3.9, meso: 2.2, ecto: 3.4, refScore: 87 },
+      eliteRef: { sport: 'Elit Voleybol', endo: 3.9, meso: 2.2, ecto: 3.4, refScore: 94 },
     },
     potential: {
       directionDeg: 125,
@@ -581,10 +583,12 @@ export const DEFAULT_LAB_REPORTS: SportsFlyLabReport[] = [
     groupInfo: {
       groupNo: 3,
       ageRange: '10,02 - 10,99 Yaş',
-      groupAthleteCount: 20,
-      groupRank: 2,
+      groupAthleteCount: 15,
+      groupRank: 1,
       totalAthleteCount: 160,
-      totalRank: 19,
+      totalRank: 1,
+      groupAverageScore: 72,
+      groupPositionPercentile: 94,
     },
     expertComment:
       'Sporcumuzun 3 ölçüm periyodundaki genel sportif performans skoru %50 seviyesinden %75 seviyesine yükselmiştir. Sürat (%89), Çabukluk (%95), Kavrama Kuvveti (%98), Dikey Sıçrama (%91) ve Esneklik (%100) parametrelerinde yaşıtlarının oldukça üzerinde elit bir profil sergilemektedir. Somatotip analizinde endomorfi bileşeni 6,8\'den 5,5\'e gerileyerek sağlıklı kas-iskelet dengesine yaklaşmıştır. Aerobik dayanıklılık (VO2peak: 35,0 ml/kg/dk) ve tek ayak dinamik denge egzersizlerinin haftalık antrenman programında desteklenmesi, 12,84 PHV büyüme atağı öncesinde atletik potansiyelini maksimuma çıkaracaktır.',
@@ -1002,7 +1006,9 @@ export const DEFAULT_LAB_REPORTS: SportsFlyLabReport[] = [
       groupAthleteCount: 15,
       groupRank: 1,
       totalAthleteCount: 160,
-      totalRank: 4,
+      totalRank: 1,
+      groupAverageScore: 72,
+      groupPositionPercentile: 94,
     },
     expertComment:
       'Kaan, U14 Basketbol altyapı grubumuzda %88 genel performans puanı ve %94 Elit Basketbol Somatotip uyumu ile kulübün en yüksek potansiyelli sporcularından biridir. 186,4 cm yetişkin boy tahmini ve yüksek dikey sıçrama gücü (36,4 cm) ile forvet/kanat pozisyonu için ideal fiziksel profile sahiptir.',
@@ -1058,11 +1064,68 @@ export function applyBrandingToReport(
   const cleanBranch = activeBranding.branchName.trim() || report.branchName || DEFAULT_LAB_SCHOOL_BRANDING.branchName;
   const cleanLogo = activeBranding.logoDataUrl || '';
 
+  const isLegacyDefaultGroup =
+    (report.id === 'lab-rep-1' || report.id === 'lab-rep-2') &&
+    report.groupInfo?.groupAverageScore === undefined;
+
+  const updatedGroupInfo = isLegacyDefaultGroup
+    ? {
+        ...report.groupInfo,
+        groupAthleteCount: 15,
+        groupRank: 1,
+        totalRank: 1,
+        groupAverageScore: 72,
+        groupPositionPercentile: 94,
+      }
+    : {
+        ...report.groupInfo,
+        groupAverageScore: report.groupInfo?.groupAverageScore ?? 72,
+        groupPositionPercentile:
+          report.groupInfo?.groupPositionPercentile ??
+          Math.min(
+            99,
+            Math.max(
+              10,
+              Math.round(
+                (((report.groupInfo?.groupAthleteCount || 15) -
+                  (report.groupInfo?.groupRank || 1) +
+                  0.1) /
+                  Math.max(1, report.groupInfo?.groupAthleteCount || 15)) *
+                  100
+              )
+            )
+          ),
+      };
+
+  const updatedScoreHistory =
+    isLegacyDefaultGroup && report.scoreHistory?.p3Score === 75
+      ? {
+          ...report.scoreHistory,
+          p1Score: 64,
+          p2Score: 76,
+          p3Score: 88,
+        }
+      : report.scoreHistory;
+
+  const updatedSomatotype =
+    report.id === 'lab-rep-1' && report.somatotype?.eliteRef?.refScore === 87
+      ? {
+          ...report.somatotype,
+          eliteRef: {
+            ...report.somatotype.eliteRef,
+            refScore: 94,
+          },
+        }
+      : report.somatotype;
+
   return {
     ...report,
     clubName: cleanSchool,
     branchName: cleanBranch,
     clubLogoUrl: cleanLogo,
+    groupInfo: updatedGroupInfo,
+    scoreHistory: updatedScoreHistory,
+    somatotype: updatedSomatotype,
   };
 }
 

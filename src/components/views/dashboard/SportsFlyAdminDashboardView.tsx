@@ -25,6 +25,7 @@ import {
 } from '../../../data/mockData';
 import { SupportTicket, NavPage } from '../../../types';
 import { UpcomingEventsNotificationPanel } from '../../dashboard/UpcomingEventsNotificationPanel';
+import { GoogleUsersAccessManagerPanel } from '../../admin/GoogleUsersAccessManagerPanel';
 
 interface SportsFlyAdminDashboardViewProps {
   onNavigate?: (page: NavPage) => void;
@@ -141,6 +142,9 @@ export const SportsFlyAdminDashboardView: React.FC<SportsFlyAdminDashboardViewPr
           </div>
         </div>
       </div>
+
+      {/* Google İle Giriş Yapan Kullanıcılar & Alan Yetkilendirme Listesi */}
+      <GoogleUsersAccessManagerPanel onNavigate={onNavigate} />
 
       {/* Merkezi Bildirim Merkezi & Yaklaşan Olaylar */}
       <UpcomingEventsNotificationPanel onNavigate={onNavigate} defaultTab="all" />

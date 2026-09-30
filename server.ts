@@ -585,10 +585,18 @@ function hashOtpCode(code: string, challengeId: string): string {
 
 function maskDestinationPhone(rawPhone: string): string {
   const digits = String(rawPhone || '').replace(/\D/g, '');
-  if (digits.length < 7) return '+90 532 ••• •• 67';
-  const last2 = digits.slice(-2);
-  const prefix = digits.slice(0, 5);
-  return `+${prefix.slice(0, 2)} ${prefix.slice(2, 5)} ••• •• ${last2}`;
+  if (digits.length >= 10) {
+    const last2 = digits.slice(-2);
+    const country = digits.length >= 12 ? digits.slice(0, 2) : '90';
+    const area = digits.length >= 12 ? digits.slice(2, 5) : digits.slice(-10, -7);
+    return `+${country} ${area} ••• •• ${last2}`;
+  }
+  if (digits.length >= 7) {
+    const last2 = digits.slice(-2);
+    const area = digits.slice(0, 3);
+    return `+90 ${area} ••• •• ${last2}`;
+  }
+  return '+90 5XX ••• •• XX';
 }
 
 // SMS Gateway & Credit Status Endpoints
