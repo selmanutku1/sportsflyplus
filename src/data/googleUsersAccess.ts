@@ -218,25 +218,26 @@ export async function fetchAndMergeGoogleUsersFromFirestore(): Promise<GoogleUse
 
     snap.docs.forEach((d) => {
       const data = d.data() as Partial<GoogleUserAccessRecord>;
-      if (data.email && data.email.trim().toLowerCase() !== ADMIN_GOOGLE_EMAIL) {
+      if (data.email) {
         const key = data.email.trim().toLowerCase();
         const existing = map.get(key);
+        const isAdmin = key === ADMIN_GOOGLE_EMAIL;
         map.set(key, {
           id: data.id || d.id,
           uid: data.uid || existing?.uid || d.id,
-          name: data.name || existing?.name || 'Google Kullanıcısı',
+          name: data.name || existing?.name || (isAdmin ? 'Selman Utku' : 'Google Kullanıcısı'),
           email: data.email.trim(),
           avatarUrl: data.avatarUrl || existing?.avatarUrl,
-          clubName: data.clubName || existing?.clubName || 'Paket Seçimi Bekleniyor',
+          clubName: data.clubName || existing?.clubName || (isAdmin ? 'SportsFly Kadıköy Merkez Şube' : 'Paket Seçimi Bekleniyor'),
           phone: data.phone || existing?.phone || '+90 532 000 00 00',
           firstLoginAt: data.firstLoginAt || existing?.firstLoginAt || '30.09.2026 12:00',
           lastLoginAt: data.lastLoginAt || existing?.lastLoginAt || '30.09.2026 15:00',
-          assignedPlan: data.assignedPlan || existing?.assignedPlan || 'Paket Seçilmedi',
+          assignedPlan: data.assignedPlan || existing?.assignedPlan || (isAdmin ? 'Pro Akademi & Çoklu Şube' : 'Paket Seçilmedi'),
           allowedPages: Array.isArray(data.allowedPages) && data.allowedPages.length > 0
             ? (data.allowedPages as NavPage[])
-            : existing?.allowedPages || ['paketler'],
-          isFullAccess: Boolean(data.isFullAccess ?? existing?.isFullAccess ?? false),
-          notes: data.notes || existing?.notes,
+            : existing?.allowedPages || (isAdmin ? ['anasayfa', 'sporcular', 'gruplar', 'egitmenler', 'yoklama', 'sporcu-karnesi', 'on-muhasebe', 'paketler', 'yetkilendirmeler'] : ['paketler']),
+          isFullAccess: Boolean(data.isFullAccess ?? existing?.isFullAccess ?? isAdmin),
+          notes: data.notes || existing?.notes || (isAdmin ? 'Süper Admin (Google OAuth ile doğrulandı)' : undefined),
         });
       }
     });
@@ -261,9 +262,10 @@ export function registerOrUpdateGoogleLoginUser(params: {
   phone?: string;
 }): GoogleUserAccessRecord | null {
   const cleanEmail = (params.email || '').trim().toLowerCase();
-  if (!cleanEmail || cleanEmail === ADMIN_GOOGLE_EMAIL) {
+  if (!cleanEmail) {
     return null;
   }
+  const isAdmin = cleanEmail === ADMIN_GOOGLE_EMAIL;
 
   const now = new Date();
   const formattedNow = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1)
@@ -282,6 +284,7 @@ export function registerOrUpdateGoogleLoginUser(params: {
       name: params.name || list[existingIdx].name,
       avatarUrl: params.avatarUrl || list[existingIdx].avatarUrl,
       lastLoginAt: formattedNow,
+      isFullAccess: isAdmin || list[existingIdx].isFullAccess,
     };
     const nextList = [...list];
     nextList[existingIdx] = updated;
@@ -291,19 +294,23 @@ export function registerOrUpdateGoogleLoginUser(params: {
   }
 
   const newRecord: GoogleUserAccessRecord = {
-    id: `guser-${Date.now()}`,
-    uid: params.uid || `google-uid-${Date.now()}`,
-    name: params.name || 'Google Kullanıcısı',
-    email: params.email.trim(),
+    id: isAdmin ? 'guser-admin' : `guser-${Date.now()}`,
+    uid: params.uid || (isAdmin ? 'admin-google-selman' : `google-uid-${Date.now()}`),
+    name: params.name || (isAdmin ? 'Selman Utku' : 'Google Kullanıcısı'),
+    email: cleanEmail,
     avatarUrl: params.avatarUrl,
-    clubName: params.clubName || 'Paket Seçimi Bekleniyor',
-    phone: params.phone || '+90 532 000 00 00',
+    clubName: params.clubName || (isAdmin ? 'SportsFly Kadıköy Merkez Şube' : 'Paket Seçimi Bekleniyor'),
+    phone: params.phone || (isAdmin ? '0216 850 1907' : '+90 532 000 00 00'),
     firstLoginAt: formattedNow,
     lastLoginAt: formattedNow,
-    assignedPlan: 'Paket Seçilmedi',
-    allowedPages: ['paketler'],
-    isFullAccess: false,
-    notes: 'Google ile giriş yaptı — Admin tarafından alan yetkilendirmesi yapılabilir.',
+    assignedPlan: isAdmin ? 'Pro Akademi & Çoklu Şube' : 'Paket Seçilmedi',
+    allowedPages: isAdmin
+      ? ['anasayfa', 'sporcular', 'gruplar', 'egitmenler', 'yoklama', 'sporcu-karnesi', 'on-muhasebe', 'paketler', 'yetkilendirmeler']
+      : ['paketler'],
+    isFullAccess: isAdmin,
+    notes: isAdmin
+      ? 'Süper Admin (Google OAuth ile doğrulandı - Tam Sistem Erişimi)'
+      : 'Google ile giriş yaptı — Admin tarafından alan yetkilendirmesi yapılabilir.',
   };
 
   const nextList = [newRecord, ...list];

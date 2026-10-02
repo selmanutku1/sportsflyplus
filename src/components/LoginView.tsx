@@ -38,7 +38,7 @@ import {
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { auth } from '../firebase';
 import { ensureFirebaseAuthSession, persistUserToFirestore } from '../services/userService';
-import { getStoredGoogleUsers, registerOrUpdateGoogleLoginUser } from '../data/googleUsersAccess';
+import { registerOrUpdateGoogleLoginUser } from '../data/googleUsersAccess';
 import { basvurularService } from '../services/firestoreService';
 import { LEGAL_TEXTS, LegalDoc } from '../data/legalTexts';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -444,11 +444,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     badge: string;
   } | null>(null);
 
-  // Google Account Chooser modal states
-  const [showGoogleAccountPicker, setShowGoogleAccountPicker] = useState(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [customGoogleName, setCustomGoogleName] = useState('');
-
   // Unified Google sign in processor (genuine Firebase Auth & Firestore sync)
   const performGoogleLoginSuccess = async (
     googleEmail: string,
@@ -531,7 +526,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       );
 
       setIsLoading(false);
-      setShowGoogleAccountPicker(false);
       onLoginSuccess('Süper Admin');
       return;
     }
@@ -575,25 +569,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     );
 
     setIsLoading(false);
-    setShowGoogleAccountPicker(false);
     onLoginSuccess('Google Kullanıcısı');
   };
 
-  // Handle Google / Social Login — Activates the Google Account Chooser modal directly
-  const handleGoogleLogin = () => {
+  // Handle Google / Social Login — Directly prompts Google Account Chooser screen (accounts.google.com select_account)
+  const handleGoogleLogin = async () => {
     setLoginError(null);
     setShowRegisterModal(false);
-    setShowGoogleAccountPicker(true);
-  };
-
-  // Official native Google OAuth pop-up login trigger
-  const handleNativeGooglePopupLogin = async () => {
-    setLoginError(null);
     setIsLoading(true);
-    setLoadingText('Google açılır penceresi başlatılıyor...');
+    setLoadingText('Google hesap seçim ekranı açılıyor...');
 
     try {
       const provider = new GoogleAuthProvider();
+      // Forces Google to prompt account selection (select_account)
       provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
@@ -607,15 +595,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       setIsLoading(false);
 
       if (err?.code === 'auth/popup-closed-by-user') {
-        setLoginError('Google giriş penceresi kapatıldı. Aşağıdaki hesap seçeneklerinden birini seçebilirsiniz.');
+        setLoginError('Google hesap seçim penceresi kapatıldı.');
         return;
       }
 
       if (err?.code === 'auth/popup-blocked') {
-        setLoginError('Tarayıcınız veya önizleme penceresi Google açılır penceresini (popup) engelledi. Lütfen aşağıdaki hesap seçeneklerinden doğrudan devam ediniz.');
-      } else {
-        setLoginError('Google açılır penceresi açılamadı. Aşağıdaki hesap listesinden doğrudan giriş yapabilirsiniz.');
+        setLoginError('Tarayıcınız Google açılır penceresini (popup) engelledi. Lütfen adres çubuğundaki açılır pencere iznini verip tekrar deneyiniz.');
+        return;
       }
+      setLoginError(err?.message || 'Google ile giriş yapılırken bir hata oluştu. Lütfen tekrar deneyiniz.');
     }
   };
 
@@ -945,22 +933,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </svg>
           <span>Google ile Giriş Yap</span>
         </button>
-
-        {/* Google Account Selector Option Link */}
-        <div className="flex items-center justify-between text-[11.5px] -mt-2.5 mb-3 px-1">
-          <span className="text-slate-400 font-medium">Resmi Google girişi</span>
-          <button
-            type="button"
-            onClick={() => {
-              setLoginError(null);
-              setShowGoogleAccountPicker(true);
-            }}
-            className="text-blue-600 hover:text-blue-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-          >
-            <span>Google Hesabı Seç</span>
-            <ChevronRight className="w-3 h-3" />
-          </button>
-        </div>
 
         {/* Divider: "veya e-posta / telefon ile" */}
         <div className="w-full flex items-center gap-3 my-4">
@@ -1763,172 +1735,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           handleRoleQuickSelect('sporcu');
         }}
       />
-
-      {/* Google Account Chooser Modal (Active Google Account Selection Screen) */}
-      {showGoogleAccountPicker && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 space-y-4 animate-in fade-in zoom-in-95 relative text-left max-h-[92vh] overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => setShowGoogleAccountPicker(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center p-2.5 shrink-0 shadow-xs">
-                <svg className="w-full h-full" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Google Hesabı Seçin</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">SportsFly Spor Kulübü Sistemi için oturum açın</p>
-              </div>
-            </div>
-
-            {/* Official Google Native Pop-up Button */}
-            <button
-              type="button"
-              onClick={handleNativeGooglePopupLogin}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl border-2 border-blue-500/30 bg-blue-50/60 dark:bg-blue-950/40 hover:bg-blue-50 hover:border-blue-500 text-blue-700 dark:text-blue-300 font-bold text-xs transition-all shadow-xs cursor-pointer group"
-            >
-              <svg className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-              </svg>
-              <span>Resmi Google Penceresi ile Oturum Aç (Açılır Pencere)</span>
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="h-[1px] bg-slate-200 dark:bg-slate-700 flex-1" />
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">veya kayıtlı hesabı seçin</span>
-              <div className="h-[1px] bg-slate-200 dark:bg-slate-700 flex-1" />
-            </div>
-
-            {/* Account Options */}
-            <div className="space-y-2.5">
-              {/* Option 1: Selman Utku (Super Admin) */}
-              <button
-                type="button"
-                onClick={() => performGoogleLoginSuccess('selmanutkumarmara@gmail.com', 'Selman Utku', undefined, 'admin-google-selman')}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100/70 hover:border-emerald-400 transition-all text-left group cursor-pointer shadow-xs"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-emerald-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
-                    SU
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">Selman Utku</span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-600 text-white">
-                        Süper Admin
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block truncate">selmanutkumarmara@gmail.com</span>
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium block">Tüm Kulüp ve Panel Modüllerine Tam Erişim</span>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform shrink-0" />
-              </button>
-
-              {/* Dynamic Stored Google Users */}
-              {getStoredGoogleUsers()
-                .filter((u) => u.email.trim().toLowerCase() !== ADMIN_GOOGLE_EMAIL)
-                .slice(0, 3)
-                .map((guser) => (
-                  <button
-                    key={guser.id}
-                    type="button"
-                    onClick={() => performGoogleLoginSuccess(guser.email, guser.name, guser.avatarUrl, guser.uid)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-all text-left group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-                        {guser.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-slate-900 dark:text-white text-xs">{guser.name}</span>
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                            {guser.assignedPlan || 'Google Kullanıcısı'}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">{guser.email}</span>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 group-hover:text-blue-600 transition-all shrink-0" />
-                  </button>
-                ))}
-
-              {/* Option 2: Custom Google Account Form */}
-              <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 space-y-2.5">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Farklı Bir Google Hesabı ile Giriş:</span>
-                <div className="space-y-2 text-xs">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Google E-Posta Adresi</label>
-                    <input
-                      type="email"
-                      value={customGoogleEmail}
-                      onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                      placeholder="ad.soyad@gmail.com"
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-3 py-2 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Adınız Soyadınız (İsteğe Bağlı)</label>
-                    <input
-                      type="text"
-                      value={customGoogleName}
-                      onChange={(e) => setCustomGoogleName(e.target.value)}
-                      placeholder="Örn: Mertcan Demir"
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-3 py-2 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!customGoogleEmail.trim() || !customGoogleEmail.includes('@')}
-                    onClick={() => {
-                      if (!customGoogleEmail.trim()) return;
-                      const displayName = customGoogleName.trim() || customGoogleEmail.split('@')[0];
-                      performGoogleLoginSuccess(customGoogleEmail, displayName, undefined, `google-${Date.now()}`);
-                    }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 disabled:opacity-40 font-bold text-xs transition-all cursor-pointer shadow-xs"
-                  >
-                    Bu Hesapla Giriş Yap & Firestore'a Bağla
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Security and Database Connection Note */}
-            <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900 text-[11px] text-blue-800 dark:text-blue-300 leading-tight">
-              <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-              <span>
-                <strong>Firebase Auth & Firestore Aktif:</strong> Giriş yapılan hesap 'auth' oturumuna bağlanır ve kullanıcı profili Firestore veritabanında kalıcı olarak saklanır.
-              </span>
-            </div>
-
-            <div className="pt-1 text-center">
-              <button
-                type="button"
-                onClick={() => setShowGoogleAccountPicker(false)}
-                className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-semibold cursor-pointer"
-              >
-                Vazgeç ve Giriş Ekranına Dön
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
