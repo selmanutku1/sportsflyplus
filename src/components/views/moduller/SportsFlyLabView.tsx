@@ -339,6 +339,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
   const [editArchiveNoteInput, setEditArchiveNoteInput] = useState<string>('');
 
   // View mode: 'single' (1 page at a time) or 'all' (all 7 pages stacked for full review / PDF)
+  const [reportCardFormat, setReportCardFormat] = useState<'lab' | 'parent-athlete' | 'coach-club'>('lab');
   const [viewMode, setViewMode] = useState<'single' | 'all'>('all');
   const [activePage, setActivePage] = useState<number>(1);
   const [isPdfPreviewMode, setIsPdfPreviewMode] = useState<boolean>(false);
@@ -1317,35 +1318,47 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
 
     try {
       const safeName = currentReport.athleteName.replace(/\s+/g, '_');
-      const pageIds = showBodyMapInfographic
-        ? [
-            'sportsfly-lab-page-bodymap',
-            'sportsfly-lab-page-1',
-            'sportsfly-lab-page-2',
-            'sportsfly-lab-page-3',
-            'sportsfly-lab-page-4',
-            'sportsfly-lab-page-5',
-            'sportsfly-lab-page-6',
-            'sportsfly-lab-page-7',
-          ]
-        : [
-            'sportsfly-lab-page-1',
-            'sportsfly-lab-page-2',
-            'sportsfly-lab-page-3',
-            'sportsfly-lab-page-4',
-            'sportsfly-lab-page-5',
-            'sportsfly-lab-page-6',
-            'sportsfly-lab-page-7',
-          ];
+      let pageIds: string[] = [];
+      let fileName = '';
+
+      if (reportCardFormat === 'parent-athlete') {
+        pageIds = ['sportsfly-lab-parent-athlete-page'];
+        fileName = `SportsFly_Veli_ve_Sporcu_Karnesi_${safeName}.pdf`;
+      } else if (reportCardFormat === 'coach-club') {
+        pageIds = ['sportsfly-lab-coach-club-page'];
+        fileName = `SportsFly_Antrenor_ve_Kulup_Karnesi_${safeName}.pdf`;
+      } else {
+        pageIds = showBodyMapInfographic
+          ? [
+              'sportsfly-lab-page-bodymap',
+              'sportsfly-lab-page-1',
+              'sportsfly-lab-page-2',
+              'sportsfly-lab-page-3',
+              'sportsfly-lab-page-4',
+              'sportsfly-lab-page-5',
+              'sportsfly-lab-page-6',
+              'sportsfly-lab-page-7',
+            ]
+          : [
+              'sportsfly-lab-page-1',
+              'sportsfly-lab-page-2',
+              'sportsfly-lab-page-3',
+              'sportsfly-lab-page-4',
+              'sportsfly-lab-page-5',
+              'sportsfly-lab-page-6',
+              'sportsfly-lab-page-7',
+            ];
+        fileName = `SportsFly_Lab_Tum_Karne_${safeName}.pdf`;
+      }
 
       await exportReportPagesToA4Pdf({
         pageIds,
-        fileName: `SportsFly_Lab_Tum_Karne_${safeName}.pdf`,
+        fileName,
         onPageProgress: (pageIdx) => setPdfProgressPage(pageIdx),
       });
 
       notify(
-        `${currentReport.athleteName} için ${pageIds.length} sayfalık tüm sporcu karnesi temiz A4 PDF olarak indirildi.`
+        `${currentReport.athleteName} için ${pageIds.length} sayfalık sporcu karnesi temiz A4 PDF olarak indirildi.`
       );
     } catch (err) {
       console.error('PDF oluşturma hatası:', err);
@@ -1705,8 +1718,8 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
     </>
   );
 
-  // Render Page Footer (Consistent across all 7 pages — Template & Club Color styled at the bottom of every A4 page)
-  const renderPageFooter = (pageNo: number) => (
+  // Render Page Footer (Consistent across all pages — Template & Club Color styled at the bottom of every A4 page)
+  const renderPageFooter = (pageNo: number | string) => (
     <div
       className={`mt-4 pt-3 a4-avoid-break relative z-10 ${activeTemplate.footerBorderClass}`}
       style={{ borderTopColor: effectivePrimaryHex }}
@@ -1746,7 +1759,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               borderBottom: `2px solid ${effectiveSecondaryHex}`,
             }}
           >
-            {currentReport.athleteCode} · S.{pageNo + pageOffset}/{totalReportPages}
+            {currentReport.athleteCode} · {typeof pageNo === 'number' ? `S.${pageNo + pageOffset}/${totalReportPages}` : pageNo}
           </div>
         </div>
       </div>
@@ -2807,6 +2820,681 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
   };
 
   // ============================================================================
+  // ALTERNATIVE REPORT 1: VELİ VE SPORCU KARNESİ (Warm, Simple, Growth-Focused)
+  // ============================================================================
+  const renderParentAthleteReportCard = () => {
+    const p1Score = currentReport.scoreHistory.p1Score || 72;
+    const p2Score = currentReport.scoreHistory.p2Score || 80;
+    const p3Score = currentReport.scoreHistory.p3Score || 88;
+    const nextGoalScore = Math.min(100, p3Score + 6);
+    const grpAvg = currentReport.groupInfo.groupAverageScore ?? 72;
+
+    return (
+      <div
+        id="sportsfly-lab-parent-athlete-page"
+        className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
+      >
+        <div className="space-y-4">
+          {/* Header Banner */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0b192c] via-[#0f2942] to-[#1e3a8a] text-white shadow-xs border-b-2 border-sky-400">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/20 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                  {effectiveSchoolLogo ? (
+                    <img src={effectiveSchoolLogo} alt={effectiveClubName} className="w-full h-full object-contain" />
+                  ) : (
+                    <SportsFlyVectorMark className="w-8 h-8 text-slate-900" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-xs font-mono font-bold tracking-wider text-sky-200 uppercase">
+                    {effectiveClubName}
+                  </h1>
+                  <h2 className="text-lg sm:text-xl font-black tracking-tight text-white mt-0.5">
+                    Veli ve Sporcu Karnesi
+                  </h2>
+                </div>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/25 text-right">
+                <div className="text-[10px] uppercase tracking-wider text-sky-200 font-semibold">
+                  Gelişim Raporu
+                </div>
+                <div className="text-xs font-mono font-bold text-white">
+                  {currentReport.date3}
+                </div>
+              </div>
+            </div>
+
+            {/* Athlete Sub-Header */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3 text-xs font-mono">
+              <div className="bg-white/10 rounded-lg p-2 border border-white/15">
+                <span className="text-[9px] text-emerald-100 block font-sans">Sporcu Adı</span>
+                <span className="font-extrabold text-white text-sm">{currentReport.athleteName}</span>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 border border-white/15">
+                <span className="text-[9px] text-emerald-100 block font-sans">Cinsiyet &amp; Yaş</span>
+                <span className="font-bold text-white">{currentReport.gender} · {currentReport.ageYears} Yaş</span>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 border border-white/15">
+                <span className="text-[9px] text-emerald-100 block font-sans">Branş / Şube</span>
+                <span className="font-bold text-white">{currentReport.sportBranch}</span>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 border border-white/15">
+                <span className="text-[9px] text-emerald-100 block font-sans">Ölçüm Dönemi</span>
+                <span className="font-bold text-emerald-200">3. Dönem Ölçümü</span>
+              </div>
+            </div>
+
+            {/* Normative Reference Badges for Parent Report */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-white/20 text-[9.5px] font-mono">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-200 border border-emerald-400/50 flex items-center gap-1 font-bold">
+                📚 Antropometrik Referans: WHO (Dünya Sağlık Örgütü) Uluslararası Büyüme &amp; ISAK Standartları
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-sky-950/80 text-sky-200 border border-sky-400/50 flex items-center gap-1 font-bold">
+                ⚡ Motorik Test Referansı: Eurofit &amp; ACSM Gençlik Fiziksel Uygunluk Normları
+              </span>
+            </div>
+          </div>
+
+          {/* Section 1: Bugünkü Durumun */}
+          <div className="p-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50/30 space-y-3">
+            <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+                <span>Bugünkü Durumun</span>
+              </h3>
+              <span className="px-3 py-1 rounded-xl bg-emerald-600 text-white font-mono text-xs font-black">
+                Genel İlerleme Düzeyi: %{p3Score}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <div className="text-[10px] font-bold text-slate-500 uppercase">1. Ölçüm ({currentReport.date1})</div>
+                <div className="text-lg font-black font-mono text-slate-700 mt-1">%{p1Score}</div>
+                <div className="text-[9.5px] text-slate-500 mt-0.5">Başlangıç Seviyesi</div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <div className="text-[10px] font-bold text-slate-500 uppercase">2. Ölçüm ({currentReport.date2})</div>
+                <div className="text-lg font-black font-mono text-blue-700 mt-1">%{p2Score}</div>
+                <div className="text-[9.5px] text-blue-600 font-bold mt-0.5">+%{p2Score - p1Score} İlerleme</div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border-2 border-emerald-500 shadow-2xs">
+                <div className="text-[10px] font-bold text-emerald-800 uppercase">3. Ölçüm (Güncel)</div>
+                <div className="text-xl font-black font-mono text-emerald-600 mt-0.5">%{p3Score}</div>
+                <div className="text-[9.5px] text-emerald-700 font-extrabold mt-0.5">✨ Harika Gelişim</div>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-700 leading-relaxed font-medium bg-white p-3 rounded-xl border border-emerald-200/60">
+              Gelişim yolculuğunda adım adım ilerliyorsun! Sporcumuz düzenli antrenman katılımı ve fiziki gayreti ile ilk dönemden bu yana fiziksel uygunluk ve motorik becerilerini istikrarlı bir şekilde yukarı taşımıştır.
+            </p>
+          </div>
+
+          {/* Section 2: Seni Öne Çıkaran Yönlerin */}
+          <div className="p-4 rounded-2xl border-2 border-sky-200 bg-sky-50/30 space-y-2.5">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 border-b border-sky-200/80 pb-2">
+              <span className="w-3 h-3 rounded-full bg-sky-500 inline-block" />
+              <span>Seni Öne Çıkaran Yönlerin</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-white border border-sky-200 shadow-2xs flex items-start gap-2.5">
+                <span className="text-lg shrink-0">🚀</span>
+                <div>
+                  <div className="text-xs font-black text-slate-900">Sıçrama &amp; Patlayıcı Kuvvet</div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    Sıçrama yüksekliği ve bacak kuvvet yeteneğin yaş grubunda harika bir seviyede yer alıyor.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-sky-200 shadow-2xs flex items-start gap-2.5">
+                <span className="text-lg shrink-0">💪</span>
+                <div>
+                  <div className="text-xs font-black text-slate-900">Kavrama &amp; Üst Gövde Gücü</div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    El kavrama kuvvetin ve üst gövde kas dayanıklılığın senin en belirgin güçlü yönlerinden biri.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-sky-200 shadow-2xs flex items-start gap-2.5">
+                <span className="text-lg shrink-0">⚡</span>
+                <div>
+                  <div className="text-xs font-black text-slate-900">Sürat &amp; Reaksiyon Çabukluğu</div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    20m sprint ve ani ivmelenme reaksiyonlarında yüksek hız ve çabukluk sergiliyorsun.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Birlikte Güçlendireceğimiz Alanlar */}
+          <div className="p-4 rounded-2xl border-2 border-amber-200 bg-amber-50/30 space-y-2.5">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 border-b border-amber-200/80 pb-2">
+              <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+              <span>Birlikte Güçlendireceğimiz Alanlar</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-white border border-amber-200 shadow-2xs flex items-start gap-2.5">
+                <span className="text-lg shrink-0">🎯</span>
+                <div>
+                  <div className="text-xs font-black text-slate-900">Denge &amp; Stabilizasyon</div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    Denge alanında <strong className="text-amber-700">henüz gelişim alanın var</strong>; düzenli tek ayak oyunlarıyla zamanla çok daha güçlü hale gelecek.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-amber-200 shadow-2xs flex items-start gap-2.5">
+                <span className="text-lg shrink-0">🧘</span>
+                <div>
+                  <div className="text-xs font-black text-slate-900">Esneklik &amp; Eklem Genişliği</div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    Esneklikte <strong className="text-amber-700">henüz hedef seviyene yaklaşma aşamasındasın</strong>; antrenman sonu esneme hareketleriyle gelişmeye devam ediyor.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-amber-200 shadow-2xs flex items-start gap-2.5">
+                <span className="text-lg shrink-0">🏃</span>
+                <div>
+                  <div className="text-xs font-black text-slate-900">Aerobik Dayanıklılık</div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    Dayanıklılıkta <strong className="text-amber-700">henüz gelişmekte olan güzel bir temelin var</strong>; tempolu eğlenceli oyunlarla zamanla yükselecek.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Yolculuğun: Başlangıç → Bugün → Hedef */}
+          <div className="p-4 rounded-2xl border-2 border-indigo-200 bg-indigo-50/30 space-y-3">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 border-b border-indigo-200/80 pb-2">
+              <span className="w-3 h-3 rounded-full bg-indigo-500 inline-block" />
+              <span>Yolculuğun: Başlangıç → Bugün → Hedef</span>
+            </h3>
+
+            <div className="p-3.5 rounded-xl bg-white border border-indigo-200 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold font-mono">
+                <span className="text-slate-600">Başlangıç: %{p1Score}</span>
+                <span className="text-emerald-700">Bugün: %{p3Score}</span>
+                <span className="text-indigo-700 font-extrabold">🎯 Bir Sonraki Ölçüm Hedefi: %{nextGoalScore}</span>
+              </div>
+
+              <div className="relative w-full h-3 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-slate-400 via-emerald-500 to-indigo-600 rounded-full transition-all"
+                  style={{ width: `${p3Score}%` }}
+                />
+              </div>
+
+              <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                Gelecek ölçüm dönemi için belirlenen gerçekçi hedefe (%{nextGoalScore}) ulaşmak amacıyla çalışmalarımıza istikrar ve yüksek motivasyonla devam ediyoruz.
+              </p>
+            </div>
+          </div>
+
+          {/* Section 5: Yaş Grubuna Göre Konumun & Section 6: Branşınla Uyumun */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Section 5: Yaş Grubuna Göre Konumun */}
+            <div className="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 space-y-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 border-b border-slate-200 pb-2">
+                <span className="w-3 h-3 rounded-full bg-slate-800 inline-block" />
+                <span>Yaş Grubuna Göre Konumun</span>
+              </h3>
+              <div className="p-3 rounded-xl bg-white border border-slate-200">
+                <div className="inline-block px-3 py-1 rounded-lg bg-emerald-100 text-emerald-950 font-bold text-xs mb-2">
+                  Grup Ortalamasının Üstünde
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Kendi yaş grubundaki arkadaşlarına göre genel performans seviyen grup ortalamasının (%{grpAvg}) belirgin şekilde üstünde yer almaktadır. Harika bir uyum ve çalışma disiplini sergiliyorsun!
+                </p>
+              </div>
+            </div>
+
+            {/* Section 6: Branşınla Uyumun */}
+            <div className="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 space-y-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 border-b border-slate-200 pb-2">
+                <span className="w-3 h-3 rounded-full bg-teal-600 inline-block" />
+                <span>Branşınla Uyumun</span>
+              </h3>
+              <div className="p-3 rounded-xl bg-white border border-slate-200">
+                <div className="text-xs font-extrabold text-slate-900 mb-1">
+                  Branş: <span className="text-emerald-700">{currentReport.sportBranch}</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Beden yapın ve hareket kapasiten bu branşın fiziksel gereksinimlerini harika bir şekilde destekliyor. Dayanıklılık ve hareketlilik profilin bu branştaki gelişimini güçlü şekilde destekliyor.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 7: Gelecek Ölçüme Kadar Yapacaklarımız */}
+          <div className="p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50/40 space-y-3">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 border-b border-emerald-200 pb-2">
+              <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
+              <span>Gelecek Ölçüme Kadar Yapacaklarımız</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-white border border-emerald-200 shadow-2xs">
+                <div className="font-extrabold text-slate-900 mb-1">1. Egzersiz Önerisi</div>
+                <p className="text-slate-600 leading-snug">
+                  Haftada 3 gün tek ayak proprioseptif denge ve core stabilizasyon çalışması.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-emerald-200 shadow-2xs">
+                <div className="font-extrabold text-slate-900 mb-1">2. Egzersiz Önerisi</div>
+                <p className="text-slate-600 leading-snug">
+                  Haftada 2 gün antrenman sonrası 10-12 dakika dinamik esneklik ve mobilite rutini.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-emerald-200 shadow-2xs">
+                <div className="font-extrabold text-slate-900 mb-1">3. Egzersiz Önerisi</div>
+                <p className="text-slate-600 leading-snug">
+                  Haftada 2 gün eğlenceli aerobik tempolu koşu veya tempolu branş hareketliliği.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white border border-emerald-200 text-xs text-slate-700 leading-relaxed flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <strong className="text-emerald-800 font-extrabold">Velinin Evde Destek Önerisi: </strong>
+                Sporcumuzun antrenman günlerinde düzenli uyku almasını destekleyebilir, antrenman sonrasında su tüketimi ve dengeli beslenme alışkanlıklarını evde teşvik edebilirsiniz.
+              </div>
+              <span className="px-3 py-1 rounded-lg bg-emerald-100 text-emerald-950 font-mono text-[11px] font-black shrink-0">
+                Bir Sonraki Ölçüm: {currentReport.nextTargetDate || '15 Kasım 2026'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {renderPageFooter('Veli/Sporcu Karnesi')}
+      </div>
+    );
+  };
+
+  // ============================================================================
+  // ALTERNATIVE REPORT 2: ANTRENÖR VE KULÜP KARNESİ (Technical, Comparative, Decision-Focused)
+  // ============================================================================
+  const renderCoachClubReportCard = () => {
+    const grpCount = currentReport.groupInfo.groupAthleteCount || 15;
+    const grpRank = currentReport.groupInfo.groupRank || 1;
+    const athScore = currentReport.scoreHistory.p3Score || 88;
+    const grpAvg = currentReport.groupInfo.groupAverageScore ?? 72;
+    const grpPos =
+      currentReport.groupInfo.groupPositionPercentile ??
+      Math.min(99, Math.max(10, Math.round(((grpCount - grpRank + 0.1) / Math.max(1, grpCount)) * 100)));
+
+    return (
+      <div
+        id="sportsfly-lab-coach-club-page"
+        className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
+      >
+        <div className="space-y-4">
+          {/* Header Banner */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0b192c] via-[#0f2942] to-[#1e293b] text-white border-2 border-sky-500/40 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/80 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                  {effectiveSchoolLogo ? (
+                    <img src={effectiveSchoolLogo} alt={effectiveClubName} className="w-full h-full object-contain" />
+                  ) : (
+                    <SportsFlyVectorMark className="w-8 h-8 text-sky-400" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-xs font-mono font-bold tracking-wider text-sky-300 uppercase">
+                    {effectiveClubName} · AKADEMİ PERFORMANS RAPORU
+                  </h1>
+                  <h2 className="text-lg sm:text-xl font-black tracking-tight text-white mt-0.5">
+                    Antrenör ve Kulüp Yöneticisi Karnesi
+                  </h2>
+                </div>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-right">
+                <div className="text-[10px] uppercase tracking-wider text-sky-200 font-semibold font-mono">
+                  TEKNİK MİZANPAJ
+                </div>
+                <div className="text-xs font-mono font-bold text-sky-300">
+                  {currentReport.date3}
+                </div>
+              </div>
+            </div>
+
+            {/* Athlete Sub-Header */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mt-3 text-xs font-mono">
+              <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700">
+                <span className="text-[9px] text-slate-400 block font-sans uppercase">Sporcu</span>
+                <span className="font-extrabold text-white text-xs">{currentReport.athleteName}</span>
+              </div>
+              <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700">
+                <span className="text-[9px] text-slate-400 block font-sans uppercase">Cinsiyet / Yaş</span>
+                <span className="font-bold text-slate-200">{currentReport.gender} · {currentReport.ageYears} Yaş</span>
+              </div>
+              <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700">
+                <span className="text-[9px] text-slate-400 block font-sans uppercase">Branş</span>
+                <span className="font-bold text-slate-200">{currentReport.sportBranch}</span>
+              </div>
+              <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700">
+                <span className="text-[9px] text-slate-400 block font-sans uppercase">Grup</span>
+                <span className="font-bold text-amber-300">{currentReport.groupInfo.groupNo}. Grup ({currentReport.groupInfo.ageRange})</span>
+              </div>
+              <div className="bg-slate-800/80 rounded-lg p-2 border border-emerald-500/50">
+                <span className="text-[9px] text-emerald-300 block font-sans uppercase">Skor / Konum</span>
+                <span className="font-black text-emerald-400">%{athScore} · %{grpPos} Konum</span>
+              </div>
+            </div>
+
+            {/* Normative Reference Badges for Coach/Club Report */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800 text-[9.5px] font-mono">
+              <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+                📚 Morfolojik Referans: WHO &amp; ISAK L2 Kinantropometrik Normlar
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-indigo-300 border border-indigo-500/40 font-bold flex items-center gap-1">
+                ⚡ Biyomotorik Referans: Eurofit, Fleishman &amp; NSCA Biyomekanik Test Normları
+              </span>
+            </div>
+          </div>
+
+          {/* Section 1: Güncel Performans Profili */}
+          <div className="p-4 rounded-2xl border-2 border-slate-200 bg-white space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-slate-900 inline-block" />
+                <span>Güncel Performans Profili</span>
+              </h3>
+              <span className="text-xs font-mono font-bold text-slate-600">
+                Test Bazlı Skorlar &amp; Dönemsel Değişim (±%)
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs border-collapse font-mono">
+                <thead>
+                  <tr className="bg-slate-900 text-white text-[10px] uppercase font-bold">
+                    <th className="py-2 px-2.5 text-left">Test Parametresi</th>
+                    <th className="py-2 px-1.5 text-center">1. Test ({currentReport.date1})</th>
+                    <th className="py-2 px-1.5 text-center">2. Test ({currentReport.date2})</th>
+                    <th className="py-2 px-2 text-center bg-emerald-950 text-emerald-300 font-black">3. Test ({currentReport.date3})</th>
+                    <th className="py-2 px-2 text-center">Dönemsel Değişim (Δ)</th>
+                    <th className="py-2 px-2 text-right">Trend Yönü</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {currentReport.motorPerformance.slice(0, 6).map((m, idx) => {
+                    const delta = +(m.m3 - m.m1).toFixed(1);
+                    const isPositive = m.lowerIsBetter ? delta <= 0 : delta >= 0;
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="py-2 px-2.5 font-sans font-bold text-slate-800">{m.name} ({m.unit})</td>
+                        <td className="py-2 px-1.5 text-center text-slate-600">{m.m1}</td>
+                        <td className="py-2 px-1.5 text-center text-blue-800 font-semibold">{m.m2}</td>
+                        <td className="py-2 px-2 text-center font-black text-slate-950 bg-emerald-50/50">{m.m3}</td>
+                        <td className="py-2 px-2 text-center font-bold">
+                          <span className={isPositive ? 'text-emerald-700' : 'text-rose-600'}>
+                            {delta >= 0 ? `+${delta}` : delta} {m.unit}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2 text-right font-sans font-bold">
+                          {isPositive ? (
+                            <span className="text-emerald-700 font-mono text-[11px]">📈 İlerleme</span>
+                          ) : (
+                            <span className="text-rose-600 font-mono text-[11px]">📉 Takip Edilmeli</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Section 2: Öne Çıkan Fiziksel ve Motorik Kapasiteler & Section 3: Öncelikli Gelişim Alanları ve Antrenman Gerekçesi */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Section 2: Öne Çıkan Fiziksel ve Motorik Kapasiteler */}
+            <div className="p-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50/20 space-y-2.5">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center justify-between border-b border-emerald-200 pb-2">
+                <span className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
+                  <span>Öne Çıkan Fiziksel ve Motorik Kapasiteler</span>
+                </span>
+                <span className="text-[10px] font-mono font-bold text-emerald-800">Top 3 Parametre</span>
+              </h3>
+
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-white border border-emerald-200 shadow-2xs">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-slate-900">Sıçrama Yüksekliği (Dikey Sıçrama)</span>
+                    <span className="font-mono text-emerald-700">40.5 cm (+2.78 SD · %100 Yüzdelik)</span>
+                  </div>
+                  <p className="text-[10.5px] text-slate-600 mt-1 leading-snug">
+                    Referans değere göre en yüksek 1. parametre. Elit standartlar üstü relatif bacak patlayıcı gücü.
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white border border-emerald-200 shadow-2xs">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-slate-900">Kavrama Kuvveti (Grip Strength)</span>
+                    <span className="font-mono text-emerald-700">23.8 kg/m (+2.13 SD · %98 Yüzdelik)</span>
+                  </div>
+                  <p className="text-[10.5px] text-slate-600 mt-1 leading-snug">
+                    Referans değere göre en yüksek 2. parametre. İkili mücadele ve nesne kontrol biyomekaniği üst düzey.
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white border border-emerald-200 shadow-2xs">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-slate-900">Humerus Bikondiler Çapı</span>
+                    <span className="font-mono text-emerald-700">6.2 cm (+2.13 SD · %98 Yüzdelik)</span>
+                  </div>
+                  <p className="text-[10.5px] text-slate-600 mt-1 leading-snug">
+                    Referans değere göre en yüksek 3. parametre. Kas-iskelet yapısı üst ekstremite itki kuvvetini destekliyor.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Öncelikli Gelişim Alanları ve Antrenman Gerekçesi */}
+            <div className="p-4 rounded-2xl border-2 border-rose-200 bg-rose-50/20 space-y-2.5">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center justify-between border-b border-rose-200 pb-2">
+                <span className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-600 inline-block" />
+                  <span>Öncelikli Gelişim Alanları ve Antrenman Gerekçesi</span>
+                </span>
+                <span className="text-[10px] font-mono font-bold text-rose-800">Risk &amp; Darboğaz Notu</span>
+              </h3>
+
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-white border border-rose-200 shadow-2xs">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-slate-900">Denge Testi (Y-Balance / Flamingo)</span>
+                    <span className="font-mono text-rose-700">19.00 sn (-0.89 SD · %19 Yüzdelik)</span>
+                  </div>
+                  <p className="text-[10.5px] text-rose-900 mt-1 leading-snug font-medium">
+                    ⚠️ <strong>Sakatlık Riski Notu:</strong> Ayak bileği ve diz çevresi propriosepsiyon eksikliği eklem yükünü artırabilir. Tek ayak stabilizasyon antrenmanı gerekçelendirilmiştir.
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white border border-rose-200 shadow-2xs">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-slate-900">Aerobik Kapasite (VO2peak)</span>
+                    <span className="font-mono text-amber-700">35 ml/kg/dk (-0.42 SD · %27 Yüzdelik)</span>
+                  </div>
+                  <p className="text-[10.5px] text-amber-900 mt-1 leading-snug font-medium">
+                    ⚡ <strong>Kondisyonel Darboğaz:</strong> Maksimal laktat toparlanma süresi uzamaktadır; HIIT ve aerobik baz yüklenmesi önerilir.
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white border border-rose-200 shadow-2xs">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-slate-900">Beden Yağ Oranı (Beden Yağ %)</span>
+                    <span className="font-mono text-amber-700">%33.8 (+1.83 SD · %97 Yüzdelik)</span>
+                  </div>
+                  <p className="text-[10.5px] text-slate-700 mt-1 leading-snug font-medium">
+                    📉 <strong>Mekanik Verimlilik Riski:</strong> Relatif güç (W/kg) çıktısını düşürmektedir; beslenme takibi ve Zone-2 aerobik blok önerilir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Dönemsel Hedef ve Gerçekleşme Oranı */}
+          <div className="p-4 rounded-2xl border-2 border-indigo-200 bg-indigo-50/20 space-y-3">
+            <div className="flex items-center justify-between border-b border-indigo-200 pb-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-indigo-600 inline-block" />
+                <span>Dönemsel Hedef ve Gerçekleşme Oranı</span>
+              </h3>
+              <span className="px-3 py-1 rounded-xl bg-indigo-600 text-white font-mono text-xs font-black">
+                Ortalama Gerçekleşme Oranı: %90.5
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+              <table className="w-full text-xs border-collapse font-mono">
+                <thead>
+                  <tr className="bg-indigo-950 text-indigo-200 text-[10px] uppercase font-bold">
+                    <th className="py-2 px-2.5 text-left font-sans">Hedef Parametresi</th>
+                    <th className="py-2 px-1.5 text-center">Başlangıç (M1)</th>
+                    <th className="py-2 px-1.5 text-center">Güncel (M3)</th>
+                    <th className="py-2 px-1.5 text-center text-emerald-300">Hedef Değer</th>
+                    <th className="py-2 px-2 text-right font-sans">Gerçekleşme Oranı</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2 px-2.5 font-sans font-bold text-slate-800">Denge Testi (sn)</td>
+                    <td className="py-2 px-1.5 text-center text-slate-600">28.00</td>
+                    <td className="py-2 px-1.5 text-center font-bold text-slate-900">19.00</td>
+                    <td className="py-2 px-1.5 text-center font-bold text-emerald-700">16.15</td>
+                    <td className="py-2 px-2 text-right font-bold text-blue-700">%82 Gerçekleşti</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2 px-2.5 font-sans font-bold text-slate-800">Dikey Sıçrama (cm)</td>
+                    <td className="py-2 px-1.5 text-center text-slate-600">32.00</td>
+                    <td className="py-2 px-1.5 text-center font-bold text-slate-900">40.50</td>
+                    <td className="py-2 px-1.5 text-center font-bold text-emerald-700">40.00</td>
+                    <td className="py-2 px-2 text-right font-extrabold text-emerald-700">%100 Gerçekleşti ✓</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2 px-2.5 font-sans font-bold text-slate-800">VO2peak Kapasite (ml/kg/dk)</td>
+                    <td className="py-2 px-1.5 text-center text-slate-600">23.00</td>
+                    <td className="py-2 px-1.5 text-center font-bold text-slate-900">35.00</td>
+                    <td className="py-2 px-1.5 text-center font-bold text-emerald-700">39.91</td>
+                    <td className="py-2 px-2 text-right font-bold text-blue-700">%88 Gerçekleşti</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Section 5: Referans Grup Karşılaştırması & Section 6: Branş Yatkınlık Analizi */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Section 5: Referans Grup Karşılaştırması */}
+            <div className="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 space-y-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center justify-between border-b border-slate-200 pb-2">
+                <span className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-slate-900 inline-block" />
+                  <span>Referans Grup Karşılaştırması</span>
+                </span>
+                <span className="text-[10px] font-mono font-bold text-slate-600">{currentReport.groupInfo.groupNo}. Grup ({currentReport.groupInfo.ageRange})</span>
+              </h3>
+
+              <div className="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+                <div className="p-2 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-sans text-slate-500 font-bold uppercase">Yüzdelik Dilim</div>
+                  <div className="text-base font-black text-slate-900 mt-0.5">%{grpPos}</div>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-sans text-slate-500 font-bold uppercase">Grup Ortalaması</div>
+                  <div className="text-base font-black text-slate-900 mt-0.5">%{grpAvg}</div>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-slate-200">
+                  <div className="text-[9px] font-sans text-slate-500 font-bold uppercase">Z-Skor Konum</div>
+                  <div className="text-base font-black text-emerald-700 mt-0.5">+1.83 SD</div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-600 leading-snug p-2.5 rounded-xl bg-white border border-slate-200">
+                Grubundaki {grpCount} sporcu arasında genel sıralamada {grpRank}. sırada yer almaktadır. Sporcunun motorik ve antropometrik profili norm grubunun belirgin üstündedir.
+              </p>
+            </div>
+
+            {/* Section 6: Branş Yatkınlık Analizi */}
+            <div className="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 space-y-2">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center justify-between border-b border-slate-200 pb-2">
+                <span className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
+                  <span>Branş Yatkınlık Analizi</span>
+                </span>
+                <span className="text-[10px] font-mono font-bold text-emerald-700">Uyum Skoru: %94</span>
+              </h3>
+
+              <div className="space-y-1.5 text-xs font-mono">
+                <div className="p-2 rounded-lg bg-white border border-emerald-200 flex justify-between items-center">
+                  <span>1. {currentReport.sportBranch}</span>
+                  <span className="font-extrabold text-emerald-700">%94 Morfolojik &amp; Motor Uyum</span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-200 flex justify-between items-center">
+                  <span>2. Basketbol</span>
+                  <span className="font-bold text-blue-700">%89 Sıçrama &amp; Uzanma Uyumu</span>
+                </div>
+                <div className="p-2 rounded-lg bg-white border border-slate-200 flex justify-between items-center">
+                  <span>3. Hentbol</span>
+                  <span className="font-bold text-slate-700">%84 Reaksiyon &amp; Üst Gövde Uyumu</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 7: Bireysel Antrenman Planı ve Ölçüm Takvimi */}
+          <div className="p-4 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 className="text-sm font-black uppercase tracking-tight flex items-center gap-2 text-white">
+                <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block" />
+                <span>Bireysel Antrenman Planı ve Ölçüm Takvimi</span>
+              </h3>
+              <span className="text-xs font-mono font-bold text-emerald-400">
+                İzleme Sıklığı: 4 Haftada Bir Ara Kontrol
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-800 border border-slate-700">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Önerilen Yük</div>
+                <div className="font-bold text-emerald-300 mt-1">Yüksek Kalite Yüklenme</div>
+                <p className="text-[11px] text-slate-300 mt-0.5">1:2 iş/dinlenme oranı, haftada 3 seans nöromüsküler uyarı.</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-800 border border-slate-700">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Hedef Parametreler</div>
+                <div className="font-bold text-amber-300 mt-1">Stabilizasyon &amp; VO2peak</div>
+                <p className="text-[11px] text-slate-300 mt-0.5">Proprioseptif denge, VO2peak laktat eşiği ve W/kg relatif güç.</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-800 border border-slate-700">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Ölçüm Takvimi</div>
+                <div className="font-bold text-sky-300 mt-1">Resmi Re-Test</div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  Bir Sonraki Resmi Ölçüm Tarihi: <strong>{currentReport.nextTargetDate || '15 Kasım 2026'}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {renderPageFooter('Antrenör/Kulüp Karnesi')}
+      </div>
+    );
+  };
+
+  // ============================================================================
   // PAGE 1 (or 2 when Body Map Page is active): BEDEN KOMPOZİSYONU TABLOSU & PHV
   // ============================================================================
   const renderPage1 = () => {
@@ -2837,7 +3525,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             'Beden Sağlığı, Deri Kıvrım Kalınlıkları (Skinfold), Kemik Çapı, Kas Çevresi ve Z-Skor (SD) Referans Analizi'
           )}
 
-          {/* 3-Dot Scale Measurement Legend & Explanation Bar */}
+          {/* 3-Dot Scale Measurement Legend & Explanation Bar + Explicit Reference Source */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border-2 border-slate-200 shadow-2xs mb-3 text-xs">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-[11px] font-black uppercase text-slate-900 tracking-wider flex items-center gap-1.5">
@@ -2857,8 +3545,10 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                 <span>Kırmızı Nokta = III. Ölçüm (Güncel Sonuç: {currentReport.date3})</span>
               </span>
             </div>
-            <div className="text-slate-800 font-mono text-[10.5px] font-extrabold bg-white px-2.5 py-1 rounded border border-slate-200">
-              Persentil &amp; Z-Skor (SD) Dönemsel İlerleme
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-950 border border-emerald-300 font-mono text-[10px] font-black">
+                📚 Referans Kaynak: Dünya Sağlık Örgütü (WHO) Uluslararası Büyüme &amp; ISAK Standartları
+              </span>
             </div>
           </div>
 
@@ -3297,8 +3987,10 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                   <span>Kırmızı = 3. Test ({currentReport.date3})</span>
                 </span>
               </div>
-              <div className="text-slate-700 font-mono text-[10px] font-bold">
-                Sağa İlerleme = Gelişim · Yeşil Bölge = Hedef Uygunluk Alanı
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-lg bg-indigo-100 text-indigo-950 border border-indigo-300 font-mono text-[10px] font-black">
+                  📚 Normatif Referans Kaynağı: Eurofit &amp; Fleishman Biyomekanik Test Normları
+                </span>
               </div>
             </div>
           </div>
@@ -3617,79 +4309,42 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 print:grid-cols-5 gap-2">
-              <div className="bg-white rounded-lg p-2 border border-slate-200 shadow-2xs flex items-center justify-between">
-                <span className="text-[9.5px] font-bold text-slate-600">• Grubundaki sporcu sayısı:</span>
-                <span className="text-sm font-black font-mono text-slate-900">{groupAthleteCount}</span>
+            {/* ÜÇLÜ KARŞILAŞTIRMA GÖRSELİ (Grup Ortalaması · İdeal / Hedef Değer · Sporcunun Mevcut Değeri) */}
+            <div className="mt-2 pt-2 border-t border-indigo-200/80">
+              <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-1">
+                <span className="text-slate-900 font-extrabold uppercase">
+                  📊 ÜÇLÜ KARŞILAŞTIRMA SENTEZİ (Grup Ortalaması vs İdeal Hedef vs Mevcut Değer):
+                </span>
+                <div className="flex items-center gap-3 text-[9.5px]">
+                  <span className="flex items-center gap-1 font-bold text-rose-800">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
+                    <span>Grup Ortalaması: %{groupAvgScore}</span>
+                  </span>
+                  <span className="flex items-center gap-1 font-bold text-blue-900">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" />
+                    <span>İdeal / Hedef: %{Math.min(100, athleticScore + 5)}</span>
+                  </span>
+                  <span className="flex items-center gap-1 font-black text-emerald-950">
+                    <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
+                    <span>Sporcu Mevcut: %{athleticScore}</span>
+                  </span>
+                </div>
               </div>
-              <div className="bg-amber-50 rounded-lg p-2 border border-amber-300 shadow-2xs flex items-center justify-between">
-                <span className="text-[9.5px] font-bold text-amber-950">• Genel sıralama:</span>
-                <span className="text-sm font-black font-mono text-amber-800">{groupRank}.</span>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-2 border border-blue-200 shadow-2xs flex items-center justify-between">
-                <span className="text-[9.5px] font-bold text-blue-950">• Sportif performans:</span>
-                <span className="text-sm font-black font-mono text-blue-800">%{athleticScore}</span>
-              </div>
-              <div className="bg-white rounded-lg p-2 border border-slate-200 shadow-2xs flex items-center justify-between">
-                <span className="text-[9.5px] font-bold text-slate-600">• Grup ortalaması:</span>
-                <span className="text-sm font-black font-mono text-slate-800">%{groupAvgScore}</span>
-              </div>
-              <div className="bg-emerald-50 rounded-lg p-2 border-2 border-emerald-400 shadow-2xs flex items-center justify-between">
-                <span className="text-[9.5px] font-bold text-emerald-950">• Grup içindeki konum:</span>
-                <span className="text-sm font-black font-mono text-emerald-800">%{groupPosPct}</span>
-              </div>
+              <svg viewBox="0 0 500 12" preserveAspectRatio="none" className="w-full h-3 rounded-full overflow-visible block">
+                <rect x="0" y="2" width="500" height="8" rx="4" fill="#e2e8f0" />
+                <rect x="0" y="2" width={groupAvgScore * 5} height="8" fill="#fda4af" opacity="0.6" />
+                <rect x="0" y="2" width={athleticScore * 5} height="8" rx="4" fill="#10b981" opacity="0.85" />
+                {/* Marker 1: Group Average */}
+                <line x1={groupAvgScore * 5} y1="0" x2={groupAvgScore * 5} y2="12" stroke="#e11d48" strokeWidth="2.5" />
+                {/* Marker 2: Target Value */}
+                <line x1={Math.min(100, athleticScore + 5) * 5} y1="0" x2={Math.min(100, athleticScore + 5) * 5} y2="12" stroke="#2563eb" strokeWidth="2.5" strokeDasharray="2,1" />
+                {/* Marker 3: Athlete Current Value */}
+                <circle cx={athleticScore * 5} cy="6" r="5" fill="#059669" stroke="#ffffff" strokeWidth="1.5" />
+              </svg>
             </div>
           </div>
 
-          {/* 1. GELİŞİM ALANLARININ AÇIKLANMASI ("NEYİM DÜŞÜK?" VE "NE YAPMALIYIM?" REHBERİ) */}
-          <div className="rounded-xl border-2 border-slate-300 bg-slate-50 p-2.5 shadow-2xs space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-[9.5px] font-black uppercase tracking-wider">
-                  1. GELİŞİM ALANLARININ AÇIKLANMASI
-                </span>
-                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
-                  Parametre Yönlendirmesi (&ldquo;Neyim Düşük?&rdquo; ve &ldquo;Ne Yapmalıyım?&rdquo;)
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[9px] font-bold">
-                <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 border border-rose-300">Geliştirilmesi önerilir</span>
-                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300">Korunmalı</span>
-                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-950 border border-emerald-300">Güçlü yön</span>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4 gap-2">
-              {[
-                currentReport.motorPerformance.find((r) => r.id === 'balance' || r.name.toLowerCase().includes('denge')) || currentReport.motorPerformance[0],
-                currentReport.motorPerformance.find((r) => r.id === 'back_strength' || r.name.toLowerCase().includes('sırt')) || currentReport.motorPerformance[1],
-                currentReport.motorPerformance.find((r) => r.id === 'flexibility' || r.name.toLowerCase().includes('esneklik')) || currentReport.motorPerformance[2],
-                currentReport.motorPerformance.find((r) => r.id === 'grip_strength' || r.name.toLowerCase().includes('kavrama')) || currentReport.motorPerformance[3],
-              ]
-                .filter(Boolean)
-                .map((row) => {
-                  const g = getMotorFocusDetail(row.id, row.name, row.percentile);
-                  return (
-                    <div key={row.id} className="bg-white rounded-lg p-2 border border-slate-200 shadow-2xs flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between gap-1 pb-1 border-b border-slate-100">
-                          <span className="text-[11px] font-black text-slate-900">
-                            {g.shortTitle} <span className="text-slate-400">→</span>
-                          </span>
-                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-extrabold border ${g.verdictBadgeClass}`}>
-                            {g.verdict}
-                          </span>
-                        </div>
-                        <div className="mt-1 text-[9.5px] text-slate-700 leading-tight">
-                          <strong className="text-blue-900 font-extrabold">Ne Yapmalıyım?: </strong>
-                          {g.whatToDo}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
         </div>
 
         {renderPageFooter(2)}
@@ -3706,7 +4361,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
       const x = ecto - endo;
       const y = 2 * meso - (endo + ecto);
       const svgX = 130 + x * 11;
-      const svgY = 130 - y * 7.5;
+      const svgY = 125 - y * 7.2;
       return { x: svgX, y: svgY };
     };
 
@@ -3779,75 +4434,77 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             'Heath-Carter Somatotip Bölge Tanımlaması ve Motorsal Bileşenlerin (Kuvvet · Sürat · Dayanıklılık) Vektörel Yönü'
           )}
 
-          {/* TWO MAIN EQUAL COLUMNS WITH PERFECT ALIGNMENT */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-5 print:gap-4 items-stretch">
+          {/* TWO MAIN EQUAL COLUMNS WITH PERFECT VERTICAL & HORIZONTAL ALIGNMENT */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-4 items-stretch">
 
             {/* LEFT COLUMN: 3. BEDEN TİPİ (SOMATOTİP) */}
-            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs">
-              <div className="space-y-3">
-                {/* Column Section Header */}
-                <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
-                      BÖLÜM 3.1
+            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs space-y-3 h-full">
+              <div className="space-y-3 flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Column Section Header */}
+                  <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100 h-8 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
+                        BÖLÜM 3.1
+                      </span>
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
+                        Heath-Carter Somatotip Profil
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 font-mono">
+                      3 Dönem Karşılaştırmalı
                     </span>
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                      Heath-Carter Somatotip Profil
-                    </h3>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 font-mono">
-                    3 Dönem Karşılaştırmalı
-                  </span>
+
+                  <p className="text-[11px] text-slate-600 leading-snug min-h-[28px] flex items-center">
+                    Deri kıvrım kalınlıkları, kemik çapı ve kas çevresi ölçümleriyle sporcunun Endomorfi, Mezomorfi ve Ektomorfi profili belirlenmiştir.
+                  </p>
                 </div>
 
-                <p className="text-[11px] text-slate-600 leading-snug">
-                  Deri kıvrım kalınlıkları, kemik çapı ve kas çevresi ölçümleriyle sporcunun Endomorfi, Mezomorfi ve Ektomorfi profili belirlenmiştir.
-                </p>
-
                 {/* 3-Period Somatotype Table */}
-                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[135px] flex flex-col justify-between">
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr
                         className="text-[10px] uppercase font-bold tracking-wider"
                         style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
                       >
-                        <th className="py-2 px-2.5 text-left">Test Tarihi</th>
-                        <th className="py-2 px-1.5 text-center">Endo</th>
-                        <th className="py-2 px-1.5 text-center">Mezo</th>
-                        <th className="py-2 px-1.5 text-center">Ekto</th>
-                        <th className="py-2 px-2.5 text-left">Somatotip Bölgesi</th>
+                        <th className="py-2 px-2.5 text-left w-[32%]">Test Tarihi</th>
+                        <th className="py-2 px-1 text-center w-[14%]">Endo</th>
+                        <th className="py-2 px-1 text-center w-[14%]">Mezo</th>
+                        <th className="py-2 px-1 text-center w-[14%]">Ekto</th>
+                        <th className="py-2 px-2.5 text-left w-[26%]">Somatotip Bölgesi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-mono bg-white text-[11px]">
                       <tr className="hover:bg-slate-50">
-                        <td className="py-2 px-2.5 font-semibold text-slate-600">{currentReport.date1} (I)</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m1.endo}</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m1.meso}</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m1.ecto}</td>
-                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">{m1.category}</td>
+                        <td className="py-1.5 px-2.5 font-semibold text-slate-600">{currentReport.date1} (I)</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m1.endo}</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m1.meso}</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m1.ecto}</td>
+                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">{m1.category}</td>
                       </tr>
                       <tr className="hover:bg-slate-50">
-                        <td className="py-2 px-2.5 font-semibold text-slate-600">{currentReport.date2} (II)</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m2.endo}</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m2.meso}</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-slate-800">{m2.ecto}</td>
-                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">{m2.category}</td>
+                        <td className="py-1.5 px-2.5 font-semibold text-slate-600">{currentReport.date2} (II)</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m2.endo}</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m2.meso}</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m2.ecto}</td>
+                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">{m2.category}</td>
                       </tr>
                       <tr className="bg-blue-50/70 border-l-4 border-l-blue-600 font-bold">
-                        <td className="py-2 px-2.5 text-blue-950 font-black">{currentReport.date3} (III)</td>
-                        <td className="py-2 px-1.5 text-center text-blue-950 font-black">{m3.endo}</td>
-                        <td className="py-2 px-1.5 text-center text-blue-950 font-black">{m3.meso}</td>
-                        <td className="py-2 px-1.5 text-center text-blue-950 font-black">{m3.ecto}</td>
-                        <td className="py-2 px-2.5 font-sans font-black text-blue-950">{m3.category}</td>
+                        <td className="py-1.5 px-2.5 text-blue-950 font-black">{currentReport.date3} (III)</td>
+                        <td className="py-1.5 px-1 text-center text-blue-950 font-black">{m3.endo}</td>
+                        <td className="py-1.5 px-1 text-center text-blue-950 font-black">{m3.meso}</td>
+                        <td className="py-1.5 px-1 text-center text-blue-950 font-black">{m3.ecto}</td>
+                        <td className="py-1.5 px-2.5 font-sans font-black text-blue-950">{m3.category}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 {/* Somatochart Diagram Card */}
-                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 flex flex-col items-center justify-center">
-                  <div className="w-full flex items-center justify-between px-1 mb-2">
+                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 h-[225px] flex flex-col justify-between items-center">
+                  <div className="w-full flex items-center justify-between px-1 mb-1 shrink-0">
                     <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider font-mono">
                       SOMATOCHART (HEATH-CARTER GRAFİĞİ)
                     </span>
@@ -3861,27 +4518,27 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
 
                   <svg
                     width="240"
-                    height="180"
-                    viewBox="0 0 260 200"
-                    className="w-[240px] h-[180px] mx-auto block overflow-visible"
+                    height="170"
+                    viewBox="0 0 260 190"
+                    className="w-[240px] h-[170px] mx-auto block overflow-visible my-auto"
                   >
                     <polygon
-                      points="130,18 28,175 232,175"
+                      points="130,16 28,168 232,168"
                       fill="#ffffff"
                       stroke="#334155"
                       strokeWidth="1.5"
                     />
-                    <line x1="130" y1="18" x2="130" y2="175" stroke="#cbd5e1" strokeDasharray="3,3" />
-                    <line x1="28" y1="175" x2="181" y2="88" stroke="#cbd5e1" strokeDasharray="3,3" />
-                    <line x1="232" y1="175" x2="79" y2="88" stroke="#cbd5e1" strokeDasharray="3,3" />
+                    <line x1="130" y1="16" x2="130" y2="168" stroke="#cbd5e1" strokeDasharray="3,3" />
+                    <line x1="28" y1="168" x2="181" y2="84" stroke="#cbd5e1" strokeDasharray="3,3" />
+                    <line x1="232" y1="168" x2="79" y2="84" stroke="#cbd5e1" strokeDasharray="3,3" />
 
-                    <text x="130" y="12" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
+                    <text x="130" y="10" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
                       MEZOMORFİ (Kas-İskelet)
                     </text>
-                    <text x="35" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
+                    <text x="35" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
                       ENDOMORFİ (Yağlılık)
                     </text>
-                    <text x="222" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
+                    <text x="222" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
                       EKTOMORFİ (İncelik)
                     </text>
 
@@ -3903,7 +4560,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                     {/* Test Points */}
                     <circle cx={pt1.x} cy={pt1.y} r="4" fill="#64748b" stroke="#ffffff" strokeWidth="1" />
                     <circle cx={pt2.x} cy={pt2.y} r="4" fill="#2563eb" stroke="#ffffff" strokeWidth="1" />
-                    <circle cx={pt3.x} cy={pt3.y} r="6" fill="#e11d48" stroke="#ffffff" strokeWidth="1.8" />
+                    <circle cx={pt3.x} cy={pt3.y} r="5.5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.8" />
                     <text x={pt3.x - 12} y={pt3.y - 8} className="text-[8.5px] font-black fill-rose-700 font-mono">
                       III ({m3.endo}-{m3.meso}-{m3.ecto})
                     </text>
@@ -3913,28 +4570,28 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
 
               {/* Left Column Bottom: High-Impact Elite Reference & Branch Match Callout */}
               <div
-                className="mt-3 p-3.5 rounded-2xl border-2 border-emerald-400 bg-slate-900 flex items-center justify-between gap-3 text-white shadow-2xs"
+                className="mt-3 p-2.5 rounded-xl border border-slate-200 bg-slate-900 text-white flex items-center justify-between gap-2.5 shadow-2xs h-[64px] shrink-0"
                 style={{ backgroundColor: '#0f172a' }}
               >
-                <div className="space-y-1">
+                <div className="space-y-0.5 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono text-[9px] font-black uppercase tracking-wider">
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono text-[8.5px] font-black uppercase tracking-wider shrink-0">
                       ELİT BRANŞ UYUMU
                     </span>
-                    <span className="text-[10px] text-emerald-300 uppercase font-extrabold tracking-wider">
+                    <span className="text-[9.5px] text-emerald-300 uppercase font-extrabold tracking-wider truncate">
                       {eliteRef.sport} Referansı
                     </span>
                   </div>
-                  <div className="text-xs font-mono text-white">
-                    Sporcu: <strong className="text-amber-300 font-black">{m3.endo} - {m3.meso} - {m3.ecto}</strong>
-                    <span className="mx-1.5 text-white/40">|</span>
-                    Elit Norm: <strong className="text-emerald-300 font-black">{eliteRef.endo} - {eliteRef.meso} - {eliteRef.ecto}</strong>
+                  <div className="text-[11px] font-mono text-white truncate">
+                    Sporcu: <strong className="text-amber-300 font-black">{m3.endo}-{m3.meso}-{m3.ecto}</strong>
+                    <span className="mx-1 text-white/40">|</span>
+                    Elit: <strong className="text-emerald-300 font-black">{eliteRef.endo}-{eliteRef.meso}-{eliteRef.ecto}</strong>
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5 bg-emerald-950 border border-emerald-400/60 px-3 py-1.5 rounded-xl shrink-0">
+                <div className="flex items-center gap-2 bg-emerald-950 border border-emerald-400/60 px-2.5 py-1 rounded-lg shrink-0">
                   <div className="text-right">
-                    <div className="text-[8.5px] text-emerald-200 uppercase font-black tracking-wider">Branş Uyumu</div>
-                    <div className="text-2xl font-black font-mono text-emerald-300 leading-none mt-0.5">
+                    <div className="text-[8px] text-emerald-200 uppercase font-black tracking-wider">Branş Uyumu</div>
+                    <div className="text-xl font-black font-mono text-emerald-300 leading-none mt-0.5">
                       %{primaryBranchScore}
                     </div>
                   </div>
@@ -3943,55 +4600,57 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             </div>
 
             {/* RIGHT COLUMN: 5. POTANSİYEL BİLEŞENLERİ */}
-            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs">
-              <div className="space-y-3">
-                {/* Column Section Header */}
-                <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
-                      BÖLÜM 5.1
+            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs space-y-3 h-full">
+              <div className="space-y-3 flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Column Section Header */}
+                  <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100 h-8 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
+                        BÖLÜM 5.1
+                      </span>
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
+                        Potansiyel Bileşenlerin Yönü
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 font-mono">
+                      Kuvvet · Sürat · Dayanıklılık
                     </span>
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                      Potansiyel Bileşenlerin Yönü
-                    </h3>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 font-mono">
-                    Kuvvet · Sürat · Dayanıklılık
-                  </span>
+
+                  <p className="text-[11px] text-slate-600 leading-snug min-h-[28px] flex items-center">
+                    Performans; Kuvvet, Sürat ve Dayanıklılık bileşenlerinin vektörel etkileşimiyle belirlenir. Sporcunun baskın gelişim yönü aşağıda analiz edilmiştir.
+                  </p>
                 </div>
 
-                <p className="text-[11px] text-slate-600 leading-snug">
-                  Performans; Kuvvet, Sürat ve Dayanıklılık bileşenlerinin vektörel etkileşimiyle belirlenir. Sporcunun baskın gelişim yönü aşağıda analiz edilmiştir.
-                </p>
-
                 {/* Matching Height Potential Summary Table (Symmetrical to Left Table) */}
-                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[135px] flex flex-col justify-between">
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr
                         className="text-[10px] uppercase font-bold tracking-wider"
                         style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
                       >
-                        <th className="py-2 px-2.5 text-left">Bileşen Parametresi</th>
-                        <th className="py-2 px-1.5 text-center">Endeks</th>
-                        <th className="py-2 px-2.5 text-right">Performans Düzeyi</th>
+                        <th className="py-2 px-2.5 text-left w-[45%]">Bileşen Parametresi</th>
+                        <th className="py-2 px-1 text-center w-[20%]">Endeks</th>
+                        <th className="py-2 px-2.5 text-right w-[35%]">Performans Düzeyi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-mono bg-white text-[11px]">
                       <tr className="hover:bg-slate-50">
-                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">1. Sürat Bileşeni</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-blue-700">{currentReport.potential.speedScore}</td>
-                        <td className="py-2 px-2.5 text-right font-sans font-bold text-emerald-700">Yüksek İvmelenme</td>
+                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">1. Sürat Bileşeni</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-blue-700">{currentReport.potential.speedScore}</td>
+                        <td className="py-1.5 px-2.5 text-right font-sans font-bold text-emerald-700">Yüksek İvmelenme</td>
                       </tr>
                       <tr className="hover:bg-slate-50">
-                        <td className="py-2 px-2.5 font-sans font-bold text-slate-700">2. Kuvvet Bileşeni</td>
-                        <td className="py-2 px-1.5 text-center font-extrabold text-indigo-700">{currentReport.potential.strengthScore}</td>
-                        <td className="py-2 px-2.5 text-right font-sans font-bold text-indigo-700">Patlayıcı Reaktif Güç</td>
+                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">2. Kuvvet Bileşeni</td>
+                        <td className="py-1.5 px-1 text-center font-extrabold text-indigo-700">{currentReport.potential.strengthScore}</td>
+                        <td className="py-1.5 px-2.5 text-right font-sans font-bold text-indigo-700">Patlayıcı Güç</td>
                       </tr>
                       <tr className="bg-indigo-50/70 border-l-4 border-l-indigo-600 font-bold">
-                        <td className="py-2 px-2.5 font-sans font-black text-indigo-950">3. Vektörel Baskın Tür</td>
-                        <td className="py-2 px-1.5 text-center text-indigo-950 font-black">{currentReport.potential.directionDeg}°</td>
-                        <td className="py-2 px-2.5 text-right font-sans font-black text-indigo-950">
+                        <td className="py-1.5 px-2.5 font-sans font-black text-indigo-950">3. Vektörel Baskın Tür</td>
+                        <td className="py-1.5 px-1 text-center text-indigo-950 font-black">{currentReport.potential.directionDeg}°</td>
+                        <td className="py-1.5 px-2.5 text-right font-sans font-black text-indigo-950">
                           {currentReport.potential.dominantType}
                         </td>
                       </tr>
@@ -4000,8 +4659,8 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                 </div>
 
                 {/* Polar Vector Diagram Card */}
-                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 flex flex-col items-center justify-center">
-                  <div className="w-full flex items-center justify-between px-1 mb-2">
+                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 h-[225px] flex flex-col justify-between items-center">
+                  <div className="w-full flex items-center justify-between px-1 mb-1 shrink-0">
                     <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider font-mono">
                       VEKTÖREL POTANSİYEL DİYAGRAMI
                     </span>
@@ -4014,74 +4673,74 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
 
                   <svg
                     width="240"
-                    height="180"
-                    viewBox="0 0 260 200"
-                    className="w-[240px] h-[180px] mx-auto block overflow-visible"
+                    height="170"
+                    viewBox="0 0 260 190"
+                    className="w-[240px] h-[170px] mx-auto block overflow-visible my-auto"
                   >
                     <polygon
-                      points="130,18 32,175 228,175"
+                      points="130,16 32,168 228,168"
                       fill="#ffffff"
                       stroke="#cbd5e1"
                       strokeWidth="1.5"
                       strokeDasharray="4,3"
                     />
-                    <circle cx="130" cy="115" r="22" fill="none" stroke="#e2e8f0" />
-                    <circle cx="130" cy="115" r="44" fill="none" stroke="#cbd5e1" />
-                    <circle cx="130" cy="115" r="66" fill="none" stroke="#94a3b8" />
+                    <circle cx="130" cy="110" r="20" fill="none" stroke="#e2e8f0" />
+                    <circle cx="130" cy="110" r="40" fill="none" stroke="#cbd5e1" />
+                    <circle cx="130" cy="110" r="60" fill="none" stroke="#94a3b8" />
 
-                    <line x1="130" y1="35" x2="130" y2="180" stroke="#cbd5e1" />
-                    <line x1="55" y1="115" x2="205" y2="115" stroke="#cbd5e1" />
+                    <line x1="130" y1="32" x2="130" y2="172" stroke="#cbd5e1" />
+                    <line x1="55" y1="110" x2="205" y2="110" stroke="#cbd5e1" />
 
-                    <text x="130" y="12" textAnchor="middle" className="text-[8.5px] font-black fill-indigo-800 uppercase">
+                    <text x="130" y="10" textAnchor="middle" className="text-[8.5px] font-black fill-indigo-800 uppercase">
                       KUVVET (Patlayıcı Güç)
                     </text>
-                    <text x="40" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-rose-800 uppercase">
+                    <text x="40" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-rose-800 uppercase">
                       SÜRAT (İvmelenme)
                     </text>
-                    <text x="215" y="190" textAnchor="middle" className="text-[8.5px] font-black fill-emerald-800 uppercase">
+                    <text x="215" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-emerald-800 uppercase">
                       DAYANIKLILIK (Aerobik)
                     </text>
 
                     {/* Vector Arrow Line */}
                     <line
                       x1="130"
-                      y1="115"
+                      y1="110"
                       x2="88"
-                      y2="62"
+                      y2="58"
                       stroke="#0f172a"
                       strokeWidth="3"
                     />
-                    <circle cx="88" cy="62" r="5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.5" />
-                    <circle cx="130" cy="115" r="4" fill="#0f172a" />
-                    <text x="65" y="52" className="text-[8.5px] font-black fill-slate-900 font-mono">
+                    <circle cx="88" cy="58" r="5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.5" />
+                    <circle cx="130" cy="110" r="4" fill="#0f172a" />
+                    <text x="65" y="48" className="text-[8.5px] font-black fill-slate-900 font-mono">
                       {currentReport.potential.directionDeg}° ({currentReport.potential.dominantType.split(' ')[0]})
                     </text>
                   </svg>
                 </div>
               </div>
 
-              {/* Right Column Bottom: 1-9 Somatotype Scale Sliders */}
-              <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 text-xs">
+              {/* Right Column Bottom: 1-9 Somatotype Scale Sliders (Exact matching h-[64px]) */}
+              <div className="mt-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 flex flex-col justify-center gap-1 h-[64px] shrink-0">
                 {[
                   { label: 'Endomorfi (Yağlık)', val: m3.endo, hex: '#e11d48' },
                   { label: 'Mezomorfi (Kas-İskelet)', val: m3.meso, hex: '#2563eb' },
                   { label: 'Ektomorfi (Doğrusallık)', val: m3.ecto, hex: '#059669' },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="w-32 text-[10.5px] font-bold text-slate-700 shrink-0">{s.label}</span>
-                    <svg viewBox="0 0 160 8" preserveAspectRatio="none" className="flex-1 h-2 rounded-full overflow-hidden block">
-                      <rect x="0" y="0" width="160" height="8" rx="4" fill="#e2e8f0" />
+                    <span className="w-28 text-[9.5px] font-bold text-slate-700 shrink-0 truncate">{s.label}</span>
+                    <svg viewBox="0 0 160 6" preserveAspectRatio="none" className="flex-1 h-1.5 rounded-full overflow-hidden block">
+                      <rect x="0" y="0" width="160" height="6" rx="3" fill="#e2e8f0" />
                       <rect
                         x="0"
                         y="0"
                         width={Math.max(6, Math.min(160, (s.val / 9) * 160))}
-                        height="8"
-                        rx="4"
+                        height="6"
+                        rx="3"
                         fill={s.hex}
                       />
                     </svg>
-                    <span className="w-12 text-right font-mono text-[11px] font-black text-slate-900">
-                      {s.val} <span className="text-slate-400 font-normal text-[9px]">/ 9</span>
+                    <span className="w-10 text-right font-mono text-[10px] font-black text-slate-900 shrink-0">
+                      {s.val} <span className="text-slate-400 font-normal text-[8.5px]">/ 9</span>
                     </span>
                   </div>
                 ))}
@@ -4919,56 +5578,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               </div>
             </div>
 
-            {/* 1. Gelişim Alanlarının Açıklanması (Özet Yönlendirme Bandı) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-2 mb-3">
-              <div className="p-2 rounded-xl bg-white border border-rose-200 flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-black text-slate-900">Denge →</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-100 text-rose-900 border border-rose-300">
-                    Geliştirilmesi önerilir
-                  </span>
-                </div>
-                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
-                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Haftada 3 gün tek ayak proprioseptif denge ve core stabilizasyon çalışılmalı.
-                </p>
-              </div>
 
-              <div className="p-2 rounded-xl bg-white border border-rose-200 flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-black text-slate-900">Sırt kuvveti →</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-rose-100 text-rose-900 border border-rose-300">
-                    Geliştirilmesi önerilir
-                  </span>
-                </div>
-                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
-                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Sırt ekstansör ve gövde kuvveti için haftada 2 gün izometrik core drilleri uygulanmalı.
-                </p>
-              </div>
-
-              <div className="p-2 rounded-xl bg-white border border-blue-200 flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-black text-slate-900">Esneklik →</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-100 text-blue-900 border border-blue-300">
-                    Korunmalı
-                  </span>
-                </div>
-                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
-                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Mevcut hareket açıklığını korumak için antrenman sonu esneme rutini sürdürülmeli.
-                </p>
-              </div>
-
-              <div className="p-2 rounded-xl bg-white border border-emerald-200 flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-black text-slate-900">Kavrama kuvveti →</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-950 border border-emerald-300">
-                    Güçlü yön
-                  </span>
-                </div>
-                <p className="text-[9.5px] text-slate-600 mt-1 leading-tight">
-                  <strong className="text-slate-900">Ne Yapmalıyım?:</strong> Üst düzey el-ön kol kuvveti branş tekniği ve ikili mücadelelerde avantaja dönüştürülmeli.
-                </p>
-              </div>
-            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-3 text-xs">
               {activeAiAnalysis.improvementAreas.slice(0, 3).map((item, idx) => {
@@ -5075,26 +5685,6 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               SPORCU GELİŞİM DEĞERLENDİRMESİ VE UZMAN GÖRÜŞÜ
             </div>
             <p className="text-xs text-slate-700 leading-relaxed">{currentReport.expertComment}</p>
-          </div>
-
-          {/* 9.2 Haftalık Örnek Mikro-Döngü Antrenman Planı */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-2.5 text-[11px]">
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[9.5px] font-extrabold text-slate-900 uppercase">Pzt / Çar · Sürat &amp; Çeviklik</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">15 dk Nöromüsküler Isınma + 10x5m Reaktif Yön Değiştirme</div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[9.5px] font-extrabold text-slate-900 uppercase">Sal / Per · Kuvvet &amp; Denge</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">Vücut Ağırlığı Merkez Gövde (Core) + Flamingo Propriosepsiyon</div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[9.5px] font-extrabold text-slate-900 uppercase">Cuma / Cmt · Branş &amp; Oyun</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">Aerobik Oyun İçi Dayanıklılık + Teknik Koordinasyon Drilleri</div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[9.5px] font-extrabold text-emerald-800 uppercase">Pazar · Rejenerasyon</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">Dinamik Esneklik (Sit &amp; Reach) + 9 Saat Kaliteli Uyku Takibi</div>
-            </div>
           </div>
 
           {/* 12. Referans ve Metodoloji Bölümü (Sayfa Altı Sade ve Küçük Puntolu Bölüm) */}
@@ -5353,6 +5943,57 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* 3 Karne Formatı Switcher (Laboratuvar, Veli/Sporcu, Antrenör/Kulüp) */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 max-w-full overflow-x-auto scrollbar-none shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveLabTab('studio');
+                  setReportCardFormat('lab');
+                  notify('🧪 Laboratuvar Karnesi (Tam 7 Sayfa) aktif edildi.');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  reportCardFormat === 'lab'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                🧪 Laboratuvar Karnesi (Tam 7 Sayfa)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveLabTab('studio');
+                  setReportCardFormat('parent-athlete');
+                  notify('👨‍👩‍👧 Veli ve Sporcu Karnesi aktif edildi.');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  reportCardFormat === 'parent-athlete'
+                    ? 'bg-emerald-600 text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                👨‍👩‍👧 Veli ve Sporcu Karnesi
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveLabTab('studio');
+                  setReportCardFormat('coach-club');
+                  notify('📋 Antrenör ve Kulüp Karnesi aktif edildi.');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  reportCardFormat === 'coach-club'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                📋 Antrenör ve Kulüp Karnesi
+              </button>
             </div>
 
             {/* DROPDOWN 1: Excel & Veri İşlemleri (Grouped Vertically) */}
@@ -7315,32 +7956,40 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               : undefined
           }
         >
-          {showBodyMapInfographic && (
-            <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 0 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-              {renderAnatomicalBodyMapPage()}
-            </div>
+          {reportCardFormat === 'parent-athlete' ? (
+            renderParentAthleteReportCard()
+          ) : reportCardFormat === 'coach-club' ? (
+            renderCoachClubReportCard()
+          ) : (
+            <>
+              {showBodyMapInfographic && (
+                <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 0 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                  {renderAnatomicalBodyMapPage()}
+                </div>
+              )}
+              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 1 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                {renderPage1()}
+              </div>
+              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 2 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                {renderPage2()}
+              </div>
+              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 3 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                {renderPage3()}
+              </div>
+              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 4 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                {renderPage4()}
+              </div>
+              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 5 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                {renderPage5()}
+              </div>
+              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 6 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                {renderPage6()}
+              </div>
+              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 7 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
+                {renderPage7()}
+              </div>
+            </>
           )}
-          <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 1 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-            {renderPage1()}
-          </div>
-          <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 2 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-            {renderPage2()}
-          </div>
-          <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 3 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-            {renderPage3()}
-          </div>
-          <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 4 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-            {renderPage4()}
-          </div>
-          <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 5 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-            {renderPage5()}
-          </div>
-          <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 6 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-            {renderPage6()}
-          </div>
-          <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 7 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-            {renderPage7()}
-          </div>
         </div>
       </div>
 

@@ -1971,28 +1971,31 @@ function buildLabReportFromExcelRow(
     return fallback;
   };
 
-  const athleteName = sanitizeSpreadsheetCell(
-    r.Sporcu_Adi ||
-      r['Sporcu Adı'] ||
-      r.Ad_Soyad ||
-      r['Ad Soyad'] ||
-      r.Isim ||
-      r['İsim'] ||
-      r['Öğrenci Adı'] ||
-      ''
+  const athleteName = String(
+    sanitizeSpreadsheetCell(
+      r.Sporcu_Adi ||
+        r['Sporcu Adı'] ||
+        r.Ad_Soyad ||
+        r['Ad Soyad'] ||
+        r.Isim ||
+        r['İsim'] ||
+        r['Öğrenci Adı'] ||
+        ''
+    ) || ''
   );
   if (!athleteName) return null;
 
   const cloned: SportsFlyLabReport = JSON.parse(JSON.stringify(brandedTemplate));
   cloned.id = `lab-batch-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
   cloned.athleteName = athleteName;
-  cloned.athleteCode =
+  cloned.athleteCode = String(
     sanitizeSpreadsheetCell(r.Sporcu_Kodu || r['Sporcu Kodu'] || '') ||
-    `SF-${new Date().getFullYear()}-${101 + idx}`;
+    `SF-${new Date().getFullYear()}-${101 + idx}`
+  );
 
-  if (r.Kulup_Adi || r['Kulüp']) cloned.clubName = sanitizeSpreadsheetCell(r.Kulup_Adi || r['Kulüp']);
-  if (r.Sube || r['Şube']) cloned.branchName = sanitizeSpreadsheetCell(r.Sube || r['Şube']);
-  if (r.Brans || r['Branş']) cloned.sportBranch = sanitizeSpreadsheetCell(r.Brans || r['Branş']);
+  if (r.Kulup_Adi || r['Kulüp']) cloned.clubName = String(sanitizeSpreadsheetCell(r.Kulup_Adi || r['Kulüp']));
+  if (r.Sube || r['Şube']) cloned.branchName = String(sanitizeSpreadsheetCell(r.Sube || r['Şube']));
+  if (r.Brans || r['Branş']) cloned.sportBranch = String(sanitizeSpreadsheetCell(r.Brans || r['Branş']));
 
   const rawGender = String(r.Cinsiyet || r.cinsiyet || '').trim().toLowerCase();
   if (rawGender.startsWith('k') || rawGender.includes('kız') || rawGender.includes('kadın')) {
@@ -2141,7 +2144,7 @@ function buildLabReportFromExcelRow(
   if (vjItem && wItem) {
     // Lewis / Sayers approximation for youth anaerobic peak power
     const watt = Math.round(Math.max(650, 21.67 * wItem.m3 * Math.sqrt(vjItem.m3 / 100) + 420));
-    cloned.cardio.verticalJumpWatt = watt;
+    cloned.cardio.verticalJumpAnaerobicWatt = watt;
     cloned.cardio.verticalJumpRelativeWatt = Number((watt / Math.max(25, wItem.m3)).toFixed(2));
   }
   if (hItem && wItem) {
