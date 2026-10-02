@@ -112,7 +112,7 @@ Sporcumuzun spora olan sevgisini ve özverisini gönülden tebrik eder, kulübü
 
 📊 *Performans Kırılımı (10 Üzerinden):*
 • 🎯 Teknik Yetenek: *{teknik_not}/10*
-• ⚡ Fiziksel Kapasite: *{fiziksel_not}/10*
+•  Fiziksel Kapasite: *{fiziksel_not}/10*
 • 🧠 Taktik & Oyun Görüşü: *{taktik_not}/10*
 • 🛡️ Zihinsel & Karakter: *{zihinsel_not}/10*
 • ⭐ Genel Ortalama: *{genel_not}/10*

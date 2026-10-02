@@ -3,36 +3,36 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Minimal & Crisp SaaS Typography Hierarchy */
+  /* Minimal & Crisp SaaS Typography Hierarchy - Plus Jakarta Sans */
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  /* Refined, compact typography scale */
+  /* Refined typography scale with 5% increased line-height for enhanced corporate readability */
   --text-2xs: 0.65rem;
-  --text-2xs--line-height: 0.85rem;
+  --text-2xs--line-height: 0.9rem;
 
   --text-xs: 0.725rem;
-  --text-xs--line-height: 1rem;
+  --text-xs--line-height: 1.05rem;
 
   --text-sm: 0.8125rem;
-  --text-sm--line-height: 1.15rem;
+  --text-sm--line-height: 1.225rem;
 
   --text-base: 0.875rem;
-  --text-base--line-height: 1.3rem;
+  --text-base--line-height: 1.375rem;
 
   --text-lg: 0.975rem;
-  --text-lg--line-height: 1.4rem;
+  --text-lg--line-height: 1.5rem;
 
   --text-xl: 1.125rem;
-  --text-xl--line-height: 1.5rem;
+  --text-xl--line-height: 1.6rem;
 
   --text-2xl: 1.275rem;
-  --text-2xl--line-height: 1.65rem;
+  --text-2xl--line-height: 1.75rem;
 
   --text-3xl: 1.5rem;
-  --text-3xl--line-height: 1.85rem;
+  --text-3xl--line-height: 1.95rem;
 
   --text-4xl: 1.75rem;
-  --text-4xl--line-height: 2.1rem;
+  --text-4xl--line-height: 2.225rem;
 
   /* SportsFly Professional Blue-Gray Tone */
   --color-blue-50: #f0f4f8;
@@ -96,58 +96,61 @@
   body {
     font-family: var(--font-sans);
     font-size: 0.875rem;
-    line-height: 1.45;
+    line-height: 1.52; /* ~5% increased line-height for optimal corporate reading flow */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
-    letter-spacing: -0.012em;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01', 'ss02';
+    letter-spacing: -0.011em;
   }
 
-  /* Buttery-Smooth, Hardware-Accelerated Theme transitions */
-  html,
-  body,
-  div,
-  section,
-  header,
-  footer,
-  aside,
-  nav,
-  main,
-  button,
-  a,
-  input,
-  select,
-  textarea,
-  span,
-  p,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  th,
-  td,
-  tr,
-  thead,
-  tbody,
-  table,
-  svg {
-    transition-property: background-color, border-color, color, fill, stroke, box-shadow, text-decoration-color;
-    transition-duration: 250ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Distinct Hierarchical Font Weight Definitions for Headings & Body Elements */
+  h1 {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.25;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h2 {
+    font-weight: 800;
     letter-spacing: -0.025em;
+    line-height: 1.3;
+  }
+
+  h3 {
     font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+  }
+
+  h4 {
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
+  }
+
+  h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+
+  p {
+    line-height: 1.55;
   }
 
   button, input, select, textarea {
     font-family: inherit;
     font-feature-settings: inherit;
     letter-spacing: -0.01em;
+  }
+
+  button {
+    font-weight: 600;
+  }
+
+  label {
+    font-weight: 600;
   }
 
   .tabular-nums {

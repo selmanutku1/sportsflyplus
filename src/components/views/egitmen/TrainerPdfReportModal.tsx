@@ -93,7 +93,7 @@ export const TrainerPdfReportModal: React.FC<TrainerPdfReportModalProps> = ({
 <body>
   <div class="header">
     <div>
-      <div class="logo">⚡ SPORTSFLY ACADEMY</div>
+      <div class="logo"> SPORTSFLY ACADEMY</div>
       <div class="meta">Spor Akademisi &amp; Kulüp Yönetim Sistemi</div>
     </div>
     <div style="text-align: right;">

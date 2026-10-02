@@ -40,6 +40,8 @@ import { auth } from '../firebase';
 import { LEGAL_TEXTS, LegalDoc } from '../data/legalTexts';
 import { useLanguage } from '../i18n/LanguageContext';
 import { getStoredUserProfile, saveStoredUserProfile, ADMIN_GOOGLE_EMAIL } from '../data/userProfile';
+import { SporcuItem } from '../types';
+import { INITIAL_SPORCULAR, INITIAL_YONETICILER } from '../data/mockData';
 import { setActiveSessionPlan } from '../data/packagePermissions';
 import { registerOrUpdateGoogleLoginUser } from '../data/googleUsersAccess';
 import { QrYoklamaScannerModal } from './modals/QrYoklamaScannerModal';

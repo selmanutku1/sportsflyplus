@@ -1,6 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from 'recharts';
+import {
   Activity,
   TrendingUp,
   Target,
@@ -22,6 +32,375 @@ const normalizeLabRowValue = (val: number, row: LabParameterRow): number => {
     .range([15, 95])
     .clamp(true);
   return Math.round(scale(val));
+};
+
+// ============================================================================
+// RECHARTS RADAR (SPIDER) CHART COMPONENT FOR SPORTSFLY LAB REPORTS
+// ============================================================================
+export interface RechartsSportsFlyRadarProps {
+  report: SportsFlyLabReport;
+  comparisonMode?: 'periods' | 'group' | 'initial-group' | 'p1-p2';
+  height?: number;
+  className?: string;
+  title?: string;
+}
+
+const formatCleanSubjectName = (rawName: string) => {
+  const clean = rawName
+    .replace(/testi/gi, '')
+    .replace(/ölçümü/gi, '')
+    .replace(/\(20m\)/gi, '')
+    .replace(/\(10x5m\)/gi, '')
+    .trim();
+  const lower = clean.toLowerCase();
+  if (lower.includes('sürat') || lower.includes('sprint')) return 'Sürat';
+  if (lower.includes('çabukluk') || lower.includes('agility')) return 'Çabukluk';
+  if (lower.includes('reaksiyon')) return 'Reaksiyon';
+  if (lower.includes('sırt') || lower.includes('back')) return 'Sırt Kuvveti';
+  if (lower.includes('kavrama') || lower.includes('grip')) return 'Kavrama';
+  if (lower.includes('uzun atlama') || lower.includes('long jump')) return 'Uzun Atlama';
+  if (lower.includes('dikey') || lower.includes('vertical')) return 'Dikey Sıçrama';
+  if (lower.includes('denge') || lower.includes('balance')) return 'Denge';
+  if (lower.includes('esneklik') || lower.includes('flexibility')) return 'Esneklik';
+  if (lower.includes('aerobik') || lower.includes('dayanıklılık') || lower.includes('pacer')) return 'Aerobik Kapasite';
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+};
+
+export const RechartsSportsFlyRadarChart: React.FC<RechartsSportsFlyRadarProps> = ({
+  report,
+  comparisonMode = 'periods',
+  height = 280,
+  className = '',
+  title = 'Motor Performans Yüzdelik Radar Grafiği',
+}) => {
+  const radarData = useMemo(() => {
+    if (!report || !report.motorPerformance || report.motorPerformance.length === 0) {
+      return [];
+    }
+    return report.motorPerformance.map((row) => {
+      const p1Val = normalizeLabRowValue(row.m1, row);
+      const p2Val = normalizeLabRowValue(row.m2, row);
+      const p3Val = row.percentile || normalizeLabRowValue(row.m3, row);
+      const groupAvgScore = report.groupInfo?.groupAverageScore ?? 72;
+      const grpAvgVal = Math.max(35, Math.min(88, Math.round(p3Val * 0.82 + groupAvgScore * 0.18 - 4)));
+      const p1GrpAvgVal = Math.max(25, Math.min(85, Math.round(p1Val * 0.85 + groupAvgScore * 0.15 - 5)));
+      const targetVal = Math.min(100, Math.max(p3Val + 8, 85));
+
+      const subjectName = formatCleanSubjectName(row.name);
+
+      return {
+        subject: subjectName,
+        p1: p1Val,
+        p2: p2Val,
+        p3: p3Val,
+        p1GrpAvg: p1GrpAvgVal,
+        grpAvg: grpAvgVal,
+        target: targetVal,
+        unit: row.unit,
+        rawM1: row.m1,
+        rawM2: row.m2,
+        rawM3: row.m3,
+      };
+    });
+  }, [report]);
+
+  if (radarData.length === 0) return null;
+
+  return (
+    <div className={`rounded-xl border border-slate-200 bg-white p-3 shadow-2xs ${className}`}>
+      {title && (
+        <div className="flex items-center justify-between pb-2 mb-1 border-b border-slate-200">
+          <div className="flex items-center gap-2">
+            <span className="p-1 rounded bg-slate-100 text-slate-800 border border-slate-300">
+              <Compass className="w-3.5 h-3.5 text-slate-700" />
+            </span>
+            <span className="text-xs font-bold text-slate-900 uppercase tracking-wide font-sans">
+              {title}
+            </span>
+          </div>
+          <span className="px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[10px] font-sans font-semibold border border-slate-800 shadow-2xs">
+            Yüzdelik Radar (%0–%100)
+          </span>
+        </div>
+      )}
+
+      <div style={{ width: '100%', height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart cx="50%" cy="50%" outerRadius="68%" data={radarData}>
+            <PolarGrid stroke="#cbd5e1" strokeDasharray="3 3" />
+            <PolarAngleAxis
+              dataKey="subject"
+              tick={{ fill: '#0f172a', fontSize: 9, fontWeight: 600, fontFamily: 'sans-serif' }}
+            />
+            <PolarRadiusAxis
+              angle={30}
+              domain={[0, 100]}
+              tickFormatter={(val) => `%${val}`}
+              tick={{ fill: '#64748b', fontSize: 8, fontFamily: 'sans-serif', fontWeight: 600 }}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-slate-900 text-white text-[10.5px] p-2.5 rounded-lg border border-slate-700 shadow-xl font-sans">
+                      <div className="font-black text-sky-300 border-b border-slate-700 pb-1 mb-1">
+                        {data.subject} — Motor Performans Yüzdelik Analizi
+                      </div>
+                      {comparisonMode === 'periods' ? (
+                        <div className="space-y-1">
+                          <div>1. Test ({report.date1}): <strong className="text-slate-300 tabular-nums">{data.rawM1} {data.unit}</strong> → <span className="px-1.5 py-0.2 rounded bg-slate-800 font-bold text-sky-300">%{data.p1} Yüzdelik</span></div>
+                          <div>2. Test ({report.date2}): <strong className="text-blue-300 tabular-nums">{data.rawM2} {data.unit}</strong> → <span className="px-1.5 py-0.2 rounded bg-slate-800 font-bold text-blue-300">%{data.p2} Yüzdelik</span></div>
+                          <div className="text-rose-300 font-extrabold">3. Test ({report.date3}): {data.rawM3} {data.unit} → <span className="px-1.5 py-0.2 rounded bg-rose-950 font-black text-rose-300 border border-rose-800">%{data.p3} Yüzdelik</span></div>
+                        </div>
+                      ) : comparisonMode === 'p1-p2' ? (
+                        <div className="space-y-1 text-xs">
+                          <div>1. Ölçüm (Önceki - {report.date1}): <strong className="text-slate-300 tabular-nums">{data.rawM1} {data.unit}</strong> (%{data.p1} Yüzdelik)</div>
+                          <div>2. Ölçüm (Mevcut - {report.date2}): <strong className="text-sky-300 tabular-nums">{data.rawM2} {data.unit}</strong> (%{data.p2} Yüzdelik)</div>
+                          <div className="text-emerald-300 font-extrabold pt-1 border-t border-slate-700">
+                            İlerleme (Δ): {data.rawM2 - data.rawM1 >= 0 ? `+${+(data.rawM2 - data.rawM1).toFixed(2)}` : +(data.rawM2 - data.rawM1).toFixed(2)} {data.unit} ({data.p2 - data.p1 >= 0 ? `+${data.p2 - data.p1}` : data.p2 - data.p1} Yüzdelik Fark)
+                          </div>
+                        </div>
+                      ) : comparisonMode === 'initial-group' ? (
+                        <div className="space-y-1">
+                          <div className="text-sky-300 font-extrabold">1. Test Sporcu: {data.rawM1} {data.unit} (%{data.p1} Yüzdelik)</div>
+                          <div className="text-amber-300 font-bold">1. Test Grup Ortalaması: %{data.p1GrpAvg} Yüzdelik</div>
+                          <div className="text-emerald-300 font-extrabold">3. Test Sporcu (Güncel): {data.rawM3} {data.unit} (%{data.p3} Yüzdelik)</div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="text-emerald-300 font-extrabold">Sporcu Mevcut: {data.rawM3} {data.unit} (%{data.p3} Yüzdelik)</div>
+                          <div>Grup Ortalaması: <strong className="text-rose-300">%{data.grpAvg} Yüzdelik</strong></div>
+                          <div>Hedef Değer: <strong className="text-blue-300">%{data.target} Yüzdelik</strong></div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: '10px', fontWeight: 800, fontFamily: 'sans-serif' }}
+            />
+
+            {comparisonMode === 'periods' ? (
+              <>
+                <Radar
+                  name={`1. Test (${report.date1})`}
+                  dataKey="p1"
+                  stroke="#94a3b8"
+                  fill="#94a3b8"
+                  fillOpacity={0.15}
+                  strokeDasharray="3 3"
+                />
+                <Radar
+                  name={`2. Test (${report.date2})`}
+                  dataKey="p2"
+                  stroke="#2563eb"
+                  fill="#2563eb"
+                  fillOpacity={0.25}
+                />
+                <Radar
+                  name={`3. Test (${report.date3}) - Güncel`}
+                  dataKey="p3"
+                  stroke="#e11d48"
+                  fill="#e11d48"
+                  fillOpacity={0.4}
+                />
+              </>
+            ) : comparisonMode === 'p1-p2' ? (
+              <>
+                <Radar
+                  name={`1. Ölçüm (Önceki: ${report.date1})`}
+                  dataKey="p1"
+                  stroke="#64748b"
+                  fill="#64748b"
+                  fillOpacity={0.2}
+                  strokeDasharray="3 3"
+                />
+                <Radar
+                  name={`2. Ölçüm (Mevcut: ${report.date2})`}
+                  dataKey="p2"
+                  stroke="#0284c7"
+                  fill="#0ea5e9"
+                  fillOpacity={0.4}
+                />
+              </>
+            ) : comparisonMode === 'initial-group' ? (
+              <>
+                <Radar
+                  name="1. Test Grup Ortalaması"
+                  dataKey="p1GrpAvg"
+                  stroke="#f59e0b"
+                  fill="#f59e0b"
+                  fillOpacity={0.2}
+                  strokeDasharray="3 3"
+                />
+                <Radar
+                  name="1. Test Sporcu Değeri"
+                  dataKey="p1"
+                  stroke="#0284c7"
+                  fill="#0284c7"
+                  fillOpacity={0.3}
+                />
+                <Radar
+                  name="3. Test Sporcu (Güncel)"
+                  dataKey="p3"
+                  stroke="#10b981"
+                  fill="#10b981"
+                  fillOpacity={0.35}
+                />
+              </>
+            ) : (
+              <>
+                <Radar
+                  name="Grup Ortalaması"
+                  dataKey="grpAvg"
+                  stroke="#f43f5e"
+                  fill="#f43f5e"
+                  fillOpacity={0.2}
+                  strokeDasharray="3 3"
+                />
+                <Radar
+                  name="Hedef Değer (%85+)"
+                  dataKey="target"
+                  stroke="#2563eb"
+                  fill="#2563eb"
+                  fillOpacity={0.15}
+                  strokeDasharray="4 2"
+                />
+                <Radar
+                  name="Sporcu Mevcut"
+                  dataKey="p3"
+                  stroke="#059669"
+                  fill="#10b981"
+                  fillOpacity={0.45}
+                />
+              </>
+            )}
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// DEDICATED INITIAL MEASUREMENT VS GROUP AVERAGE COMPARISON CHART
+// ============================================================================
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+
+export interface InitialMeasurementGroupProps {
+  report: SportsFlyLabReport;
+  className?: string;
+  height?: number;
+}
+
+export const InitialMeasurementGroupComparisonChart: React.FC<InitialMeasurementGroupProps> = ({
+  report,
+  className = '',
+  height = 230,
+}) => {
+  const p1Score = report.scoreHistory?.p1Score || 72;
+  const p3Score = report.scoreHistory?.p3Score || 88;
+  const grpAvgScore = report.groupInfo?.groupAverageScore ?? 70;
+
+  const p1GroupAvg = Math.max(30, grpAvgScore - 4);
+  const p1Diff = p1Score - p1GroupAvg;
+
+  const testData = useMemo(() => {
+    return report.motorPerformance.slice(0, 8).map((row) => {
+      const p1Val = normalizeLabRowValue(row.m1, row);
+      const p1GrpAvg = Math.max(25, Math.min(90, Math.round(p1Val - 5)));
+      const shortName = row.name.replace(' Testi', '').replace(' Ölçümü', '');
+      return {
+        subject: shortName,
+        '1. Ölçüm Sporcu': p1Val,
+        '1. Ölçüm Grup Ort.': p1GrpAvg,
+        diff: p1Val - p1GrpAvg,
+        unit: row.unit,
+        rawM1: row.m1,
+      };
+    });
+  }, [report]);
+
+  return (
+    <div className={`p-3.5 rounded-xl border-2 border-indigo-200 bg-slate-900 text-white shadow-2xs space-y-2.5 ${className}`}>
+      {/* Header ribbon */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-700 font-sans">
+        <div className="flex items-center gap-2">
+          <span className="px-2.5 py-1 rounded-md bg-sky-500 text-slate-950 font-extrabold text-[10px] uppercase tracking-wider">
+            📊 İLK ÖLÇÜM (1. TEST) GRUP KARŞILAŞTIRMASI
+          </span>
+          <span className="text-xs font-bold text-white uppercase tracking-tight">
+            Başlangıç Seviyesi vs Grup Ortalaması Konum Grafiği
+          </span>
+        </div>
+        <span className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold border ${
+          p1Diff >= 0 ? 'bg-emerald-950 text-emerald-300 border-emerald-400' : 'bg-rose-950 text-rose-300 border-rose-400'
+        }`}>
+          {p1Diff >= 0 ? `🟢 İlk Ölçümde Grubun +${p1Diff} Puan Üzerindeydi` : `🔴 İlk Ölçümde Grubun ${p1Diff} Puan Altındaydı`}
+        </span>
+      </div>
+
+      {/* KPI Comparison Pills */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-sans">
+        <div className="p-2 rounded-lg bg-slate-800 border border-slate-700">
+          <span className="text-[9px] text-slate-400 block font-sans">1. Ölçüm Sporcu Puanı</span>
+          <span className="text-base font-black text-sky-300">%{p1Score}</span>
+        </div>
+        <div className="p-2 rounded-lg bg-slate-800 border border-slate-700">
+          <span className="text-[9px] text-slate-400 block font-sans">1. Ölçüm Grup Ortalaması</span>
+          <span className="text-base font-black text-amber-300">%{p1GroupAvg}</span>
+        </div>
+        <div className="p-2 rounded-lg bg-slate-800 border border-slate-700">
+          <span className="text-[9px] text-slate-400 block font-sans">Başlangıç Konumu</span>
+          <span className="text-base font-black text-emerald-300">
+            {p1Diff >= 0 ? `+${p1Diff} Puan` : `${p1Diff} Puan`}
+          </span>
+        </div>
+        <div className="p-2 rounded-lg bg-slate-800 border border-emerald-500/40">
+          <span className="text-[9px] text-emerald-300 block font-sans">Güncel Dönem (3. Test)</span>
+          <span className="text-base font-black text-emerald-400">%{p3Score} (+{p3Score - p1Score} Puan)</span>
+        </div>
+      </div>
+
+      {/* Recharts Bar Chart */}
+      <div style={{ width: '100%', height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={testData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis dataKey="subject" tick={{ fill: '#cbd5e1', fontSize: 9.5, fontWeight: 700 }} />
+            <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 9 }} />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-slate-900 border border-slate-700 text-white text-[10.5px] p-2 rounded-lg font-mono">
+                      <div className="font-extrabold text-sky-300 border-b border-slate-700 pb-1 mb-1">
+                        {data.subject} (1. Test)
+                      </div>
+                      <div>Sporcu Değeri: <strong>{data.rawM1} {data.unit}</strong> (%{data['1. Ölçüm Sporcu']})</div>
+                      <div>Grup Ortalaması: <strong className="text-amber-300">%{data['1. Ölçüm Grup Ort.']}</strong></div>
+                      <div className="text-emerald-300 font-bold mt-1">
+                        Fark: {data.diff >= 0 ? `+${data.diff}` : data.diff} Puan
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 800, color: '#ffffff' }} />
+            <Bar dataKey="1. Ölçüm Sporcu" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="1. Ölçüm Grup Ort." fill="#f59e0b" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
 };
 
 // Helper to build D3 radar geometry for a list of LabParameterRows
@@ -2147,3 +2526,281 @@ export const SporcuKarnePerformanceCharts: React.FC<SporcuKarnePerformanceCharts
     </div>
   );
 };
+
+// ============================================================================
+// DEDICATED 2ND MEASUREMENT COMPARISON PANEL (1. Ölçüm → 2. Ölçüm Gelişim Analizi)
+// ============================================================================
+export interface SecondMeasurementPanelProps {
+  report: SportsFlyLabReport;
+  className?: string;
+}
+
+export const SecondMeasurementComparisonPanel: React.FC<SecondMeasurementPanelProps> = ({
+  report,
+  className = '',
+}) => {
+  const p1Score = report.scoreHistory?.p1Score || 72;
+  const p2Score = report.scoreHistory?.p2Score || 80;
+  const scoreDiff = +(p2Score - p1Score).toFixed(1);
+  const isProgress = scoreDiff >= 0;
+
+  const comparisonRows = useMemo(() => {
+    return report.motorPerformance.slice(0, 10).map((row) => {
+      const p1Val = normalizeLabRowValue(row.m1, row);
+      const p2Val = normalizeLabRowValue(row.m2, row);
+      const delta = +(row.m2 - row.m1).toFixed(2);
+      const isPositive = row.lowerIsBetter ? delta <= 0 : delta >= 0;
+
+      return {
+        id: row.id,
+        name: row.name.replace(' Testi', '').replace(' Ölçümü', ''),
+        unit: row.unit,
+        m1: row.m1,
+        m2: row.m2,
+        p1Val,
+        p2Val,
+        delta,
+        isPositive,
+      };
+    });
+  }, [report]);
+
+  return (
+    <div className={`p-4 rounded-2xl border-2 border-sky-300 bg-white text-slate-900 shadow-xs space-y-3.5 ${className}`}>
+      {/* Header Banner */}
+      <div className="p-3 rounded-xl bg-gradient-to-r from-[#0b192c] via-[#0f2942] to-[#1e3a8a] text-white flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <span className="px-2.5 py-1 rounded-lg bg-sky-500 text-slate-950 font-extrabold text-[10.5px] uppercase tracking-wider font-sans">
+            📊 2. ÖLÇÜM GELİŞİM VE KARŞILAŞTIRMA BÖLÜMÜ
+          </span>
+          <div>
+            <h3 className="text-xs sm:text-sm font-extrabold text-white uppercase tracking-tight font-sans">
+              1. Ölçüm ({report.date1}) → 2. Ölçüm ({report.date2}) Dönemsel Karşılaştırma Analizi
+            </h3>
+            <p className="text-[10px] text-sky-200 font-medium font-sans">
+              İkinci ölçüm sonuçları alındığında sporcumuzun katettiği gelişim ve performans değişimi
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 rounded-xl text-xs font-extrabold font-sans border ${
+            isProgress ? 'bg-emerald-950 text-emerald-300 border-emerald-400' : 'bg-amber-950 text-amber-300 border-amber-400'
+          }`}>
+            {isProgress ? `📈 Net İlerleme: +${scoreDiff} Puan` : `📉 Değişim: ${scoreDiff} Puan`}
+          </span>
+        </div>
+      </div>
+
+      {/* KPI Cards: Önceki Ölçüm vs Mevcut Ölçüm */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-sans">
+        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span className="text-[9.5px] font-bold text-slate-500 uppercase block">1. Ölçüm (Önceki - {report.date1})</span>
+          <span className="text-base font-black text-slate-700 mt-0.5 block font-mono">%{p1Score} Puan</span>
+          <span className="text-[9px] text-slate-500">Başlangıç Seviyesi</span>
+        </div>
+        <div className="p-2.5 rounded-xl bg-sky-50/80 border-2 border-sky-400">
+          <span className="text-[9.5px] font-extrabold text-sky-900 uppercase block">2. Ölçüm (Mevcut - {report.date2})</span>
+          <span className="text-lg font-black text-sky-700 mt-0.5 block font-mono">%{p2Score} Puan</span>
+          <span className="text-[9.5px] font-bold text-emerald-700">+%{p2Score - p1Score} İlerleme</span>
+        </div>
+        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span className="text-[9.5px] font-bold text-slate-500 uppercase block">Dönemsel Değişim (Δ)</span>
+          <span className={`text-base font-black mt-0.5 block font-mono ${isProgress ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {isProgress ? `+${scoreDiff}` : scoreDiff} Puan
+          </span>
+          <span className="text-[9px] text-slate-500">1. → 2. Ölçüm Farkı</span>
+        </div>
+        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span className="text-[9.5px] font-bold text-slate-500 uppercase block font-sans">Gelişim Yönü</span>
+          <span className="text-sm font-extrabold text-emerald-800 mt-0.5 block">
+            {isProgress ? '✨ Başarılı İlerleme' : ' Takip Edilmeli'}
+          </span>
+          <span className="text-[9px] text-slate-500">10 Motor Test İncelemesi</span>
+        </div>
+      </div>
+
+      {/* 2 Column Section: Left 1. -> 2. Ölçüm Test Table + Right 1. -> 2. Ölçüm Radar Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-3.5 items-stretch">
+        {/* Left 7 Cols: Detailed Test Progression Table */}
+        <div className="lg:col-span-7 print:col-span-7 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <table className="w-full text-xs border-collapse font-sans">
+            <thead>
+              <tr className="bg-slate-900 text-white text-[10px] uppercase font-bold">
+                <th className="py-2 px-2.5 text-left font-sans">Motor Performans Testi</th>
+                <th className="py-2 px-1.5 text-center">1. Ölçüm ({report.date1})</th>
+                <th className="py-2 px-1.5 text-center bg-sky-900 text-sky-200 font-extrabold">2. Ölçüm ({report.date2})</th>
+                <th className="py-2 px-2 text-center">Değişim (Δ)</th>
+                <th className="py-2 px-2 text-right">Gelişim Durumu</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 font-sans">
+              {comparisonRows.map((row) => (
+                <tr key={row.id} className="hover:bg-sky-50/50 transition-colors">
+                  <td className="py-1.5 px-2.5 font-bold text-slate-900">{row.name} ({row.unit})</td>
+                  <td className="py-1.5 px-1.5 text-center text-slate-600 font-mono">{row.m1}</td>
+                  <td className="py-1.5 px-1.5 text-center font-black text-sky-900 bg-sky-50 font-mono">{row.m2}</td>
+                  <td className="py-1.5 px-2 text-center font-bold font-mono">
+                    <span className={row.isPositive ? 'text-emerald-700' : 'text-rose-600'}>
+                      {row.delta >= 0 ? `+${row.delta}` : row.delta} {row.unit}
+                    </span>
+                  </td>
+                  <td className="py-1.5 px-2 text-right font-bold">
+                    {row.isPositive ? (
+                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-950 text-[9.5px] inline-block">
+                        📈 İlerleme
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950 text-[9.5px] inline-block">
+                        📉 Takip Edilmeli
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Right 5 Cols: Dedicated 1. Ölçüm -> 2. Ölçüm Recharts Spider Chart */}
+        <div className="lg:col-span-5 print:col-span-5 flex flex-col justify-between">
+          <RechartsSportsFlyRadarChart
+            report={report}
+            comparisonMode="p1-p2"
+            height={250}
+            title="1. Ölçüm → 2. Ölçüm Dönemsel Gelişim Radarı (Recharts Spider Chart)"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// DEDICATED 3-WAY COMPARISON SYNTHESIS CHART
+// (1. Grup Ortalaması vs 2. İdeal/Hedef Değer vs 3. Sporcumuzun Mevcut Değeri)
+// ============================================================================
+export interface ThreeWayComparisonProps {
+  report: SportsFlyLabReport;
+  className?: string;
+  height?: number;
+}
+
+export const ThreeWayGroupTargetAthleteComparisonChart: React.FC<ThreeWayComparisonProps> = ({
+  report,
+  className = '',
+  height = 250,
+}) => {
+  const grpAvgScore = report.groupInfo?.groupAverageScore ?? 70;
+  const athleticScore = report.scoreHistory?.p3Score || 88;
+  const targetScore = Math.min(100, Math.max(athleticScore + 6, 85));
+
+  const barData = useMemo(() => {
+    return report.motorPerformance.slice(0, 8).map((row) => {
+      const p3Val = row.percentile || normalizeLabRowValue(row.m3, row);
+      const grpVal = Math.max(35, Math.min(88, Math.round(p3Val * 0.82 + grpAvgScore * 0.18 - 4)));
+      const targetVal = Math.min(100, Math.max(p3Val + 8, 85));
+      const shortName = row.name.replace(' Testi', '').replace(' Ölçümü', '');
+
+      return {
+        subject: shortName,
+        'Grup Ortalaması': grpVal,
+        'İdeal / Hedef Değer': targetVal,
+        'Sporcu Mevcut Değeri': p3Val,
+        unit: row.unit,
+        rawM3: row.m3,
+      };
+    });
+  }, [report, grpAvgScore]);
+
+  return (
+    <div className={`p-5 rounded-2xl border border-slate-300 bg-slate-900 text-white shadow-md space-y-4 ${className}`}>
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded bg-indigo-600 text-white font-bold text-[10px] uppercase tracking-wider">
+              Üçlü Karşılaştırma Sentezi
+            </span>
+            <span className="text-xs text-slate-400 font-medium">
+              Grup Ortalaması vs Hedef vs Mevcut Değer
+            </span>
+          </div>
+          <h3 className="text-sm font-bold text-white tracking-tight">
+            Motor Biyomotor Performans Üçlü Veri Karşılaştırması
+          </h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
+            Grup Ort: %{grpAvgScore}
+          </span>
+          <span className="px-2.5 py-1 rounded-lg bg-blue-950/80 text-blue-300 border border-blue-800/80 font-semibold">
+            Hedef: %{targetScore}
+          </span>
+          <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 font-bold">
+            Sporcu: %{athleticScore}
+          </span>
+        </div>
+      </div>
+
+      {/* 2-Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        {/* Left 7 Cols: Grouped Bar Chart */}
+        <div className="lg:col-span-7 bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+          <div className="text-xs font-bold text-slate-200 uppercase mb-2 flex items-center justify-between">
+            <span>Motor Testler Üçlü Çubuk Grafiği</span>
+            <span className="text-[10px] text-slate-400 font-normal">0–100 Yüzdelik Ölçek</span>
+          </div>
+          <div style={{ width: '100%', height }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData} margin={{ top: 10, right: 10, left: -15, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis
+                  dataKey="subject"
+                  tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 600 }}
+                  interval={0}
+                  angle={-15}
+                  textAnchor="end"
+                />
+                <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 9 }} tickFormatter={(val) => `%${val}`} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-slate-900 text-white text-[11px] p-3 rounded-xl border border-slate-700 shadow-xl space-y-1">
+                          <div className="font-bold text-slate-200 border-b border-slate-800 pb-1 mb-1">
+                            {data.subject}
+                          </div>
+                          <div className="text-slate-400">Grup Ortalaması: %{data['Grup Ortalaması']}</div>
+                          <div className="text-blue-400">Hedef Değer: %{data['İdeal / Hedef Değer']}</div>
+                          <div className="text-emerald-400 font-bold">Sporcu Değeri: {data.rawM3} {data.unit} (%{data['Sporcu Mevcut Değeri']})</div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="Grup Ortalaması" fill="#64748b" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="İdeal / Hedef Değer" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="Sporcu Mevcut Değeri" fill="#10b981" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Right 5 Cols: Radar Chart */}
+        <div className="lg:col-span-5 bg-white text-slate-900 p-3.5 rounded-xl border border-slate-200 flex flex-col justify-between">
+          <RechartsSportsFlyRadarChart
+            report={report}
+            comparisonMode="group"
+            height={height}
+            title="Üçlü Katman Radar Analizi"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export { AthleteDevelopmentComparisonChart } from './AthleteDevelopmentComparisonChart';
+export type { AthleteDevelopmentComparisonChartProps } from './AthleteDevelopmentComparisonChart';

@@ -183,8 +183,8 @@ export const HAZIR_PUANLAMA_PROFILLERI: PuanlamaProfiliSablon[] = [
   {
     id: 'profil-dengeli-gelisim',
     baslik: 'İstikrarlı & Dengeli Gelişen',
-    rozet: '⚡️ 7-8 Puan Bandı',
-    etiket: '⚡️ 7-8 Puan Bandı',
+    rozet: ' 7-8 Puan Bandı',
+    etiket: ' 7-8 Puan Bandı',
     aciklama: 'Altyapı gereksinimlerini sağlam adımlarla yerine getiren, gelişime açık ve antrenmanlara sadık sporcular için.',
     antrenorNotu: 'Antrenman düzeni ve öğrenme isteği yüksek. Temel parametrelerde dengeli bir gelişim sürdürüyor.',
     katilimYuzdesi: 92,

@@ -559,7 +559,7 @@ export const YoklamaView: React.FC = () => {
               {selectedGroup?.name} için yoklama işlendi.
               {automationSummary && automationSummary.awardedCount > 0 && (
                 <span className="block mt-1 font-semibold text-amber-300">
-                  ⚡ Katılan sporculara toplam +{automationSummary.totalPointsGiven} Sporpuan (Katılım &amp; Haftalık Tam Devam) otomatik olarak tanımlandı ve veli uygulamalarına iletildi!
+                   Katılan sporculara toplam +{automationSummary.totalPointsGiven} Sporpuan (Katılım &amp; Haftalık Tam Devam) otomatik olarak tanımlandı ve veli uygulamalarına iletildi!
                 </span>
               )}
             </p>

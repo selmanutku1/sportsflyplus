@@ -1,10 +1,11 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
-  children: ReactNode;
+  children: React.ReactNode;
   fallbackTitle?: string;
   onResetToHome?: () => void;
+  key?: React.Key;
 }
 
 interface State {
@@ -12,7 +13,7 @@ interface State {
   errorMessage: string;
 }
 
-export class AppErrorBoundary extends Component<Props, State> {
+export class AppErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     errorMessage: '',
@@ -25,18 +26,18 @@ export class AppErrorBoundary extends Component<Props, State> {
     };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[SportsFly ErrorBoundary]', error, errorInfo);
   }
 
   private handleRetry = () => {
-    this.setState({ hasError: false, errorMessage: '' });
+    (this as any).setState({ hasError: false, errorMessage: '' });
   };
 
   private handleGoHome = () => {
-    this.setState({ hasError: false, errorMessage: '' });
-    if (this.props.onResetToHome) {
-      this.props.onResetToHome();
+    (this as any).setState({ hasError: false, errorMessage: '' });
+    if ((this as any).props.onResetToHome) {
+      (this as any).props.onResetToHome();
     } else if (typeof window !== 'undefined') {
       window.location.reload();
     }
@@ -51,7 +52,7 @@ export class AppErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="w-6 h-6" />
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-              {this.props.fallbackTitle || 'Bu modül yüklenirken geçici bir sorun oluştu'}
+              {(this as any).props.fallbackTitle || 'Bu modül yüklenirken geçici bir sorun oluştu'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
               Oturumunuz ve verileriniz güvende. Sayfayı yenileyerek veya ana ekrana dönerek işleminize kesintisiz devam edebilirsiniz.
@@ -65,7 +66,7 @@ export class AppErrorBoundary extends Component<Props, State> {
                 <RefreshCw className="w-3.5 h-3.5" />
                 Modülü Yenile
               </button>
-              {this.props.onResetToHome && (
+              {(this as any).props.onResetToHome && (
                 <button
                   type="button"
                   onClick={this.handleGoHome}
@@ -81,6 +82,6 @@ export class AppErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return (this as any).props.children;
   }
 }

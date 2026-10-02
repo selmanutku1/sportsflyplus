@@ -198,7 +198,7 @@ export const YoklamaHatirlatmaModal: React.FC<YoklamaHatirlatmaModalProps> = ({
             }`}
           >
             <Send className="w-3.5 h-3.5" />
-            <span>⚡ Anlık Hatırlatma Gönder ({unsubmittedOrAbsentMembers.length})</span>
+            <span> Anlık Hatırlatma Gönder ({unsubmittedOrAbsentMembers.length})</span>
           </button>
 
           <button

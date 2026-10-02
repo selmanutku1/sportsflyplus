@@ -14,6 +14,8 @@ import {
   QueryConstraint,
   Unsubscribe,
   DocumentData,
+  Timestamp,
+  FieldValue,
 } from 'firebase/firestore';
 import {
   db,
@@ -384,6 +386,18 @@ export const egitmenlerService = {
     onData: (items: FirestoreEgitmenDoc[]) => void,
     constraints?: QueryConstraint[]
   ) => subscribeToCollection('egitmenler', onData, constraints),
+};
+
+export const gruplarService = {
+  add: (data: CreatePayload<'gruplar'>) => addDocument('gruplar', data),
+  getById: (grupId: string) => getDocumentById('gruplar', grupId),
+  getAll: (constraints?: QueryConstraint[]) => getDocuments('gruplar', constraints),
+  update: (grupId: string, data: UpdatePayload<'gruplar'>) => updateDocument('gruplar', grupId, data),
+  delete: (grupId: string) => deleteDocument('gruplar', grupId),
+  subscribe: (
+    onData: (items: FirestoreGrupDoc[]) => void,
+    constraints?: QueryConstraint[]
+  ) => subscribeToCollection('gruplar', onData, constraints),
 };
 
 export interface FirestoreSporOkuluBasvurusuDoc {

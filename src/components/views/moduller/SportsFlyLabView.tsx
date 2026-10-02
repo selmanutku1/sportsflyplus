@@ -26,7 +26,7 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle2,
-  Zap,
+  Award,
   BarChart3,
   Building2,
   ImagePlus,
@@ -54,7 +54,16 @@ import {
   SportsFlyLabPerformanceCharts,
   SportsFlyLabKarnePage5RadarContent,
   SportsFlyLabKarnePage6LineContent,
+  RechartsSportsFlyRadarChart,
+  InitialMeasurementGroupComparisonChart,
+  SecondMeasurementComparisonPanel,
+  ThreeWayGroupTargetAthleteComparisonChart,
+  AthleteDevelopmentComparisonChart,
 } from '../../charts/KarnePerformansGrafikleri';
+import {
+  downloadCriticalPerformanceCSV,
+  downloadCriticalPerformancePDF,
+} from '../../../utils/criticalPerformanceExporter';
 import {
   SportsFlyLabReport,
   SportsFlyLabSchoolBranding,
@@ -96,12 +105,8 @@ interface SportsFlyLabViewProps {
 
 const PAGE_TITLES = [
   { page: 1, short: '1. Beden', full: '1. Beden Kompozisyonu Değerlendirmesi (Beden Sağlığı)' },
-  { page: 2, short: '2. Motor', full: '2. Motor Performans Değerlendirmesi (Sportif Performans)' },
-  { page: 3, short: '3. Somatotip', full: '3. Beden Tipi (Heath-Carter) & 5. Bileşenlerin Yönü' },
-  { page: 4, short: '4. Kalp & Güç', full: '4. Kardiyorespiratuar Uygunluk, Anaerobik Güç & 6. Risk Noktaları' },
-  { page: 5, short: '5. Radar Grafik', full: '7. Performans Grafikleri I — Motor Performans Yüzdelik Radar & Antropometrik Radar' },
-  { page: 6, short: '6. Gelişim Grafik', full: '8. Performans Grafikleri II — Genel Sportif Performans Puan Gelişimi & Dönemsel Eğriler' },
-  { page: 7, short: '7. Hedef & PHV', full: '9. Hedef Performans (İpsatif), Tepe Boy Hızı (PHV) & Uzman Görüşü' },
+  { page: 2, short: '2. Motor & Radar', full: '2. Motor Performans Değerlendirmesi & Yüzdelik Radar Grafiği' },
+  { page: 3, short: '3. Karşılaştırma', full: '3. Karşılaştırma & Gelişim Analizi (Grup Ortalaması, İdeal Değer & Sporcu)' },
 ];
 
 export type KarneTemplateId =
@@ -434,7 +439,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
         : activePaletteObj.secondaryHex;
 
   const [openHeaderMenu, setOpenHeaderMenu] = useState<
-    'excel' | 'karne' | 'panels' | 'export' | 'batchSamples' | 'templates' | 'clubColors' | null
+    'excel' | 'karne' | 'panels' | 'export' | 'report-download' | 'batchSamples' | 'templates' | 'clubColors' | null
   >(null);
   const [isAnalyzingAI, setIsAnalyzingAI] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -1180,19 +1185,11 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
           'sportsfly-lab-page-1',
           'sportsfly-lab-page-2',
           'sportsfly-lab-page-3',
-          'sportsfly-lab-page-4',
-          'sportsfly-lab-page-5',
-          'sportsfly-lab-page-6',
-          'sportsfly-lab-page-7',
         ]
       : [
           'sportsfly-lab-page-1',
           'sportsfly-lab-page-2',
           'sportsfly-lab-page-3',
-          'sportsfly-lab-page-4',
-          'sportsfly-lab-page-5',
-          'sportsfly-lab-page-6',
-          'sportsfly-lab-page-7',
         ];
 
     try {
@@ -1334,19 +1331,11 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               'sportsfly-lab-page-1',
               'sportsfly-lab-page-2',
               'sportsfly-lab-page-3',
-              'sportsfly-lab-page-4',
-              'sportsfly-lab-page-5',
-              'sportsfly-lab-page-6',
-              'sportsfly-lab-page-7',
             ]
           : [
               'sportsfly-lab-page-1',
               'sportsfly-lab-page-2',
               'sportsfly-lab-page-3',
-              'sportsfly-lab-page-4',
-              'sportsfly-lab-page-5',
-              'sportsfly-lab-page-6',
-              'sportsfly-lab-page-7',
             ];
         fileName = `SportsFly_Lab_Tum_Karne_${safeName}.pdf`;
       }
@@ -1387,6 +1376,29 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
     if (nextState) {
       setViewMode('all');
       notify('Karne A4 PDF görüntüleme ve yazdırma moduna alındı.');
+    }
+  };
+
+  // Download Critical Performance PDF
+  const handleDownloadCriticalPDF = async () => {
+    try {
+      notify(`${currentReport.athleteName} kritik performans PDF raporu hazırlanıyor...`);
+      await downloadCriticalPerformancePDF(currentReport, 'sportsfly-critical-performance-chart');
+      notify(`${currentReport.athleteName} kritik performans PDF raporu indirildi.`);
+    } catch (err) {
+      console.error(err);
+      notify('PDF oluşturulurken bir hata meydana geldi.');
+    }
+  };
+
+  // Download Critical Performance CSV
+  const handleDownloadCriticalCSV = () => {
+    try {
+      downloadCriticalPerformanceCSV(currentReport);
+      notify(`${currentReport.athleteName} performans verileri CSV formatında indirildi.`);
+    } catch (err) {
+      console.error(err);
+      notify('CSV oluşturulurken bir hata meydana geldi.');
     }
   };
 
@@ -2866,32 +2878,32 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             </div>
 
             {/* Athlete Sub-Header */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3 text-xs font-mono">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3 text-xs font-sans">
               <div className="bg-white/10 rounded-lg p-2 border border-white/15">
-                <span className="text-[9px] text-emerald-100 block font-sans">Sporcu Adı</span>
+                <span className="text-[9px] text-sky-100 block font-sans font-medium uppercase">Sporcu Adı</span>
                 <span className="font-extrabold text-white text-sm">{currentReport.athleteName}</span>
               </div>
               <div className="bg-white/10 rounded-lg p-2 border border-white/15">
-                <span className="text-[9px] text-emerald-100 block font-sans">Cinsiyet &amp; Yaş</span>
+                <span className="text-[9px] text-sky-100 block font-sans font-medium uppercase">Cinsiyet &amp; Yaş</span>
                 <span className="font-bold text-white">{currentReport.gender} · {currentReport.ageYears} Yaş</span>
               </div>
               <div className="bg-white/10 rounded-lg p-2 border border-white/15">
-                <span className="text-[9px] text-emerald-100 block font-sans">Branş / Şube</span>
+                <span className="text-[9px] text-sky-100 block font-sans font-medium uppercase">Branş / Şube</span>
                 <span className="font-bold text-white">{currentReport.sportBranch}</span>
               </div>
               <div className="bg-white/10 rounded-lg p-2 border border-white/15">
-                <span className="text-[9px] text-emerald-100 block font-sans">Ölçüm Dönemi</span>
-                <span className="font-bold text-emerald-200">3. Dönem Ölçümü</span>
+                <span className="text-[9px] text-sky-100 block font-sans font-medium uppercase">Ölçüm Dönemi</span>
+                <span className="font-bold text-sky-200">3. Dönem Ölçümü</span>
               </div>
             </div>
 
             {/* Normative Reference Badges for Parent Report */}
-            <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-white/20 text-[9.5px] font-mono">
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-200 border border-emerald-400/50 flex items-center gap-1 font-bold">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-white/20 text-[10.5px] font-sans">
+              <span className="px-3 py-1 rounded-lg bg-slate-900/90 text-sky-200 border border-sky-400/40 flex items-center gap-1.5 font-semibold shadow-xs">
                 📚 Antropometrik Referans: WHO (Dünya Sağlık Örgütü) Uluslararası Büyüme &amp; ISAK Standartları
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-sky-950/80 text-sky-200 border border-sky-400/50 flex items-center gap-1 font-bold">
-                ⚡ Motorik Test Referansı: Eurofit &amp; ACSM Gençlik Fiziksel Uygunluk Normları
+              <span className="px-3 py-1 rounded-lg bg-slate-900/90 text-emerald-200 border border-emerald-400/40 flex items-center gap-1.5 font-semibold shadow-xs">
+                 Motorik Test Referansı: Eurofit &amp; ACSM Gençlik Fiziksel Uygunluk Normları
               </span>
             </div>
           </div>
@@ -2929,6 +2941,17 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             <p className="text-xs text-slate-700 leading-relaxed font-medium bg-white p-3 rounded-xl border border-emerald-200/60">
               Gelişim yolculuğunda adım adım ilerliyorsun! Sporcumuz düzenli antrenman katılımı ve fiziki gayreti ile ilk dönemden bu yana fiziksel uygunluk ve motorik becerilerini istikrarlı bir şekilde yukarı taşımıştır.
             </p>
+
+            {/* Recharts Spider Chart for Parent Report */}
+            <div className="mt-2 space-y-3">
+              <SecondMeasurementComparisonPanel report={currentReport} />
+              <RechartsSportsFlyRadarChart
+                report={currentReport}
+                comparisonMode="periods"
+                height={260}
+                title="Biyomotor Becerilerinin Ölçümler Arası Dönemsel Gelişim Radarı (Recharts Spider Chart)"
+              />
+            </div>
           </div>
 
           {/* Section 2: Seni Öne Çıkaran Yönlerin */}
@@ -2960,7 +2983,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               </div>
 
               <div className="p-3 rounded-xl bg-white border border-sky-200 shadow-2xs flex items-start gap-2.5">
-                <span className="text-lg shrink-0">⚡</span>
+                <span className="text-lg shrink-0"></span>
                 <div>
                   <div className="text-xs font-black text-slate-900">Sürat &amp; Reaksiyon Çabukluğu</div>
                   <p className="text-[11px] text-slate-600 mt-1 leading-snug">
@@ -3044,7 +3067,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             <div className="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 space-y-2">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 border-b border-slate-200 pb-2">
                 <span className="w-3 h-3 rounded-full bg-slate-800 inline-block" />
-                <span>Yaş Grubuna Göre Konumun</span>
+                <span>Yaş Grubuna Göre Konumun (Üçlü Karşılaştırma)</span>
               </h3>
               <div className="p-3 rounded-xl bg-white border border-slate-200">
                 <div className="inline-block px-3 py-1 rounded-lg bg-emerald-100 text-emerald-950 font-bold text-xs mb-2">
@@ -3167,7 +3190,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             </div>
 
             {/* Athlete Sub-Header */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mt-3 text-xs font-mono">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mt-3 text-xs font-sans">
               <div className="bg-slate-800/80 rounded-lg p-2 border border-slate-700">
                 <span className="text-[9px] text-slate-400 block font-sans uppercase">Sporcu</span>
                 <span className="font-extrabold text-white text-xs">{currentReport.athleteName}</span>
@@ -3191,12 +3214,12 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             </div>
 
             {/* Normative Reference Badges for Coach/Club Report */}
-            <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800 text-[9.5px] font-mono">
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800 text-[10.5px] font-sans">
+              <span className="px-3 py-1 rounded-lg bg-slate-800 text-emerald-200 border border-emerald-500/40 font-semibold flex items-center gap-1.5 shadow-xs">
                 📚 Morfolojik Referans: WHO &amp; ISAK L2 Kinantropometrik Normlar
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-indigo-300 border border-indigo-500/40 font-bold flex items-center gap-1">
-                ⚡ Biyomotorik Referans: Eurofit, Fleishman &amp; NSCA Biyomekanik Test Normları
+              <span className="px-3 py-1 rounded-lg bg-slate-800 text-sky-200 border border-sky-500/40 font-semibold flex items-center gap-1.5 shadow-xs">
+                 Biyomotorik Referans: Eurofit, Fleishman &amp; NSCA Biyomekanik Test Normları
               </span>
             </div>
           </div>
@@ -3217,7 +3240,12 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               <table className="w-full text-xs border-collapse font-mono">
                 <thead>
                   <tr className="bg-slate-900 text-white text-[10px] uppercase font-bold">
-                    <th className="py-2 px-2.5 text-left">Test Parametresi</th>
+                    <th className="py-2.5 px-2.5 text-left">
+                      <div>Test Parametresi</div>
+                      <div className="text-[8.5px] font-sans font-medium text-sky-200 normal-case tracking-normal">
+                        (Referans: Eurofit / Fleishman / NSCA Normları)
+                      </div>
+                    </th>
                     <th className="py-2 px-1.5 text-center">1. Test ({currentReport.date1})</th>
                     <th className="py-2 px-1.5 text-center">2. Test ({currentReport.date2})</th>
                     <th className="py-2 px-2 text-center bg-emerald-950 text-emerald-300 font-black">3. Test ({currentReport.date3})</th>
@@ -3252,6 +3280,25 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Recharts Spider Chart for Coach/Club Report */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-2.5">
+              <RechartsSportsFlyRadarChart
+                report={currentReport}
+                comparisonMode="initial-group"
+                height={230}
+                title="1. Ölçüm Başlangıç Seviyesi vs Grup Ortalaması Radarı"
+              />
+              <InitialMeasurementGroupComparisonChart
+                report={currentReport}
+                height={230}
+              />
+            </div>
+
+            {/* Dedicated 2. Ölçüm Gelişim ve Karşılaştırma Paneli (1. Ölçüm -> 2. Ölçüm) */}
+            <div className="mt-3">
+              <SecondMeasurementComparisonPanel report={currentReport} />
             </div>
           </div>
 
@@ -3327,7 +3374,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                     <span className="font-mono text-amber-700">35 ml/kg/dk (-0.42 SD · %27 Yüzdelik)</span>
                   </div>
                   <p className="text-[10.5px] text-amber-900 mt-1 leading-snug font-medium">
-                    ⚡ <strong>Kondisyonel Darboğaz:</strong> Maksimal laktat toparlanma süresi uzamaktadır; HIIT ve aerobik baz yüklenmesi önerilir.
+                     <strong>Kondisyonel Darboğaz:</strong> Maksimal laktat toparlanma süresi uzamaktadır; HIIT ve aerobik baz yüklenmesi önerilir.
                   </p>
                 </div>
 
@@ -3546,8 +3593,9 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-950 border border-emerald-300 font-mono text-[10px] font-black">
-                📚 Referans Kaynak: Dünya Sağlık Örgütü (WHO) Uluslararası Büyüme &amp; ISAK Standartları
+              <span className="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white border border-slate-700 font-sans text-xs font-semibold shadow-2xs flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-sky-400 inline-block shrink-0" />
+                <span>Referans Standart: Dünya Sağlık Örgütü (WHO) Uluslararası Büyüme &amp; ISAK Kinantropometri Protokolü</span>
               </span>
             </div>
           </div>
@@ -3560,7 +3608,12 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                   className={`text-[10.5px] font-black uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
                   style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
                 >
-                  <th className="py-3 px-3.5 rounded-tl-lg w-[28%] text-white">Antropometrik Parametre</th>
+                  <th className="py-3 px-3.5 rounded-tl-lg w-[28%] text-white">
+                    <div>Antropometrik Parametre</div>
+                    <div className="text-[9px] font-sans font-medium text-sky-200 normal-case tracking-normal">
+                      (Referans: WHO Uluslararası Büyüme / ISAK L2)
+                    </div>
+                  </th>
                   <th className="py-3 px-2 text-center w-[7%] text-white">I</th>
                   <th className="py-3 px-2 text-center w-[7%] text-white">II</th>
                   <th
@@ -3988,8 +4041,9 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-lg bg-indigo-100 text-indigo-950 border border-indigo-300 font-mono text-[10px] font-black">
-                  📚 Normatif Referans Kaynağı: Eurofit &amp; Fleishman Biyomekanik Test Normları
+                <span className="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white border border-slate-700 font-sans text-xs font-semibold shadow-2xs flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" />
+                  <span>Normatif Referans Kaynağı: Eurofit &amp; Fleishman Biyomekanik Test Normları</span>
                 </span>
               </div>
             </div>
@@ -4075,15 +4129,31 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
             );
           })()}
 
+          {/* Recharts Spider Chart Comparison & 2. Ölçüm Karşılaştırma Paneli for Page 2 */}
+          <div className="mb-2.5 space-y-2.5">
+            <SecondMeasurementComparisonPanel report={currentReport} />
+            <RechartsSportsFlyRadarChart
+              report={currentReport}
+              comparisonMode="periods"
+              height={240}
+              title="3 Dönemlik Motorik Biyomotorik Performans Gelişim Radarı (Recharts Spider Chart)"
+            />
+          </div>
+
           {/* 10 Motor Tests Table (Color-Coded with Explicit Target & Progress Visibility) */}
           <div className="overflow-x-auto rounded-xl border-2 border-slate-200 shadow-2xs bg-white">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr
-                  className={`text-[10px] font-black uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
+                  className={`text-[10.5px] font-black uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
                   style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
                 >
-                  <th className="py-2 px-2.5 rounded-tl-lg w-[26%] text-white">Motor Performans Testi</th>
+                  <th className="py-2.5 px-3 rounded-tl-lg w-[26%] text-white">
+                    <div>Motor Performans Testi</div>
+                    <div className="text-[9px] font-sans font-medium text-sky-200 normal-case tracking-normal">
+                      (Referans: Eurofit / Fleishman / ACSM Gençlik Normları)
+                    </div>
+                  </th>
                   <th className="py-2 px-1.5 text-center w-[6.5%] text-white">1. Test</th>
                   <th className="py-2 px-1.5 text-center w-[6.5%] text-white">2. Test</th>
                   <th
@@ -4152,7 +4222,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                         </div>
                         <div className="text-[9.5px] text-slate-600 font-medium leading-tight mt-0.5">
                           <strong className={isNeedsDev ? 'text-rose-700' : 'text-emerald-800'}>
-                            ⚡ {guidance.drillTag}
+                             {guidance.drillTag}
                           </strong>
                         </div>
                       </td>
@@ -4229,122 +4299,29 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* Bottom Full-Page Section: Puan Skalası + Grup Karşılaştırması + 1. Gelişim Alanlarının Açıklanması */}
-        <div className="mt-2.5 pt-2.5 border-t-2 border-slate-900 space-y-2.5">
-          {/* Compact Combined Score Scale + 0-100 Linear Ruler */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-3 items-center bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
-            <div className="lg:col-span-6 print:col-span-6">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-extrabold text-slate-900 uppercase tracking-wider">
-                  GENEL SPORTİF PERFORMANS PUAN SKALASI (%{athleticScore})
-                </span>
-                <span className="text-[9.5px] font-mono font-bold text-emerald-700">
-                  +{currentReport.scoreHistory.p3Score - currentReport.scoreHistory.p1Score} Puan Gelişim (I→III)
-                </span>
-              </div>
-              <svg viewBox="0 0 600 12" preserveAspectRatio="none" className="w-full h-3 rounded-full overflow-visible block">
-                <rect x="0" y="1" width="180" height="10" rx="4" fill="#334155" />
-                <rect x="180" y="1" width="240" height="10" fill="#cbd5e1" />
-                <rect x="420" y="1" width="180" height="10" rx="4" fill="#059669" />
-                <rect
-                  x={Math.max(4, Math.min(592, currentReport.scoreHistory.p3Score * 6)) - 4}
-                  y="0"
-                  width="8"
-                  height="12"
-                  rx="2"
-                  fill="#e11d48"
-                  stroke="#ffffff"
-                  strokeWidth="1.8"
-                />
-              </svg>
-              <div className="flex justify-between text-[8.5px] font-mono text-slate-500 mt-0.5">
-                <span>DÜŞÜK (0–30)</span>
-                <span>ORTALAMA (30–70)</span>
-                <span className="text-emerald-700 font-bold">YÜKSEK PERFORMANS (70–100)</span>
-              </div>
-            </div>
-
-            <div className="lg:col-span-6 print:col-span-6 flex items-center justify-end gap-4">
-              {[
-                { label: 'I. TEST', date: currentReport.scoreHistory.p1Date, score: currentReport.scoreHistory.p1Score, color: 'border-slate-400 text-slate-700 bg-white' },
-                { label: 'II. TEST', date: currentReport.scoreHistory.p2Date, score: currentReport.scoreHistory.p2Score, color: 'border-blue-600 text-blue-700 bg-white' },
-                { label: 'III. TEST (SON)', date: currentReport.scoreHistory.p3Date, score: currentReport.scoreHistory.p3Score, color: 'border-emerald-600 text-emerald-800 bg-emerald-50' },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <div
-                    className={`w-11 h-11 rounded-full border-3 ${item.color} flex flex-col items-center justify-center font-mono shrink-0`}
-                  >
-                    <span className="text-xs font-black tabular-nums">%{item.score}</span>
-                  </div>
-                  <div>
-                    <div className="text-[9.5px] font-extrabold text-slate-900">{item.label}</div>
-                    <div className="text-[9px] font-mono text-slate-500">{item.date}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* GRUP KARŞILAŞTIRMASI — VELİ BİLGİLENDİRME VE GRUP İÇİ KONUM PANELİ */}
-          <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50/40 p-2.5 shadow-2xs space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-indigo-200/80">
-              <div className="flex items-center gap-2">
-                <span
-                  className="px-2 py-0.5 rounded text-white font-mono text-[9.5px] font-black uppercase tracking-wider"
-                  style={{ backgroundColor: effectivePrimaryHex }}
-                >
-                  GRUP KARŞILAŞTIRMASI
-                </span>
-                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
-                  Sporcunun Bulunduğu Grup İçerisindeki Konumu:
-                </span>
-                <span className="text-[10px] text-slate-700 font-semibold">
-                  Veli Özeti: <strong>{groupAthleteCount}</strong> sporcu içinde <strong>{groupRank}.</strong> sırada (Ort: <strong>%{groupAvgScore}</strong> → Sporcu: <strong>%{athleticScore}</strong>)
-                </span>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-950 border border-emerald-300 font-mono text-[9.5px] font-black">
-                Grup Ortalamasının +{Math.max(0, athleticScore - groupAvgScore)} Puan Üzerinde
+          {/* Motor Performance Normative Reference Source Tag */}
+          <div className="mt-2.5 p-2.5 rounded-xl bg-slate-100/90 border border-slate-200 text-xs text-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-md bg-slate-900 text-white font-sans text-[10.5px] font-semibold flex items-center gap-1.5 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" />
+                <span>Normatif Referans Kaynağı: Eurofit Fiziksel Uygunluk Test Bataryası (Avrupa Konseyi) &amp; Fleishman Biyomekanik Performans Standartları (ACSM / NSCA)</span>
               </span>
             </div>
-
-            {/* ÜÇLÜ KARŞILAŞTIRMA GÖRSELİ (Grup Ortalaması · İdeal / Hedef Değer · Sporcunun Mevcut Değeri) */}
-            <div className="mt-2 pt-2 border-t border-indigo-200/80">
-              <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-1">
-                <span className="text-slate-900 font-extrabold uppercase">
-                  📊 ÜÇLÜ KARŞILAŞTIRMA SENTEZİ (Grup Ortalaması vs İdeal Hedef vs Mevcut Değer):
-                </span>
-                <div className="flex items-center gap-3 text-[9.5px]">
-                  <span className="flex items-center gap-1 font-bold text-rose-800">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
-                    <span>Grup Ortalaması: %{groupAvgScore}</span>
-                  </span>
-                  <span className="flex items-center gap-1 font-bold text-blue-900">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" />
-                    <span>İdeal / Hedef: %{Math.min(100, athleticScore + 5)}</span>
-                  </span>
-                  <span className="flex items-center gap-1 font-black text-emerald-950">
-                    <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
-                    <span>Sporcu Mevcut: %{athleticScore}</span>
-                  </span>
-                </div>
-              </div>
-              <svg viewBox="0 0 500 12" preserveAspectRatio="none" className="w-full h-3 rounded-full overflow-visible block">
-                <rect x="0" y="2" width="500" height="8" rx="4" fill="#e2e8f0" />
-                <rect x="0" y="2" width={groupAvgScore * 5} height="8" fill="#fda4af" opacity="0.6" />
-                <rect x="0" y="2" width={athleticScore * 5} height="8" rx="4" fill="#10b981" opacity="0.85" />
-                {/* Marker 1: Group Average */}
-                <line x1={groupAvgScore * 5} y1="0" x2={groupAvgScore * 5} y2="12" stroke="#e11d48" strokeWidth="2.5" />
-                {/* Marker 2: Target Value */}
-                <line x1={Math.min(100, athleticScore + 5) * 5} y1="0" x2={Math.min(100, athleticScore + 5) * 5} y2="12" stroke="#2563eb" strokeWidth="2.5" strokeDasharray="2,1" />
-                {/* Marker 3: Athlete Current Value */}
-                <circle cx={athleticScore * 5} cy="6" r="5" fill="#059669" stroke="#ffffff" strokeWidth="1.5" />
-              </svg>
-            </div>
+            <span className="text-[10px] font-sans font-semibold text-slate-600 shrink-0">
+              📊 Yaş &amp; Cinsiyet Normatif Standartları
+            </span>
           </div>
 
-
+          {/* 3. TEST BÖLÜMÜ MOTOR PERFORMANS YÜZDELİK RADAR GRAFİĞİ (SPIDER CHART) */}
+          <div className="mt-3.5 pt-3 border-t-2 border-slate-900">
+            <RechartsSportsFlyRadarChart
+              report={currentReport}
+              comparisonMode="periods"
+              height={260}
+              title="3. Test Bölümü Motor Performans Yüzdelik Radar Grafiği (Spider Chart %0–%100)"
+            />
+          </div>
         </div>
 
         {renderPageFooter(2)}
@@ -4353,576 +4330,280 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
   };
 
   // ============================================================================
-  // PAGE 3: 3. BEDEN TİPİ (SOMATOTİP) & 5. BİLEŞENLERİN YÖNÜ (POTANSİYEL)
+  // PAGE 3: 3. KRİTİK PERFORMANS & GELİŞİM ANALİZİ (ÖNCELİKLİ 4 BİYOMOTORİK VERİ & KARŞILAŞTIRMA)
   // ============================================================================
   const renderPage3 = () => {
-    const { m1, m2, m3, eliteRef } = currentReport.somatotype;
-    const toSomatoXY = (endo: number, meso: number, ecto: number) => {
-      const x = ecto - endo;
-      const y = 2 * meso - (endo + ecto);
-      const svgX = 130 + x * 11;
-      const svgY = 125 - y * 7.2;
-      return { x: svgX, y: svgY };
-    };
+    const gInfo = currentReport.groupInfo;
+    const groupAthleteCount = gInfo?.groupAthleteCount || 15;
+    const groupRank = gInfo?.groupRank || 1;
+    const athleticScore = currentReport.scoreHistory?.p3Score || 88;
+    const groupAvgScore = gInfo?.groupAverageScore ?? 72;
 
-    const pt1 = toSomatoXY(m1.endo, m1.meso, m1.ecto);
-    const pt2 = toSomatoXY(m2.endo, m2.meso, m2.ecto);
-    const pt3 = toSomatoXY(m3.endo, m3.meso, m3.ecto);
-    const ptRef = toSomatoXY(eliteRef.endo, eliteRef.meso, eliteRef.ecto);
+    // En kritik 4 biyomotorik test parametresi seçimi
+    const motorRows = currentReport.motorPerformance || [];
 
-    const primaryBranchScore = eliteRef.refScore || 94;
-    const branchSuitabilityList = [
+    const speedRow = motorRows.find((r) => {
+      const l = r.name.toLowerCase();
+      return l.includes('sürat') || l.includes('sprint');
+    }) || motorRows[0];
+
+    const powerRow = motorRows.find((r) => {
+      const l = r.name.toLowerCase();
+      return l.includes('dikey') || l.includes('sıçrama');
+    }) || motorRows[1];
+
+    const agilityRow = motorRows.find((r) => {
+      const l = r.name.toLowerCase();
+      return l.includes('10x5') || l.includes('çeviklik') || l.includes('çabukluk');
+    }) || motorRows[2];
+
+    const enduranceRow = motorRows.find((r) => {
+      const l = r.name.toLowerCase();
+      return l.includes('aerobik') || l.includes('dayanıklılık') || l.includes('pacer');
+    }) || motorRows[3];
+
+    const criticalMetrics = [
       {
-        branch: currentReport.sportBranch || 'Voleybol / Elit Branş',
-        score: primaryBranchScore,
-        note: 'Birincil Branş Morfolojik & Biyomotor Uyumu',
-        icon: '🏆',
-        rankBadge: '1. BİRİNCİL BRANŞ',
-        tierLabel: primaryBranchScore >= 90 ? 'ELİT UYUM' : 'YÜKSEK UYUM',
-        cardStyle: 'border-2 border-emerald-500 bg-emerald-50',
-        scoreBadgeStyle: 'bg-emerald-600 text-white border-emerald-700',
-        rankBadgeStyle: 'bg-emerald-900 text-emerald-200',
-        barColor: '#059669',
+        id: 'speed',
+        category: 'Hız / İvmelenme',
+        title: 'Sürat Performansı',
+        subTitle: speedRow?.name || '20m Sürat Testi',
+        row: speedRow,
+        targetScore: 92,
+        groupScore: Math.round(groupAvgScore * 0.98),
+        badgeClass: 'bg-blue-600 text-white',
+        borderClass: 'border-blue-200',
+        bgClass: 'bg-blue-50/30',
+        deltaText: speedRow ? `${(speedRow.m1 - speedRow.m3).toFixed(2)} sn iyileşme` : '+4% İlerleme',
       },
       {
-        branch: 'Atletizm (Sürat & Atlama)',
-        score: Math.min(96, Math.max(88, Math.round((currentReport.potential.speedScore + currentReport.potential.strengthScore) / 2 + 88))),
-        note: 'Patlayıcı Güç & Reaktif Sıçrama Kapasitesi',
-        icon: '🏃',
-        rankBadge: '2. UYGUN BRANŞ',
-        tierLabel: 'ÇOK YÜKSEK UYUM',
-        cardStyle: 'border-2 border-blue-300 bg-blue-50',
-        scoreBadgeStyle: 'bg-blue-600 text-white border-blue-700',
-        rankBadgeStyle: 'bg-blue-900 text-blue-100',
-        barColor: '#2563eb',
+        id: 'power',
+        category: 'Patlayıcı Güç',
+        title: 'Dikey Sıçrama & Güç',
+        subTitle: powerRow?.name || 'Dikey Sıçrama Testi',
+        row: powerRow,
+        targetScore: 95,
+        groupScore: Math.round(groupAvgScore * 1.02),
+        badgeClass: 'bg-indigo-600 text-white',
+        borderClass: 'border-indigo-200',
+        bgClass: 'bg-indigo-50/30',
+        deltaText: powerRow ? `+${(powerRow.m3 - powerRow.m1).toFixed(1)} cm artış` : '+8% İlerleme',
       },
       {
-        branch: 'Basketbol / Takım Sporları',
-        score: Math.min(95, Math.max(86, primaryBranchScore - 2)),
-        note: 'Boy-Kulaç Avantajı & Çok Yönlü Çeviklik',
-        icon: '🏀',
-        rankBadge: '3. UYGUN BRANŞ',
-        tierLabel: 'YÜKSEK UYUM',
-        cardStyle: 'border-2 border-indigo-200 bg-indigo-50',
-        scoreBadgeStyle: 'bg-indigo-600 text-white border-indigo-700',
-        rankBadgeStyle: 'bg-indigo-900 text-indigo-100',
-        barColor: '#4f46e5',
+        id: 'agility',
+        category: 'Yön Değiştirme',
+        title: 'Çeviklik & Koordinasyon',
+        subTitle: agilityRow?.name || '10x5m Mekik Koşusu',
+        row: agilityRow,
+        targetScore: 90,
+        groupScore: Math.round(groupAvgScore * 0.96),
+        badgeClass: 'bg-emerald-600 text-white',
+        borderClass: 'border-emerald-200',
+        bgClass: 'bg-emerald-50/30',
+        deltaText: agilityRow ? `${(agilityRow.m1 - agilityRow.m3).toFixed(2)} sn iyileşme` : '+5% İlerleme',
       },
       {
-        branch: 'Raket & File Sporları (Tenis)',
-        score: Math.min(94, Math.max(84, primaryBranchScore - 4)),
-        note: 'Üst-Alt Ekstremite Hız & Reaksiyon Koordinasyonu',
-        icon: '🎾',
-        rankBadge: '4. DESTEKLEYİCİ BRANŞ',
-        tierLabel: 'OPTİMAL UYUM',
-        cardStyle: 'border-2 border-amber-300 bg-amber-50',
-        scoreBadgeStyle: 'bg-amber-500 text-slate-950 border-amber-600',
-        rankBadgeStyle: 'bg-amber-900 text-amber-100',
-        barColor: '#d97706',
+        id: 'endurance',
+        category: 'Kardiyorespiratuvar',
+        title: 'Aerobik Dayanıklılık',
+        subTitle: enduranceRow?.name || 'Pacer Mekik Testi',
+        row: enduranceRow,
+        targetScore: 88,
+        groupScore: Math.round(groupAvgScore * 0.94),
+        badgeClass: 'bg-slate-700 text-white',
+        borderClass: 'border-slate-300',
+        bgClass: 'bg-slate-50',
+        deltaText: enduranceRow ? `+${(enduranceRow.m3 - enduranceRow.m1).toFixed(0)} mekik` : '+6% İlerleme',
       },
     ];
 
     return (
       <div
         id="sportsfly-lab-page-3"
-        className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
+        className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none font-sans ${activeTemplate.pageFrameClass}`}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           {renderPageHeader(
             3,
-            '3. Beden Tipi (Somatotip) & 5. Potansiyel Bileşenleri',
-            'Heath-Carter Somatotip Bölge Tanımlaması ve Motorsal Bileşenlerin (Kuvvet · Sürat · Dayanıklılık) Vektörel Yönü'
+            '3. Kritik Performans & Gelişim Analizi',
+            'En Kritik Biyomotorik Parametreler, Mevcut Değer vs Hedef vs Akran Grubu Karşılaştırması'
           )}
 
-          {/* TWO MAIN EQUAL COLUMNS WITH PERFECT VERTICAL & HORIZONTAL ALIGNMENT */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-4 items-stretch">
-
-            {/* LEFT COLUMN: 3. BEDEN TİPİ (SOMATOTİP) */}
-            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs space-y-3 h-full">
-              <div className="space-y-3 flex-1 flex flex-col justify-between">
-                <div>
-                  {/* Column Section Header */}
-                  <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100 h-8 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
-                        BÖLÜM 3.1
-                      </span>
-                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                        Heath-Carter Somatotip Profil
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-mono">
-                      3 Dönem Karşılaştırmalı
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-600 leading-snug min-h-[28px] flex items-center">
-                    Deri kıvrım kalınlıkları, kemik çapı ve kas çevresi ölçümleriyle sporcunun Endomorfi, Mezomorfi ve Ektomorfi profili belirlenmiştir.
-                  </p>
-                </div>
-
-                {/* 3-Period Somatotype Table */}
-                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[135px] flex flex-col justify-between">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr
-                        className="text-[10px] uppercase font-bold tracking-wider"
-                        style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
-                      >
-                        <th className="py-2 px-2.5 text-left w-[32%]">Test Tarihi</th>
-                        <th className="py-2 px-1 text-center w-[14%]">Endo</th>
-                        <th className="py-2 px-1 text-center w-[14%]">Mezo</th>
-                        <th className="py-2 px-1 text-center w-[14%]">Ekto</th>
-                        <th className="py-2 px-2.5 text-left w-[26%]">Somatotip Bölgesi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-mono bg-white text-[11px]">
-                      <tr className="hover:bg-slate-50">
-                        <td className="py-1.5 px-2.5 font-semibold text-slate-600">{currentReport.date1} (I)</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m1.endo}</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m1.meso}</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m1.ecto}</td>
-                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">{m1.category}</td>
-                      </tr>
-                      <tr className="hover:bg-slate-50">
-                        <td className="py-1.5 px-2.5 font-semibold text-slate-600">{currentReport.date2} (II)</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m2.endo}</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m2.meso}</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-slate-800">{m2.ecto}</td>
-                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">{m2.category}</td>
-                      </tr>
-                      <tr className="bg-blue-50/70 border-l-4 border-l-blue-600 font-bold">
-                        <td className="py-1.5 px-2.5 text-blue-950 font-black">{currentReport.date3} (III)</td>
-                        <td className="py-1.5 px-1 text-center text-blue-950 font-black">{m3.endo}</td>
-                        <td className="py-1.5 px-1 text-center text-blue-950 font-black">{m3.meso}</td>
-                        <td className="py-1.5 px-1 text-center text-blue-950 font-black">{m3.ecto}</td>
-                        <td className="py-1.5 px-2.5 font-sans font-black text-blue-950">{m3.category}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Somatochart Diagram Card */}
-                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 h-[225px] flex flex-col justify-between items-center">
-                  <div className="w-full flex items-center justify-between px-1 mb-1 shrink-0">
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider font-mono">
-                      SOMATOCHART (HEATH-CARTER GRAFİĞİ)
-                    </span>
-                    <div className="flex items-center gap-2 text-[9px] font-bold font-mono">
-                      <span className="text-slate-500">● I</span>
-                      <span className="text-blue-600">● II</span>
-                      <span className="text-rose-600 font-extrabold">● III (Güncel)</span>
-                      <span className="text-emerald-600 font-extrabold">● Elit</span>
-                    </div>
-                  </div>
-
-                  <svg
-                    width="240"
-                    height="170"
-                    viewBox="0 0 260 190"
-                    className="w-[240px] h-[170px] mx-auto block overflow-visible my-auto"
-                  >
-                    <polygon
-                      points="130,16 28,168 232,168"
-                      fill="#ffffff"
-                      stroke="#334155"
-                      strokeWidth="1.5"
-                    />
-                    <line x1="130" y1="16" x2="130" y2="168" stroke="#cbd5e1" strokeDasharray="3,3" />
-                    <line x1="28" y1="168" x2="181" y2="84" stroke="#cbd5e1" strokeDasharray="3,3" />
-                    <line x1="232" y1="168" x2="79" y2="84" stroke="#cbd5e1" strokeDasharray="3,3" />
-
-                    <text x="130" y="10" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
-                      MEZOMORFİ (Kas-İskelet)
-                    </text>
-                    <text x="35" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
-                      ENDOMORFİ (Yağlılık)
-                    </text>
-                    <text x="222" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-slate-900 uppercase">
-                      EKTOMORFİ (İncelik)
-                    </text>
-
-                    {/* Progress Trend Line */}
-                    <polyline
-                      points={`${pt1.x},${pt1.y} ${pt2.x},${pt2.y} ${pt3.x},${pt3.y}`}
-                      fill="none"
-                      stroke="#e11d48"
-                      strokeWidth="2"
-                      strokeDasharray="2,2"
-                    />
-
-                    {/* Reference Point */}
-                    <circle cx={ptRef.x} cy={ptRef.y} r="5" fill="#10b981" stroke="#ffffff" strokeWidth="1.5" />
-                    <text x={ptRef.x + 7} y={ptRef.y + 3} className="text-[7.5px] font-black fill-emerald-800">
-                      Elit {eliteRef.sport}
-                    </text>
-
-                    {/* Test Points */}
-                    <circle cx={pt1.x} cy={pt1.y} r="4" fill="#64748b" stroke="#ffffff" strokeWidth="1" />
-                    <circle cx={pt2.x} cy={pt2.y} r="4" fill="#2563eb" stroke="#ffffff" strokeWidth="1" />
-                    <circle cx={pt3.x} cy={pt3.y} r="5.5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.8" />
-                    <text x={pt3.x - 12} y={pt3.y - 8} className="text-[8.5px] font-black fill-rose-700 font-mono">
-                      III ({m3.endo}-{m3.meso}-{m3.ecto})
-                    </text>
-                  </svg>
-                </div>
+          {/* 1. SECTION: EN KRİTİK 4 PERFORMANS VERİSİ (TEMİZ, FERAH, EMOJİSİZ, DAKTİLOSUZ KARTLAR) */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider">
+                  Kritik Performans Odakları
+                </span>
+                <span className="text-xs text-slate-500 font-medium">
+                  En yüksek biyomotorik korelasyona sahip 4 temel test parametresi
+                </span>
               </div>
-
-              {/* Left Column Bottom: High-Impact Elite Reference & Branch Match Callout */}
-              <div
-                className="mt-3 p-2.5 rounded-xl border border-slate-200 bg-slate-900 text-white flex items-center justify-between gap-2.5 shadow-2xs h-[64px] shrink-0"
-                style={{ backgroundColor: '#0f172a' }}
-              >
-                <div className="space-y-0.5 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono text-[8.5px] font-black uppercase tracking-wider shrink-0">
-                      ELİT BRANŞ UYUMU
-                    </span>
-                    <span className="text-[9.5px] text-emerald-300 uppercase font-extrabold tracking-wider truncate">
-                      {eliteRef.sport} Referansı
-                    </span>
-                  </div>
-                  <div className="text-[11px] font-mono text-white truncate">
-                    Sporcu: <strong className="text-amber-300 font-black">{m3.endo}-{m3.meso}-{m3.ecto}</strong>
-                    <span className="mx-1 text-white/40">|</span>
-                    Elit: <strong className="text-emerald-300 font-black">{eliteRef.endo}-{eliteRef.meso}-{eliteRef.ecto}</strong>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 bg-emerald-950 border border-emerald-400/60 px-2.5 py-1 rounded-lg shrink-0">
-                  <div className="text-right">
-                    <div className="text-[8px] text-emerald-200 uppercase font-black tracking-wider">Branş Uyumu</div>
-                    <div className="text-xl font-black font-mono text-emerald-300 leading-none mt-0.5">
-                      %{primaryBranchScore}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <span className="text-xs text-slate-700 font-semibold hidden sm:inline-block">
+                Ölçüm Tarihi: {currentReport.date3}
+              </span>
             </div>
 
-            {/* RIGHT COLUMN: 5. POTANSİYEL BİLEŞENLERİ */}
-            <div className="border-2 border-slate-200/90 rounded-2xl p-4 bg-white flex flex-col justify-between shadow-2xs space-y-3 h-full">
-              <div className="space-y-3 flex-1 flex flex-col justify-between">
-                <div>
-                  {/* Column Section Header */}
-                  <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100 h-8 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-black tracking-wider uppercase font-mono">
-                        BÖLÜM 5.1
-                      </span>
-                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                        Potansiyel Bileşenlerin Yönü
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 font-mono">
-                      Kuvvet · Sürat · Dayanıklılık
-                    </span>
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {criticalMetrics.map((item) => {
+                const currentPercentile = item.row?.percentile || Math.round(item.row?.m3 || 80);
+                const isAheadOfGroup = currentPercentile >= item.groupScore;
+                const progressToTarget = Math.min(100, Math.round((currentPercentile / item.targetScore) * 100));
 
-                  <p className="text-[11px] text-slate-600 leading-snug min-h-[28px] flex items-center">
-                    Performans; Kuvvet, Sürat ve Dayanıklılık bileşenlerinin vektörel etkileşimiyle belirlenir. Sporcunun baskın gelişim yönü aşağıda analiz edilmiştir.
-                  </p>
-                </div>
-
-                {/* Matching Height Potential Summary Table (Symmetrical to Left Table) */}
-                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[135px] flex flex-col justify-between">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr
-                        className="text-[10px] uppercase font-bold tracking-wider"
-                        style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
-                      >
-                        <th className="py-2 px-2.5 text-left w-[45%]">Bileşen Parametresi</th>
-                        <th className="py-2 px-1 text-center w-[20%]">Endeks</th>
-                        <th className="py-2 px-2.5 text-right w-[35%]">Performans Düzeyi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-mono bg-white text-[11px]">
-                      <tr className="hover:bg-slate-50">
-                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">1. Sürat Bileşeni</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-blue-700">{currentReport.potential.speedScore}</td>
-                        <td className="py-1.5 px-2.5 text-right font-sans font-bold text-emerald-700">Yüksek İvmelenme</td>
-                      </tr>
-                      <tr className="hover:bg-slate-50">
-                        <td className="py-1.5 px-2.5 font-sans font-bold text-slate-700">2. Kuvvet Bileşeni</td>
-                        <td className="py-1.5 px-1 text-center font-extrabold text-indigo-700">{currentReport.potential.strengthScore}</td>
-                        <td className="py-1.5 px-2.5 text-right font-sans font-bold text-indigo-700">Patlayıcı Güç</td>
-                      </tr>
-                      <tr className="bg-indigo-50/70 border-l-4 border-l-indigo-600 font-bold">
-                        <td className="py-1.5 px-2.5 font-sans font-black text-indigo-950">3. Vektörel Baskın Tür</td>
-                        <td className="py-1.5 px-1 text-center text-indigo-950 font-black">{currentReport.potential.directionDeg}°</td>
-                        <td className="py-1.5 px-2.5 text-right font-sans font-black text-indigo-950">
-                          {currentReport.potential.dominantType}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Polar Vector Diagram Card */}
-                <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/90 h-[225px] flex flex-col justify-between items-center">
-                  <div className="w-full flex items-center justify-between px-1 mb-1 shrink-0">
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider font-mono">
-                      VEKTÖREL POTANSİYEL DİYAGRAMI
-                    </span>
-                    <div className="flex items-center gap-2 text-[9px] font-bold font-mono">
-                      <span className="text-indigo-700">● Kuvvet</span>
-                      <span className="text-rose-700">● Sürat</span>
-                      <span className="text-emerald-700">● Dayanıklılık</span>
-                    </div>
-                  </div>
-
-                  <svg
-                    width="240"
-                    height="170"
-                    viewBox="0 0 260 190"
-                    className="w-[240px] h-[170px] mx-auto block overflow-visible my-auto"
+                return (
+                  <div
+                    key={item.id}
+                    className={`p-3.5 rounded-xl border ${item.borderClass} ${item.bgClass} bg-white shadow-2xs space-y-2.5 transition-all`}
                   >
-                    <polygon
-                      points="130,16 32,168 228,168"
-                      fill="#ffffff"
-                      stroke="#cbd5e1"
-                      strokeWidth="1.5"
-                      strokeDasharray="4,3"
-                    />
-                    <circle cx="130" cy="110" r="20" fill="none" stroke="#e2e8f0" />
-                    <circle cx="130" cy="110" r="40" fill="none" stroke="#cbd5e1" />
-                    <circle cx="130" cy="110" r="60" fill="none" stroke="#94a3b8" />
+                    {/* Card Category & Title */}
+                    <div className="flex items-center justify-between gap-1.5 border-b border-slate-200/80 pb-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide ${item.badgeClass}`}>
+                        {item.category}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]">
+                        {item.subTitle}
+                      </span>
+                    </div>
 
-                    <line x1="130" y1="32" x2="130" y2="172" stroke="#cbd5e1" />
-                    <line x1="55" y1="110" x2="205" y2="110" stroke="#cbd5e1" />
+                    {/* Main Current Value */}
+                    <div>
+                      <div className="text-[11px] text-slate-500 font-semibold">Mevcut Ölçüm Sonucu</div>
+                      <div className="flex items-baseline justify-between mt-0.5">
+                        <span className="text-2xl font-black text-slate-900 tabular-nums">
+                          {item.row?.m3 ?? '-'} <span className="text-xs font-semibold text-slate-500">{item.row?.unit}</span>
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-xs font-extrabold tabular-nums">
+                          %{currentPercentile}
+                        </span>
+                      </div>
+                    </div>
 
-                    <text x="130" y="10" textAnchor="middle" className="text-[8.5px] font-black fill-indigo-800 uppercase">
-                      KUVVET (Patlayıcı Güç)
-                    </text>
-                    <text x="40" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-rose-800 uppercase">
-                      SÜRAT (İvmelenme)
-                    </text>
-                    <text x="215" y="182" textAnchor="middle" className="text-[8.5px] font-black fill-emerald-800 uppercase">
-                      DAYANIKLILIK (Aerobik)
-                    </text>
+                    {/* Target & Group Average Reference Values */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 text-xs">
+                      <div className="p-1.5 rounded-lg bg-blue-50/70 border border-blue-100">
+                        <span className="text-[9.5px] text-blue-700 font-bold block uppercase">Hedef</span>
+                        <span className="text-xs font-extrabold text-blue-900 tabular-nums">
+                          %{item.targetScore}
+                        </span>
+                      </div>
+                      <div className="p-1.5 rounded-lg bg-slate-100 border border-slate-200">
+                        <span className="text-[9.5px] text-slate-500 font-bold block uppercase">Grup Ort.</span>
+                        <span className="text-xs font-extrabold text-slate-700 tabular-nums">
+                          %{item.groupScore}
+                        </span>
+                      </div>
+                    </div>
 
-                    {/* Vector Arrow Line */}
-                    <line
-                      x1="130"
-                      y1="110"
-                      x2="88"
-                      y2="58"
-                      stroke="#0f172a"
-                      strokeWidth="3"
-                    />
-                    <circle cx="88" cy="58" r="5" fill="#e11d48" stroke="#ffffff" strokeWidth="1.5" />
-                    <circle cx="130" cy="110" r="4" fill="#0f172a" />
-                    <text x="65" y="48" className="text-[8.5px] font-black fill-slate-900 font-mono">
-                      {currentReport.potential.directionDeg}° ({currentReport.potential.dominantType.split(' ')[0]})
-                    </text>
-                  </svg>
+                    {/* Progress Bar & Status Pill */}
+                    <div className="pt-0.5 space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500 font-medium">Hedefe Ulaşım</span>
+                        <span className="text-slate-800 font-bold tabular-nums">%{progressToTarget}</span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            progressToTarget >= 95 ? 'bg-emerald-500' : progressToTarget >= 80 ? 'bg-blue-600' : 'bg-amber-500'
+                          }`}
+                          style={{ width: `${Math.min(100, progressToTarget)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[9.5px] pt-0.5">
+                        <span className={`font-semibold ${isAheadOfGroup ? 'text-emerald-700' : 'text-slate-600'}`}>
+                          {isAheadOfGroup ? 'Grup Ortalamasının Üzerinde' : 'Grup Normuna Yakın'}
+                        </span>
+                        <span className="text-emerald-700 font-bold tabular-nums">
+                          {item.deltaText}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. SECTION: BİRLEŞİK GELİŞİM VE KARŞILAŞTIRMA GRAFİĞİ BİLEŞENİ (ÇUBUK/ÇİZGİ VE RAPOR İNDİR DÜĞMESİ) */}
+          <AthleteDevelopmentComparisonChart
+            report={currentReport}
+            height={320}
+            onToast={notify}
+            defaultChartType="bar"
+            initialFilterMode="critical"
+          />
+
+          {/* 3. SECTION: DÖNEMSEL İLERLEME, BAŞARI SKALASI VE YÖNETİCİ ÖZETİ */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3 font-sans">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md bg-emerald-700 text-white text-[11px] font-bold uppercase tracking-wider">
+                  Genel Performans Skalası (%{athleticScore})
+                </span>
+                <span className="text-xs text-slate-600 font-medium">
+                  {groupAthleteCount} Sporcu Arasında {groupRank}. Sırada (Grup Ortalamasının +{Math.max(0, athleticScore - groupAvgScore)} Puan Önünde)
+                </span>
+              </div>
+              <span className="text-xs text-emerald-800 font-bold tabular-nums">
+                Toplam Gelişim: +{currentReport.scoreHistory?.p3Score - currentReport.scoreHistory?.p1Score} Puan
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-4 items-center">
+              {/* Left: 0-100 Progress Scale */}
+              <div className="lg:col-span-7 print:col-span-7 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                    0–100 Biyomotorik Yetenek İndeksi
+                  </span>
+                  <span className="text-[11px] font-bold text-emerald-700 tabular-nums">
+                    %{athleticScore} Başarı Düzeyi
+                  </span>
+                </div>
+                <div className="relative w-full h-3 rounded-full bg-slate-200 overflow-hidden flex">
+                  <div className="w-[30%] bg-slate-400 h-full" title="Düşük (0-30)" />
+                  <div className="w-[40%] bg-slate-300 h-full" title="Ortalama (30-70)" />
+                  <div className="w-[30%] bg-emerald-600 h-full" title="Yüksek Performans (70-100)" />
+                  <div
+                    className="absolute top-0 bottom-0 w-2.5 bg-slate-950 rounded-full border-2 border-white shadow-sm"
+                    style={{ left: `calc(${Math.min(98, Math.max(2, athleticScore))}% - 5px)` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[9px] text-slate-500 font-semibold">
+                  <span>Temel Gelişim (0–30)</span>
+                  <span>Grup Normu (30–70)</span>
+                  <span className="text-emerald-700 font-bold">İleri Düzey Atletik Kapasite (70–100)</span>
                 </div>
               </div>
 
-              {/* Right Column Bottom: 1-9 Somatotype Scale Sliders (Exact matching h-[64px]) */}
-              <div className="mt-3 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 flex flex-col justify-center gap-1 h-[64px] shrink-0">
+              {/* Right: Test Cycle Progression Badges */}
+              <div className="lg:col-span-5 print:col-span-5 flex items-center justify-end gap-3">
                 {[
-                  { label: 'Endomorfi (Yağlık)', val: m3.endo, hex: '#e11d48' },
-                  { label: 'Mezomorfi (Kas-İskelet)', val: m3.meso, hex: '#2563eb' },
-                  { label: 'Ektomorfi (Doğrusallık)', val: m3.ecto, hex: '#059669' },
-                ].map((s, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="w-28 text-[9.5px] font-bold text-slate-700 shrink-0 truncate">{s.label}</span>
-                    <svg viewBox="0 0 160 6" preserveAspectRatio="none" className="flex-1 h-1.5 rounded-full overflow-hidden block">
-                      <rect x="0" y="0" width="160" height="6" rx="3" fill="#e2e8f0" />
-                      <rect
-                        x="0"
-                        y="0"
-                        width={Math.max(6, Math.min(160, (s.val / 9) * 160))}
-                        height="6"
-                        rx="3"
-                        fill={s.hex}
-                      />
-                    </svg>
-                    <span className="w-10 text-right font-mono text-[10px] font-black text-slate-900 shrink-0">
-                      {s.val} <span className="text-slate-400 font-normal text-[8.5px]">/ 9</span>
-                    </span>
+                  { label: 'I. Test', date: currentReport.scoreHistory?.p1Date, score: currentReport.scoreHistory?.p1Score, ringClass: 'border-slate-300 bg-slate-50 text-slate-700' },
+                  { label: 'II. Test', date: currentReport.scoreHistory?.p2Date, score: currentReport.scoreHistory?.p2Score, ringClass: 'border-blue-300 bg-blue-50 text-blue-800' },
+                  { label: 'III. Test (Son)', date: currentReport.scoreHistory?.p3Date, score: currentReport.scoreHistory?.p3Score, ringClass: 'border-emerald-400 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-200' },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className={`w-10 h-10 rounded-xl border ${item.ringClass} flex flex-col items-center justify-center font-sans shrink-0`}>
+                      <span className="text-xs font-extrabold tabular-nums">%{item.score}</span>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-800">{item.label}</div>
+                      <div className="text-[9px] text-slate-500 font-medium tabular-nums">{item.date}</div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-          </div>
-
-          {/* ========================================================================
-              CENTERPIECE VISUAL FOCAL POINT: BÖLÜM 3.2 BRANŞ UYUMU & YETENEK VİTRİNİ
-              ======================================================================== */}
-          <div className="pt-2 border-t-2 border-slate-900 space-y-3">
-            <div
-              className="rounded-2xl border-2 border-emerald-500 bg-slate-900 p-4 text-white shadow-2xs space-y-3"
-              style={{ backgroundColor: '#0f172a' }}
-            >
-              {/* Top Header Ribbon */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-700">
-                <div className="flex items-center gap-2.5">
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 font-black text-[10.5px] font-mono uppercase tracking-wider">
-                    BÖLÜM 3.2 · BRANŞ UYUM VİTRİNİ
-                  </span>
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
-                      Sportif Branş Uyumu &amp; Morfolojik Yetenek Yönlendirme Analizi
-                    </h3>
-                    <p className="text-[10px] text-emerald-200 font-medium">
-                      Somatotip ({m3.endo}-{m3.meso}-{m3.ecto}) ve Motor Potansiyel Vektörü ({currentReport.potential.directionDeg}°) verilerine göre sporcunun branş uygunluk derecesi
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-xl bg-emerald-950 border border-emerald-400 text-emerald-300 font-mono text-xs font-black">
-                    ★ BİRİNCİL BRANŞ UYUMU: %{primaryBranchScore}
-                  </span>
-                </div>
-              </div>
-
-              {/* Main Focal Point Layout: Left 5 Cols Giant Radial Score Showcase + Right 7 Cols Multi-Branch Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-3.5 items-stretch">
-                {/* LEFT 5 COLS: HERO RADIAL GAUGE SPOTLIGHT FOR %94 BRANŞ UYUMU */}
-                <div
-                  className="lg:col-span-5 print:col-span-5 rounded-2xl bg-emerald-950 border-2 border-emerald-400 p-3.5 flex flex-col justify-between relative overflow-hidden"
-                  style={{ backgroundColor: '#064e3b' }}
-                >
-                  <div className="flex items-center gap-3.5">
-                    {/* High-Precision Vector Radial Gauge */}
-                    <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
-                      <svg
-                        width="112"
-                        height="112"
-                        viewBox="0 0 120 120"
-                        className="w-28 h-28 block"
-                      >
-                        {/* Outer subtle decorative ring */}
-                        <circle cx="60" cy="60" r="54" fill="none" stroke="#34d399" strokeOpacity="0.3" strokeWidth="1.5" strokeDasharray="3,3" />
-                        {/* Background track */}
-                        <circle cx="60" cy="60" r="46" fill="none" stroke="#0f172a" strokeWidth="10" />
-                        {/* Active progress arc */}
-                        <circle
-                          cx="60"
-                          cy="60"
-                          r="46"
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="10"
-                          strokeLinecap="round"
-                          strokeDasharray={`${(primaryBranchScore / 100) * 289} 289`}
-                          transform="rotate(-90 60 60)"
-                        />
-                        {/* Center Score Text */}
-                        <text x="60" y="57" textAnchor="middle" className="text-[24px] font-black font-mono fill-white">
-                          %{primaryBranchScore}
-                        </text>
-                        <text x="60" y="72" textAnchor="middle" className="text-[8px] font-black font-mono fill-emerald-300 uppercase tracking-widest">
-                          BRANŞ UYUMU
-                        </text>
-                        <rect x="30" y="79" width="60" height="13" rx="6.5" fill="#10b981" />
-                        <text x="60" y="88" textAnchor="middle" className="text-[7px] font-black font-mono fill-slate-950 uppercase">
-                          ELİT UYUM
-                        </text>
-                      </svg>
-                    </div>
-
-                    {/* Right of Gauge: Primary Branch Verdict & Details */}
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <span className="inline-block px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-mono text-[9px] font-black uppercase tracking-wider">
-                        BİRİNCİL BRANŞ POTANSİYELİ
-                      </span>
-                      <div className="text-sm sm:text-base font-black text-white leading-tight">
-                        {currentReport.sportBranch}
-                      </div>
-                      <p className="text-[10px] text-slate-100 leading-snug">
-                        Sporcunun beden tipi ve motor vektörü, <strong className="text-emerald-300">{eliteRef.sport}</strong> elit sporcu referansıyla <strong className="text-amber-300">%{primaryBranchScore}</strong> oranında örtüşmektedir.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Bottom 3 Mini Telemetry Pills inside Spotlight */}
-                  <div className="grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-emerald-800 text-center font-mono">
-                    <div className="bg-slate-900/80 rounded-lg p-1.5 border border-emerald-700">
-                      <div className="text-[8px] text-slate-300 font-sans font-bold uppercase">Elit Eşik</div>
-                      <div className="text-[11px] font-black text-white mt-0.5">≥%85</div>
-                    </div>
-                    <div className="bg-slate-900/80 rounded-lg p-1.5 border border-emerald-500">
-                      <div className="text-[8px] text-emerald-200 font-sans font-bold uppercase">Eşik Farkı</div>
-                      <div className="text-[11px] font-black text-emerald-300 mt-0.5">
-                        +{Math.max(0, primaryBranchScore - 85)} Puan
-                      </div>
-                    </div>
-                    <div className="bg-slate-900/80 rounded-lg p-1.5 border border-amber-400">
-                      <div className="text-[8px] text-amber-200 font-sans font-bold uppercase">Seviye</div>
-                      <div className="text-[11px] font-black text-amber-300 mt-0.5">Çok Yüksek</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* RIGHT 7 COLS: 4 SPORT BRANCH SUITABILITY CARDS (2x2 GRID) */}
-                <div className="lg:col-span-7 print:col-span-7 grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-2.5">
-                  {branchSuitabilityList.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-xl flex flex-col justify-between shadow-2xs text-slate-900 ${item.cardStyle}`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                          <span className={`px-2 py-0.5 rounded text-[8.5px] font-mono font-black uppercase tracking-wider ${item.rankBadgeStyle}`}>
-                            {item.rankBadge}
-                          </span>
-                          <span className="text-[9px] font-mono font-extrabold text-slate-600">
-                            {item.tierLabel}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="text-xs font-black text-slate-900">
-                              {item.icon} {item.branch}
-                            </div>
-                            <div className="text-[9.5px] font-semibold text-slate-600 mt-0.5">
-                              {item.note}
-                            </div>
-                          </div>
-                          <div className={`px-2.5 py-1 rounded-xl border font-mono text-sm font-black shrink-0 ${item.scoreBadgeStyle}`}>
-                            %{item.score}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-2 pt-1.5 border-t border-slate-200/80">
-                        <div className="flex justify-between text-[8.5px] font-mono font-bold text-slate-500 mb-1">
-                          <span>Branş Uyum Derecesi</span>
-                          <span className="text-slate-900 font-black">%{item.score} (Elit Eşik: %85)</span>
-                        </div>
-                        <svg viewBox="0 0 200 8" preserveAspectRatio="none" className="w-full h-2 rounded-full overflow-visible block">
-                          <rect x="0" y="0" width="200" height="8" rx="4" fill="#cbd5e1" />
-                          <rect
-                            x="0"
-                            y="0"
-                            width={Math.max(20, Math.min(200, item.score * 2))}
-                            height="8"
-                            rx="4"
-                            fill={item.barColor}
-                          />
-                          <line x1="170" y1="-1" x2="170" y2="9" stroke="#0f172a" strokeWidth="2" />
-                        </svg>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Bottom Synthesis Bar inside the Showcase */}
-              <div className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-[10.5px] text-slate-200 leading-relaxed flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <strong className="font-extrabold text-emerald-300">Yetenek &amp; Branş Yönlendirme Özeti: </strong>
-                  Sporcunun <strong className="text-white">{m3.category}</strong> beden tipi ve <strong className="text-amber-300">{currentReport.potential.dominantType}</strong> baskın bileşen yönü; <strong className="text-white">%{primaryBranchScore}</strong> branş uyumuyla uzun vadeli atletik gelişimde yüksek başarı potansiyeline işaret etmektedir.
-                </div>
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 font-mono text-[9.5px] font-black shrink-0 uppercase">
-                  BRANŞ UYGUNLUĞU: ELİT (%{primaryBranchScore})
-                </span>
-              </div>
+            {/* Executive Evaluator Guidance Note */}
+            <div className="mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
+                <span className="font-bold text-slate-900">Antrenör & Laboratuvar Notu:</span> Sporcumuz, incelenen kritik biyomotorik parametrelerde dönem boyunca istikrarlı bir ilerleme göstermiş ve genel performans düzeyini akran grubu ortalamasının üzerine taşımıştır.
+              </p>
+              <span className="text-[10px] font-semibold text-slate-500 shrink-0">
+                Normatif Veri Tabanı: SportsFly Biometric Engine
+              </span>
             </div>
           </div>
         </div>
@@ -4931,778 +4612,6 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
       </div>
     );
   };
-
-  // ============================================================================
-  // PAGE 4: 4. KARDİYORESPİRATUAR UYGUNLUK, ANAEROBİK GÜÇ & 6. RİSK NOKTALARI
-  // ============================================================================
-  const renderPage4 = () => {
-    const c = currentReport.cardio;
-    const hrZones = [
-      { zone: 'Zone 1 · Aktif Toparlanma', pct: '%50–60', min: Math.round(c.maxHeartRate * 0.5), max: Math.round(c.maxHeartRate * 0.6), color: 'bg-slate-100 text-slate-700' },
-      { zone: 'Zone 2 · Aerobik Temel (Yağ Yakımı)', pct: '%60–70', min: Math.round(c.maxHeartRate * 0.6), max: Math.round(c.maxHeartRate * 0.7), color: 'bg-sky-50 text-sky-800' },
-      { zone: 'Zone 3 · Aerobik Kapasite / Tempo', pct: '%70–80', min: Math.round(c.maxHeartRate * 0.7), max: Math.round(c.maxHeartRate * 0.8), color: 'bg-emerald-50 text-emerald-800' },
-      { zone: 'Zone 4 · Anaerobik Eşik (Laktat)', pct: '%80–90', min: Math.round(c.maxHeartRate * 0.8), max: Math.round(c.maxHeartRate * 0.9), color: 'bg-amber-50 text-amber-800' },
-      { zone: 'Zone 5 · Maksimal VO2peak / Redline', pct: '%90–100', min: Math.round(c.maxHeartRate * 0.9), max: c.maxHeartRate, color: 'bg-rose-50 text-rose-800' },
-    ];
-
-    return (
-      <div
-        id="sportsfly-lab-page-4"
-        className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
-      >
-        <div>
-          {renderPageHeader(
-            4,
-            '4. Kardiyorespiratuar Uygunluk & 6. Risk Noktaları Değerlendirmesi',
-            'PACER / VO2peak Mekik Koşusu, Bazal Metabolizma, Anaerobik Güç (Watt) ve Z-Skor (±2 SD) Risk Sınırları'
-          )}
-
-          {/* Top Half: Cardio & Anaerobic Power */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-5 print:gap-3.5 mb-4 print:mb-3.5">
-            {/* Cardiorespiratory PACER / Shuttle Run */}
-            <div className="border border-slate-200 rounded-xl p-4">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-extrabold text-slate-900">
-                  4. Kalp Sağlığı &amp; Aerobik Kapasite (PACER / VO2peak)
-                </h3>
-                <span className="text-xs font-mono font-bold text-emerald-700">
-                  Süre: {c.totalRunTime} dk:sn
-                </span>
-              </div>
-
-              <table className="w-full text-xs border-collapse mt-3">
-                <thead>
-                  <tr
-                    className={`text-[10px] uppercase ${activeTemplate.tableHeadClass}`}
-                    style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
-                  >
-                    <th className="py-1.5 px-2.5 text-left rounded-tl-lg">Test Dönemi</th>
-                    <th className="py-1.5 px-2 text-center">Mesafe (m)</th>
-                    <th className="py-1.5 px-2 text-center">Mekik Sayısı</th>
-                    <th className="py-1.5 px-2 text-center">VO2peak (ml/kg/dk)</th>
-                    <th className="py-1.5 px-2.5 text-right rounded-tr-lg">Uygunluk Bölgesi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 font-mono">
-                  <tr>
-                    <td className="py-1.5 px-2.5 text-slate-600">1. Test ({currentReport.date1})</td>
-                    <td className="py-1.5 px-2 text-center">{c.test1Distance} m</td>
-                    <td className="py-1.5 px-2 text-center">{c.test1Shuttles}</td>
-                    <td className="py-1.5 px-2 text-center font-bold">{c.test1Vo2}</td>
-                    <td className="py-1.5 px-2.5 text-right font-sans text-[11px] text-rose-600 font-semibold">
-                      {c.test1Status}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 px-2.5 text-slate-600">2. Test ({currentReport.date2})</td>
-                    <td className="py-1.5 px-2 text-center">{c.test2Distance} m</td>
-                    <td className="py-1.5 px-2 text-center">{c.test2Shuttles}</td>
-                    <td className="py-1.5 px-2 text-center font-bold">{c.test2Vo2}</td>
-                    <td className="py-1.5 px-2.5 text-right font-sans text-[11px] text-amber-600 font-semibold">
-                      {c.test2Status}
-                    </td>
-                  </tr>
-                  <tr className="bg-emerald-50/50">
-                    <td className="py-1.5 px-2.5 font-bold text-emerald-800">3. Test ({currentReport.date3})</td>
-                    <td className="py-1.5 px-2 text-center font-extrabold text-emerald-800">{c.test3Distance} m</td>
-                    <td className="py-1.5 px-2 text-center font-extrabold text-emerald-800">{c.test3Shuttles}</td>
-                    <td className="py-1.5 px-2 text-center font-extrabold text-emerald-800">{c.test3Vo2}</td>
-                    <td className="py-1.5 px-2.5 text-right font-sans text-[11px] text-emerald-700 font-bold">
-                      {c.test3Status}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* Physiological Metrics */}
-              <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-200 text-center">
-                <div className="bg-slate-50 p-2 rounded-lg">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase">Bazal Metabolik Hız</div>
-                  <div className="text-sm font-black font-mono text-slate-900 mt-0.5">
-                    {c.basalMetabolicRate} <span className="text-[10px] font-normal">kcal/gün</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 p-2 rounded-lg">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase">Fonksiyonel Kapasite</div>
-                  <div className="text-sm font-black font-mono text-blue-700 mt-0.5">
-                    {c.functionalCapacityMet} <span className="text-[10px] font-normal">MET</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 p-2 rounded-lg">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase">Maks. Kalp Atım Hızı</div>
-                  <div className="text-sm font-black font-mono text-rose-600 mt-0.5">
-                    {c.maxHeartRate} <span className="text-[10px] font-normal">atım/dk</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Anaerobic Power & Body Fat Health Zone */}
-            <div className="border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-200 pb-2">
-                  Anaerobik Güç (Lewis &amp; Sprint Watt Analizi)
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Çok kısa süreli maksimal fiziksel aktivitelerde kasların birim zamanda ürettiği mekanik güç kapasitesidir.
-                </p>
-
-                <div className="space-y-3 mt-3">
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/70">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                      <span>Dikey Sıçrama — Lewis Anaerobik Güç</span>
-                      <span className="font-mono text-blue-700">
-                        {c.verticalJumpAnaerobicWatt} Watt · Relatif: {c.verticalJumpRelativeWatt} W/kg
-                      </span>
-                    </div>
-                    <svg viewBox="0 0 200 8" preserveAspectRatio="none" className="w-full h-2 rounded-full mt-1.5 overflow-hidden block">
-                      <rect x="0" y="0" width="200" height="8" rx="4" fill="#e2e8f0" />
-                      <rect
-                        x="0"
-                        y="0"
-                        width={Math.min(190, (c.verticalJumpAnaerobicWatt / 700) * 200)}
-                        height="8"
-                        rx="4"
-                        fill="#2563eb"
-                      />
-                    </svg>
-                  </div>
-
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/70">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                      <span>20 Metre Sprint Koşusu — Anaerobik Güç</span>
-                      <span className="font-mono text-emerald-700">
-                        {c.sprint20mAnaerobicWatt} Watt · Relatif: {c.sprint20mRelativeWatt} W/kg
-                      </span>
-                    </div>
-                    <svg viewBox="0 0 200 8" preserveAspectRatio="none" className="w-full h-2 rounded-full mt-1.5 overflow-hidden block">
-                      <rect x="0" y="0" width="200" height="8" rx="4" fill="#e2e8f0" />
-                      <rect
-                        x="0"
-                        y="0"
-                        width={Math.min(190, (c.sprint20mAnaerobicWatt / 600) * 200)}
-                        height="8"
-                        rx="4"
-                        fill="#059669"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between text-xs bg-amber-50/60 px-3 py-2 rounded-lg border border-amber-200/70">
-                <div>
-                  <span className="font-bold text-slate-900">Healthy Fitness Zone (Sağlıklı Uygunluk): </span>
-                  <span className="text-slate-600 text-[11px]">
-                    Aerobik kapasite +0.6 SD ile sağlıklı bölgede yer almaktadır.
-                  </span>
-                </div>
-                <span className="font-mono font-bold text-emerald-700 shrink-0 ml-2">HFZ ONAYLI</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Middle Section: 6. Risk Noktaları Değerlendirmesi (Z-Score Cut-off Points >+2 SD and <-2 SD) */}
-          <div className="border border-slate-200 rounded-xl p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2 mb-3">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900">
-                  6. Risk Noktaları Değerlendirmesi (Z-Skor / Standart Sapma Sınır Analizi)
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Cut-off Sınırları: <strong className="text-emerald-700">+2 SD (Yüksek Performans / Üst Sınır)</strong> ve{' '}
-                  <strong className="text-rose-600">-2 SD (Düşük Performans / Risk Başlangıcı)</strong>
-                </p>
-              </div>
-              <div className="text-[10px] font-mono text-slate-500">
-                Kas-iskelet ve kardiyovasküler uygunluk Z-skor dağılımı
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4 print:gap-3.5">
-              {/* Motor Performance SD Chart */}
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/70">
-                <div className="text-xs font-bold text-slate-800 mb-2">
-                  Motor Performans Ölçümleri (SD Dağılımı)
-                </div>
-                <div className="space-y-1.5">
-                  {currentReport.motorPerformance.map((m) => {
-                    const pct = Math.max(5, Math.min(95, ((m.sd + 3) / 6) * 100));
-                    const dotFill = m.sd < -1 ? '#e11d48' : m.sd > 1 ? '#059669' : '#2563eb';
-                    return (
-                      <div key={m.id} className="flex items-center gap-2 text-[11px]">
-                        <span className="w-32 truncate text-slate-700 font-medium">{m.name}</span>
-                        <svg viewBox="0 0 200 12" className="flex-1 h-3 block overflow-visible">
-                          <rect x="0" y="1" width="200" height="10" rx="2" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-                          <line x1="33.2" y1="1" x2="33.2" y2="11" stroke="#fb7185" strokeWidth="1.2" />
-                          <line x1="100" y1="1" x2="100" y2="11" stroke="#cbd5e1" strokeWidth="1" />
-                          <line x1="166.6" y1="1" x2="166.6" y2="11" stroke="#10b981" strokeWidth="1.2" />
-                          <circle cx={pct * 2} cy="6" r="4.2" fill={dotFill} stroke="#ffffff" strokeWidth="1.2" />
-                        </svg>
-                        <span className="w-12 text-right font-mono text-[10px] font-bold text-slate-700">
-                          {m.sd > 0 ? `+${m.sd}` : m.sd}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Body Composition SD Chart */}
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/70">
-                <div className="text-xs font-bold text-slate-800 mb-2">
-                  Beden Kompozisyonu Ölçümleri (SD Dağılımı)
-                </div>
-                <div className="space-y-1.5">
-                  {currentReport.bodyComposition.slice(0, 10).map((b) => {
-                    const pct = Math.max(5, Math.min(95, ((b.sd + 3) / 6) * 100));
-                    const dotFill = b.sd > 1.5 ? '#d97706' : '#1e293b';
-                    return (
-                      <div key={b.id} className="flex items-center gap-2 text-[11px]">
-                        <span className="w-32 truncate text-slate-700 font-medium">{b.name}</span>
-                        <svg viewBox="0 0 200 12" className="flex-1 h-3 block overflow-visible">
-                          <rect x="0" y="1" width="200" height="10" rx="2" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-                          <line x1="33.2" y1="1" x2="33.2" y2="11" stroke="#fb7185" strokeWidth="1.2" />
-                          <line x1="100" y1="1" x2="100" y2="11" stroke="#cbd5e1" strokeWidth="1" />
-                          <line x1="166.6" y1="1" x2="166.6" y2="11" stroke="#f59e0b" strokeWidth="1.2" />
-                          <circle cx={pct * 2} cy="6" r="4.2" fill={dotFill} stroke="#ffffff" strokeWidth="1.2" />
-                        </svg>
-                        <span className="w-12 text-right font-mono text-[10px] font-bold text-slate-700">
-                          {b.sd > 0 ? `+${b.sd}` : b.sd}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Full-Page Section: 4.2 Kalp Atım Hızı Antrenman Bölgeleri (MKAH) */}
-        <div className="mt-4 pt-3.5 border-t-2 border-slate-900 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-              4.2 Bireysel Kalp Atım Hızı Antrenman Bölgeleri (MKAH: {c.maxHeartRate} atım/dk) &amp; Koruyucu Yüklenme Rehberi
-            </h3>
-            <span className="text-[10px] font-mono font-semibold text-slate-500">
-              VO2peak: {c.test3Vo2} ml/kg/dk · {c.functionalCapacityMet} MET
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-5 print:grid-cols-5 gap-2">
-            {hrZones.map((hz, i) => (
-              <div key={i} className={`p-2.5 rounded-xl border border-slate-200 ${hz.color}`}>
-                <div className="text-[9.5px] font-extrabold uppercase truncate">{hz.zone}</div>
-                <div className="text-sm font-black font-mono mt-0.5">
-                  {hz.min}–{hz.max} <span className="text-[9px] font-normal">bpm</span>
-                </div>
-                <div className="text-[9.5px] font-mono opacity-80">Yoğunluk: {hz.pct}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {renderPageFooter(4)}
-      </div>
-    );
-  };
-
-  // ============================================================================
-  // PAGE 5: 7. PERFORMANS GRAFİKLERİ I — MOTOR PERFORMANS YÜZDELİK RADAR GRAFİĞİ
-  //         & ANTROPOMETRİK BEDEN KOMPOZİSYONU RADAR ANALİZİ
-  // ============================================================================
-  const renderPage5 = () => (
-    <div
-      id="sportsfly-lab-page-5"
-      className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
-    >
-      {renderPageHeader(
-        5,
-        '7. Performans Grafikleri I — Çok Boyutlu Yüzdelik Radar Analizi',
-        'Motor Performans Yüzdelik Radar Grafiği (10 Test), Antropometrik Beden Kompozisyonu Radarı ve Yetkinlik Kümeleri'
-      )}
-
-      <SportsFlyLabKarnePage5RadarContent report={currentReport} />
-
-      {renderPageFooter(5)}
-    </div>
-  );
-
-  // ============================================================================
-  // PAGE 6: 8. PERFORMANS GRAFİKLERİ II — GENEL SPORTİF PERFORMANS PUAN GELİŞİMİ
-  //         & DÖNEMSEL GELİŞİM EĞRİLERİ
-  // ============================================================================
-  const renderPage6 = () => (
-    <div
-      id="sportsfly-lab-page-6"
-      className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
-    >
-      {renderPageHeader(
-        6,
-        '8. Performans Grafikleri II — Genel Sportif Performans Puan Gelişimi',
-        'Genel Sportif Performans Puan Gelişimi, VO2peak Kardiyorespiratuar Uygunluk, Sürat, Çabukluk ve Patlayıcı Güç Eğrileri'
-      )}
-
-      <SportsFlyLabKarnePage6LineContent report={currentReport} />
-
-      {renderPageFooter(6)}
-    </div>
-  );
-
-  // ============================================================================
-  // PAGE 7: 9. HEDEF PERFORMANS (İPSATİF), PHV BÜYÜME HIZI & UZMAN GÖRÜŞÜ
-  // ============================================================================
-  const renderPage7 = () => {
-    const g = currentReport.groupInfo;
-    return (
-      <div
-        id="sportsfly-lab-page-7"
-        className={`a4-print-page relative overflow-hidden min-h-[1460px] flex flex-col justify-between rounded-xl p-5 sm:p-7 shadow-xs print:shadow-none ${activeTemplate.pageFrameClass}`}
-      >
-        <div>
-          {renderPageHeader(
-            7,
-            '9. Hedef Performans (İpsatif Değerlendirme), PHV & Uzman Görüşü',
-            'Bireysel Büyüme Hızlarına Göre Beklenen Performans Hedefleri, Grup Sıralaması ve Klinik Metodoloji Özeti'
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-5 print:gap-3.5">
-            {/* Left 7 Cols: Ipsative Target Table & Group Ranking */}
-            <div className="lg:col-span-7 print:col-span-7 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-              <div>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-slate-200 pb-2.5">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-[9.5px] font-black uppercase">
-                        BÖLÜM 8 &amp; 15
-                      </span>
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
-                        Test Sonuçları (1., 2., 3. Ölçüm), Hedefler ve Gelişim Durumu
-                      </h3>
-                    </div>
-                    <p className="text-[10.5px] text-slate-600 mt-0.5">
-                      Sporcunun 3 ölçümdeki ilerlemesi, {currentReport.nextTargetDate} hedefi ve ilk bakışta odak/takip durumu
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 text-[9px] font-mono font-black">
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">Hedefe Ulaştı ✓</span>
-                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Takip Edilmeli</span>
-                    <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 border border-rose-300">Gelişim Göstermeli</span>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto rounded-xl border-2 border-slate-200 mt-3 bg-white shadow-2xs">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr
-                        className={`text-[9.5px] font-black uppercase tracking-wider ${activeTemplate.tableHeadClass}`}
-                        style={{ backgroundColor: effectivePrimaryHex, color: '#ffffff' }}
-                      >
-                        <th className="py-2.5 px-2.5 text-left rounded-tl-lg">Protokol / Test</th>
-                        <th className="py-2.5 px-1.5 text-center">1. Test</th>
-                        <th className="py-2.5 px-1.5 text-center">2. Test</th>
-                        <th
-                          className="py-2.5 px-2 text-center font-black"
-                          style={{ backgroundColor: 'rgba(255,255,255,0.18)', color: '#ffffff' }}
-                        >
-                          3. Test (Son)
-                        </th>
-                        <th
-                          className="py-2.5 px-2 text-center font-black"
-                          style={{ backgroundColor: 'rgba(16,185,129,0.28)', color: '#ffffff' }}
-                        >
-                          Hedef Performans
-                        </th>
-                        <th className="py-2.5 px-2 text-center rounded-tr-lg">Hedef &amp; Gelişim Durumu</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 font-mono">
-                      {currentReport.ipsativeTargets.map((row, idx) => {
-                        const lowerParam = row.parameter.toLowerCase();
-                        const isPriorityDev =
-                          lowerParam.includes('sırt') ||
-                          lowerParam.includes('aerobik') ||
-                          lowerParam.includes('denge');
-                        const isMaintainWatch =
-                          lowerParam.includes('esneklik') ||
-                          lowerParam.includes('uzun atlama');
-
-                        const rowStyle = isPriorityDev
-                          ? 'bg-rose-50/50 border-l-4 border-l-rose-600'
-                          : isMaintainWatch
-                          ? 'bg-amber-50/40 border-l-4 border-l-amber-500'
-                          : 'bg-emerald-50/45 border-l-4 border-l-emerald-600';
-
-                        const statusLabel = isPriorityDev
-                          ? 'Gelişim Göstermeli'
-                          : isMaintainWatch
-                          ? 'Takip Edilmeli'
-                          : 'Hedefe Ulaştı ✓';
-
-                        const statusBadge = isPriorityDev
-                          ? 'bg-rose-600 text-white border-rose-700'
-                          : isMaintainWatch
-                          ? 'bg-amber-500 text-slate-950 border-amber-600'
-                          : 'bg-emerald-600 text-white border-emerald-700';
-
-                        const progressPct = Math.min(
-                          100,
-                          Math.max(25, Math.round((row.m3 / Math.max(0.01, row.target)) * 100))
-                        );
-
-                        const netGain = +(row.m3 - row.m1).toFixed(1);
-
-                        return (
-                          <tr key={idx} className={`transition-colors ${rowStyle}`}>
-                            <td className="py-2.5 px-2.5 font-sans border-r border-slate-200/80">
-                              <div className="font-extrabold text-slate-900 text-xs">
-                                {row.parameter}{' '}
-                                <span className="text-[10px] font-normal text-slate-500">({row.unit})</span>
-                              </div>
-                              <div className="text-[9.5px] font-mono font-bold text-slate-500 mt-0.5">
-                                Grup Sırası: <strong className="text-slate-800">{row.groupRank}</strong> · Δ (1→3):{' '}
-                                <strong className="text-emerald-700">
-                                  {netGain >= 0 ? `+${netGain}` : netGain} {row.unit}
-                                </strong>
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-1.5 text-center text-slate-600 font-bold border-r border-slate-200/80">
-                              {row.m1}
-                            </td>
-                            <td className="py-2.5 px-1.5 text-center text-blue-900 font-bold bg-blue-50/30 border-r border-slate-200/80">
-                              {row.m2}
-                            </td>
-                            <td className="py-2.5 px-2 text-center border-r border-slate-200/80 bg-white/80">
-                              <span className="font-black text-xs text-slate-950 bg-white px-2 py-0.5 rounded border-2 border-slate-400 inline-block shadow-2xs">
-                                {row.m3}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-2 text-center border-r border-slate-200/80 bg-emerald-50/40">
-                              <div className="font-black text-xs text-emerald-950 bg-white px-2 py-0.5 rounded border-2 border-emerald-500 inline-block shadow-2xs">
-                                🎯 {row.target}
-                              </div>
-                              <svg viewBox="0 0 100 5" preserveAspectRatio="none" className="w-20 mx-auto h-1.5 rounded-full overflow-hidden block mt-1">
-                                <rect x="0" y="0" width="100" height="5" rx="2.5" fill="#e2e8f0" />
-                                <rect
-                                  x="0"
-                                  y="0"
-                                  width={progressPct}
-                                  height="5"
-                                  rx="2.5"
-                                  fill={isPriorityDev ? '#e11d48' : isMaintainWatch ? '#f59e0b' : '#059669'}
-                                />
-                              </svg>
-                            </td>
-                            <td className="py-2.5 px-2 text-center font-sans">
-                              <span className={`inline-block px-2 py-0.5 rounded-md text-[9.5px] font-extrabold uppercase tracking-wider border shadow-2xs ${statusBadge}`}>
-                                {statusLabel}
-                              </span>
-                              <div className="text-[9px] font-bold text-slate-600 mt-0.5">
-                                {isPriorityDev
-                                  ? 'Öncelikli Antrenman Odağı'
-                                  : isMaintainWatch
-                                  ? 'Düzenli İzlem & Koruma'
-                                  : 'Üst Seviye Korunmalı'}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Group Comparison & Standing Card (Grup Karşılaştırması) */}
-              {(() => {
-                const grpCount = g.groupAthleteCount || 15;
-                const grpRank = g.groupRank || 1;
-                const athScore = currentReport.scoreHistory.p3Score || 88;
-                const grpAvg = g.groupAverageScore ?? 72;
-                const grpPos =
-                  g.groupPositionPercentile ??
-                  Math.min(99, Math.max(10, Math.round(((grpCount - grpRank + 0.1) / Math.max(1, grpCount)) * 100)));
-                return (
-                  <div
-                    className={`mt-3 p-3.5 rounded-xl border-2 space-y-2.5 ${activeTemplate.bannerClass}`}
-                    style={{
-                      backgroundColor: effectivePrimaryHex,
-                      borderColor: effectiveSecondaryHex,
-                    }}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-2">
-                      <div>
-                        <div className="text-[10.5px] font-black uppercase tracking-wider text-amber-300">
-                          GRUP KARŞILAŞTIRMASI · {g.groupNo}. GRUP ({g.ageRange})
-                        </div>
-                        <div className="text-[10px] text-white/80">
-                          Sporcunun bulunduğu grup içerisindeki sıralaması, grup ortalaması ve yüzdelik konumu
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono text-[10px] font-black">
-                        Grup İçindeki Konum: %{grpPos}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-5 print:grid-cols-5 gap-2 text-center font-mono">
-                      <div className="bg-white/10 rounded-lg p-2 border border-white/15">
-                        <div className="text-[8.5px] font-sans font-bold text-white/75 uppercase">Grubundaki Sporcu</div>
-                        <div className="text-base font-black text-white mt-0.5">{grpCount}</div>
-                      </div>
-                      <div className="bg-white/10 rounded-lg p-2 border border-amber-400/40">
-                        <div className="text-[8.5px] font-sans font-bold text-amber-200 uppercase">Genel Sıralama</div>
-                        <div className="text-base font-black text-amber-300 mt-0.5">{grpRank}.</div>
-                      </div>
-                      <div className="bg-white/10 rounded-lg p-2 border border-sky-400/40">
-                        <div className="text-[8.5px] font-sans font-bold text-sky-200 uppercase">Sportif Performans</div>
-                        <div className="text-base font-black text-sky-300 mt-0.5">%{athScore}</div>
-                      </div>
-                      <div className="bg-white/10 rounded-lg p-2 border border-white/15">
-                        <div className="text-[8.5px] font-sans font-bold text-white/75 uppercase">Grup Ortalaması</div>
-                        <div className="text-base font-black text-white mt-0.5">%{grpAvg}</div>
-                      </div>
-                      <div className="bg-emerald-500/20 rounded-lg p-2 border border-emerald-400/50">
-                        <div className="text-[8.5px] font-sans font-bold text-emerald-200 uppercase">Grup İçi Konum</div>
-                        <div className="text-base font-black text-emerald-300 mt-0.5">%{grpPos}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-white/90 pt-1 border-t border-white/10">
-                      <span>• Grubundaki sporcu sayısı: <strong>{grpCount}</strong></span>
-                      <span>• Genel sıralama: <strong>{grpRank}.</strong></span>
-                      <span>• Sportif performans: <strong>%{athScore}</strong></span>
-                      <span>• Grup ortalaması: <strong>%{grpAvg}</strong></span>
-                      <span>• Grup içindeki konum: <strong>%{grpPos}</strong></span>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Right 5 Cols: Peak Height Velocity (PHV) & Sensitive Periods */}
-            <div className="lg:col-span-5 print:col-span-5 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-200 pb-2">
-                  Tepe Yükseklik Hızı (Peak Height Velocity - PHV)
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  Ergenlik büyüme atağı (PHV) zamanlaması, antrenman yüklenmelerinin ve hassas motor gelişim pencerelerinin planlanmasında temel ölçüttür.
-                </p>
-
-                <div className="grid grid-cols-3 gap-2 mt-3 text-center">
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-200">
-                    <div className="text-[9px] font-bold text-slate-400 uppercase">Mevcut Boy</div>
-                    <div className="text-sm font-black font-mono text-slate-900">
-                      {currentReport.bodyComposition.find((x) => x.id === 'height')?.m3 || 149.5} cm
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-200">
-                    <div className="text-[9px] font-bold text-slate-400 uppercase">PHV Boy / Yaş</div>
-                    <div className="text-sm font-black font-mono text-blue-700">
-                      {currentReport.phvHeight} cm ({currentReport.phvAge})
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-200">
-                    <div className="text-[9px] font-bold text-slate-400 uppercase">18 Yaş Olasılık</div>
-                    <div className="text-sm font-black font-mono text-emerald-700">
-                      {currentReport.predictedAdultHeight} cm
-                    </div>
-                  </div>
-                </div>
-
-                {/* PHV Growth Velocity Curve SVG */}
-                <div className="mt-3 bg-slate-50 p-3 rounded-lg border border-slate-200/70">
-                  <div className="text-[10px] font-bold text-slate-700 mb-1 flex justify-between">
-                    <span>Büyüme Hızı Eğrisi (cm/yıl) &amp; Hassas Dönem</span>
-                    <span className="font-mono text-rose-700">PHV Zirvesi: {currentReport.phvAge} Yaş</span>
-                  </div>
-                  <svg viewBox="0 0 260 95" className="w-full h-auto">
-                    <line x1="20" y1="80" x2="250" y2="80" stroke="#94a3b8" strokeWidth="1" />
-                    <path
-                      d="M 25 45 Q 70 55, 105 52 Q 135 12, 165 45 T 245 78"
-                      fill="none"
-                      stroke="#e11d48"
-                      strokeWidth="2.2"
-                    />
-                    <line x1="135" y1="12" x2="135" y2="80" stroke="#0f172a" strokeDasharray="2,2" />
-                    <circle cx="135" cy="24" r="4" fill="#0f172a" />
-                    <text x="135" y="10" textAnchor="middle" className="text-[8px] font-bold fill-slate-900">
-                      PHV ({currentReport.phvAge} yaş)
-                    </text>
-                    <circle cx="96" cy="50" r="4" fill="#2563eb" stroke="#fff" strokeWidth="1" />
-                    <text x="85" y="65" textAnchor="middle" className="text-[8px] font-bold fill-blue-700">
-                      Mevcut ({currentReport.ageYears})
-                    </text>
-                  </svg>
-                </div>
-              </div>
-
-              {/* Sensitive Development Windows */}
-              <div className="mt-3 pt-2 border-t border-slate-200 space-y-1 text-[11px]">
-                <div className="font-bold text-slate-800">Gelişimin Hassas Dönem Öncelikleri:</div>
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>· Kaba &amp; İnce Motor Koordinasyon</span>
-                  <span className="font-mono font-bold text-emerald-700">Aktif Pencere (Optimal)</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>· Sürat, Çabukluk &amp; Pliometrik Beceri</span>
-                  <span className="font-mono font-bold text-blue-700">Yüksek Kazanım Dönemi</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Full-Page Section: 10. Öncelikli Gelişim Alanları + Expert Evaluation + Weekly Microcycle Plan */}
-        <div className="mt-4 border-t-2 border-slate-900 pt-3.5 space-y-3">
-          <div className="border-2 border-rose-300 rounded-2xl p-3.5 bg-rose-50/40 shadow-2xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-rose-200/80 pb-2.5 mb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-mono text-[10.5px] font-black uppercase tracking-wider shadow-2xs">
-                  BÖLÜM 10
-                </span>
-                <div>
-                  <span className="text-xs sm:text-[13px] font-black text-slate-900 uppercase tracking-tight block">
-                    10. ÖNCELİKLİ GELİŞİM ALANLARI &amp; İLK BAKIŞTA ANTRENMAN ODAK PLANI
-                  </span>
-                  <span className="text-[10px] text-slate-600 font-medium block">
-                    Sporcunun ölçüm verilerine göre ilk bakışta odaklanılması gereken en kritik 3 parametre ve bireysel gelişim reçetesi
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 text-[9.5px] font-mono font-bold">
-                <span className="px-2 py-0.5 rounded bg-rose-600 text-white">1. Kritik Odak</span>
-                <span className="px-2 py-0.5 rounded bg-amber-500 text-white">2. Yüksek Odak</span>
-                <span className="px-2 py-0.5 rounded bg-indigo-600 text-white">3. Gelişim Odağı</span>
-              </div>
-            </div>
-
-
-
-            <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-3 text-xs">
-              {activeAiAnalysis.improvementAreas.slice(0, 3).map((item, idx) => {
-                const rankStyle =
-                  idx === 0
-                    ? {
-                        badge: '1. ÖNCELİK · BİRİNCİL ODAK',
-                        badgeClass: 'bg-rose-600 text-white',
-                        borderClass: 'border-2 border-rose-400 bg-white',
-                        pillClass: 'bg-rose-50 text-rose-900 border-rose-200',
-                        barFill: '#e11d48',
-                      }
-                    : idx === 1
-                    ? {
-                        badge: '2. ÖNCELİK · İKİNCİL ODAK',
-                        badgeClass: 'bg-amber-500 text-white',
-                        borderClass: 'border-2 border-amber-300 bg-white',
-                        pillClass: 'bg-amber-50 text-amber-900 border-amber-200',
-                        barFill: '#f59e0b',
-                      }
-                    : {
-                        badge: '3. ÖNCELİK · DESTEKLEYİCİ ODAK',
-                        badgeClass: 'bg-indigo-600 text-white',
-                        borderClass: 'border-2 border-indigo-200 bg-white',
-                        pillClass: 'bg-indigo-50 text-indigo-900 border-indigo-200',
-                        barFill: '#4f46e5',
-                      };
-
-                return (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-xl flex flex-col justify-between shadow-2xs ${rankStyle.borderClass}`}
-                  >
-                    <div>
-                      {/* Top Priority Header */}
-                      <div className="flex items-center justify-between gap-1.5 mb-2">
-                        <span className={`px-2 py-0.5 rounded-md text-[9.5px] font-mono font-black uppercase tracking-wider ${rankStyle.badgeClass}`}>
-                          {rankStyle.badge}
-                        </span>
-                        <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded border ${rankStyle.pillClass}`}>
-                          %{item.percentile} Yüzdelik
-                        </span>
-                      </div>
-
-                      {/* Metric Name & Verdict */}
-                      <div className="flex items-center justify-between gap-1 flex-wrap">
-                        <span className="font-black text-slate-900 text-[12.5px] tracking-tight truncate">
-                          {item.metricName} →
-                        </span>
-                        <span className="text-[9.5px] font-extrabold text-rose-900 bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded shrink-0">
-                          Geliştirilmesi önerilir
-                        </span>
-                      </div>
-
-                      {/* Current vs Target Visual Box */}
-                      <div className="mt-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                        <div className="flex items-center justify-between text-[10.5px] font-mono">
-                          <span className="text-slate-700">
-                            Mevcut: <strong className="text-slate-900 font-black">{item.currentValue}</strong>
-                          </span>
-                          <span className="text-slate-400 font-black">→</span>
-                          <span className="text-emerald-800">
-                            Hedef: <strong className="text-emerald-700 font-black">{item.targetValue}</strong>
-                          </span>
-                        </div>
-                        <svg viewBox="0 0 200 6" preserveAspectRatio="none" className="w-full h-1.5 rounded-full overflow-hidden block mt-1.5">
-                          <rect x="0" y="0" width="200" height="6" rx="3" fill="#e2e8f0" />
-                          <rect
-                            x="0"
-                            y="0"
-                            width={Math.max(14, Math.min(200, item.percentile * 2))}
-                            height="6"
-                            rx="3"
-                            fill={rankStyle.barFill}
-                          />
-                        </svg>
-                      </div>
-
-                      {/* Clear Actionable Drill Prescription answering both questions */}
-                      <div className="mt-2 space-y-1 text-[10px] leading-snug">
-                        <p className="text-slate-600">
-                          <strong className="text-slate-900 font-extrabold">Neyim Düşük?: </strong>
-                          {item.analysis}
-                        </p>
-                        <p className="text-slate-800 font-medium bg-slate-50 p-1.5 rounded border border-slate-200/80">
-                          <strong className="text-rose-700 font-extrabold">Ne Yapmalıyım?: </strong>
-                          {item.drillRecommendation}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className={`mt-2 pt-1.5 border-t border-slate-200/80 flex items-center justify-between text-[9.5px] font-mono font-extrabold`}>
-                      <span className="text-blue-800">⚡ {item.weeklyFrequency}</span>
-                      <span className="text-rose-700 uppercase">{item.priority}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-            <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
-              SPORCU GELİŞİM DEĞERLENDİRMESİ VE UZMAN GÖRÜŞÜ
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">{currentReport.expertComment}</p>
-          </div>
-
-          {/* 12. Referans ve Metodoloji Bölümü (Sayfa Altı Sade ve Küçük Puntolu Bölüm) */}
-          <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/90 text-[10px] text-slate-500 leading-relaxed">
-            <div className="text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-0.5">
-              12. Referans ve Metodoloji
-            </div>
-            <p className="text-[10px] text-slate-600 leading-relaxed">
-              Değerlendirmeler yaş ve cinsiyete göre normatif referanslar kullanılarak yapılmıştır. Beden kompozisyonu ve büyüme parametreleri ilgili uluslararası standartlarla karşılaştırılmıştır.
-            </p>
-          </div>
-        </div>
-
-        {renderPageFooter(7)}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-4">
       {/* Toast Notification */}
@@ -7791,7 +6700,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
                           {item.drillRecommendation}
                         </div>
                         <div className="font-mono font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-md border border-indigo-200 dark:border-indigo-800 shrink-0">
-                          ⚡ {item.weeklyFrequency}
+                           {item.weeklyFrequency}
                         </div>
                       </div>
                     </div>
@@ -7831,7 +6740,7 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               {/* 8-Week Microcycle Prescription */}
               <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl p-4 bg-slate-50/60 dark:bg-slate-800/30">
                 <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
-                  <Zap className="w-4 h-4 text-indigo-600" />
+                  <Award className="w-4 h-4 text-indigo-600" />
                   <span>8 Haftalık Antrenman &amp; PHV Yüklenme Planı</span>
                 </h3>
                 <div className="space-y-2.5">
@@ -7975,18 +6884,6 @@ export const SportsFlyLabView: React.FC<SportsFlyLabViewProps> = ({ onToast }) =
               </div>
               <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 3 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
                 {renderPage3()}
-              </div>
-              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 4 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-                {renderPage4()}
-              </div>
-              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 5 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-                {renderPage5()}
-              </div>
-              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 6 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-                {renderPage6()}
-              </div>
-              <div className={`karne-page-wrapper ${viewMode === 'all' || activePage === 7 || isPdfPreviewMode ? 'block' : 'hidden print:block'}`}>
-                {renderPage7()}
               </div>
             </>
           )}

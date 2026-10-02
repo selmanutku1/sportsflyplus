@@ -1220,7 +1220,7 @@ export const YetkilendirmelerView: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* ⚡ MOBILE BATCH ACTIONS MODAL                                             */}
+      {/*  MOBILE BATCH ACTIONS MODAL                                             */}
       {/* ========================================================================= */}
       {isBatchModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">

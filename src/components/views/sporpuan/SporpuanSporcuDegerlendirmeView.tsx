@@ -1232,7 +1232,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                       className="text-xs py-2 px-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors max-w-[200px] truncate"
                       title="Hazır Puanlama Profili Uygula"
                     >
-                      <option value="" disabled>⚡️ Hazır Profil Seç...</option>
+                      <option value="" disabled> Hazır Profil Seç...</option>
                       {HAZIR_PUANLAMA_PROFILLERI.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.baslik} ({p.rozet})
@@ -1636,7 +1636,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                               defaultValue=""
                               className="text-[11px] py-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium cursor-pointer"
                             >
-                              <option value="" disabled>⚡️ Hazır Gözlem Şablonu...</option>
+                              <option value="" disabled> Hazır Gözlem Şablonu...</option>
                               {HAZIR_GOZLEM_SABLONLARI.map((t) => (
                                 <option key={t.id} value={t.id}>
                                   {t.baslik} ({t.durum})
@@ -1905,7 +1905,7 @@ export const SporpuanSporcuDegerlendirmeView: React.FC<SporcuDegerlendirmeViewPr
                             defaultValue=""
                             className="text-xs py-1 px-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 font-medium cursor-pointer max-w-[220px] truncate"
                           >
-                            <option value="" disabled>⚡️ Hazır Not Şablonu Ekle...</option>
+                            <option value="" disabled> Hazır Not Şablonu Ekle...</option>
                             {HAZIR_ANTRENOR_NOTLARI.map((tpl) => (
                               <option key={tpl.id} value={tpl.id}>
                                 [{tpl.kategori}] {tpl.baslik}

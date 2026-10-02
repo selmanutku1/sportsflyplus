@@ -42,6 +42,7 @@ import { NavPage, PackagePlanType } from '../types';
 import {
   UserProfileData,
   getStoredUserProfile,
+  saveStoredUserProfile,
 } from '../data/userProfile';
 import {
   Sube,
@@ -145,12 +146,10 @@ export const Header: React.FC<HeaderProps> = ({
             const newNotif: SportsFlyNotification = {
               id: notifId,
               title: 'Yeni Spor Okulu Başvurusu!',
-              message: `${latestItem.clubName || 'Yeni Kulüp'} (${latestItem.managerName || 'Yönetici'}) başvuru gönderdi.`,
+              description: `${latestItem.clubName || 'Yeni Kulüp'} (${latestItem.managerName || 'Yönetici'}) başvuru gönderdi.`,
               time: 'Şimdi',
-              type: 'system',
+              category: 'system',
               isUnread: true,
-              targetPage: 'spor-okulu-basvurulari',
-              actionLabel: 'Başvuruyu İncele',
             };
             const updated = [newNotif, ...prev];
             saveStoredNotifications(userProfile.role, updated);
