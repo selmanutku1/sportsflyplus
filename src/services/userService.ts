@@ -8,6 +8,7 @@ import { User, signInAnonymously, updateProfile } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { ADMIN_GOOGLE_EMAIL, UserProfileData, getStoredUserProfile, saveStoredUserProfile } from '../data/userProfile';
 import { registerOrUpdateGoogleLoginUser } from '../data/googleUsersAccess';
+import { setActiveSessionPlan } from '../data/packagePermissions';
 
 export interface PersistedUserRecord {
   uid: string;
@@ -194,6 +195,51 @@ export async function persistUserToFirestore(
     clubName,
     hasActivePackage,
   };
+}
+
+/**
+ * Syncs Google profile data with Firebase Auth, Firestore, and localStorage.
+ */
+export async function syncGoogleProfileData(
+  googleEmail: string,
+  displayName: string,
+  photoURL?: string,
+  uid?: string,
+  firebaseUserInstance?: User
+): Promise<PersistedUserRecord> {
+  const cleanEmail = (googleEmail || '').trim().toLowerCase();
+  const isAdminAccount = cleanEmail === ADMIN_GOOGLE_EMAIL;
+
+  // 1. Establish/Link Firebase Auth user session
+  let activeAuthUser = firebaseUserInstance || auth.currentUser;
+  if (!activeAuthUser) {
+    activeAuthUser = await ensureFirebaseAuthSession({
+      email: cleanEmail,
+      displayName: displayName || (isAdminAccount ? 'Selman Utku' : 'Google Kullanıcısı'),
+      photoURL,
+      uid,
+    });
+  }
+
+  // 2. Persist to Firestore
+  const persistedRecord = await persistUserToFirestore(
+    activeAuthUser || {
+      uid: uid || `google-${Date.now()}`,
+      email: cleanEmail,
+      displayName: displayName || (isAdminAccount ? 'Selman Utku' : 'Google Kullanıcısı'),
+      photoURL: photoURL || null,
+    },
+    {
+      email: cleanEmail,
+      name: displayName || (isAdminAccount ? 'Selman Utku' : 'Google Kullanıcısı'),
+      avatarUrl: photoURL || undefined,
+      role: isAdminAccount ? 'Süper Admin' : 'Google Kullanıcısı',
+      club: isAdminAccount ? 'SportsFly Kadıköy Merkez Şube' : 'Paket Seçimi Bekleniyor',
+      hasActivePackage: isAdminAccount,
+    }
+  );
+
+  return persistedRecord;
 }
 
 /**

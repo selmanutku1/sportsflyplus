@@ -20,6 +20,7 @@ import { getStoredUserProfile, saveStoredUserProfile, UserProfileData, ADMIN_GOO
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { fetchAndMergeGoogleUsersFromFirestore } from './data/googleUsersAccess';
+import { syncGoogleProfileData } from './services/userService';
 
 // Lazy-loaded view modules for instant initial load & code splitting
 const DashboardView = lazy(() =>
@@ -162,16 +163,21 @@ export default function App() {
     return false;
   });
 
-  const handleLoginSuccess = (role?: string) => {
+  const handleLoginSuccess = async (userData: { email: string; name: string; photoURL?: string; uid?: string; role?: string }) => {
+    // If it's a Google login (has email and name), sync it
+    if (userData.email && userData.name) {
+        await syncGoogleProfileData(userData.email, userData.name, userData.photoURL, userData.uid);
+    }
+
     const freshProfile = getStoredUserProfile();
     setUserProfile(freshProfile);
     setIsAuthenticated(true);
-    if (isGoogleRestrictedUser(role || freshProfile?.role, freshProfile?.email)) {
+    if (isGoogleRestrictedUser(userData.role || freshProfile?.role, freshProfile?.email)) {
       setCurrentPage('paketler');
       try {
         sessionStorage.setItem('sportsfly_active_page', 'paketler');
       } catch (e) {}
-    } else if (!isSuperAdminUser(role || freshProfile?.role, freshProfile?.email)) {
+    } else if (!isSuperAdminUser(userData.role || freshProfile?.role, freshProfile?.email)) {
       setCurrentPage((prev) =>
         prev === 'spor-okulu-basvurulari' ? 'anasayfa' : prev
       );
@@ -180,7 +186,7 @@ export default function App() {
       sessionStorage.setItem('sportsfly_auth_active', 'true');
       if (typeof BroadcastChannel !== 'undefined') {
         const ch = new BroadcastChannel('sportsfly_auth_channel');
-        ch.postMessage({ type: 'LOGIN', role: role || freshProfile?.role });
+        ch.postMessage({ type: 'LOGIN', role: userData.role || freshProfile?.role });
         ch.close();
       }
     } catch (e) {}

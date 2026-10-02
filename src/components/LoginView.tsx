@@ -37,8 +37,6 @@ import {
 } from 'lucide-react';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { auth } from '../firebase';
-import { ensureFirebaseAuthSession, persistUserToFirestore } from '../services/userService';
-import { registerOrUpdateGoogleLoginUser } from '../data/googleUsersAccess';
 import { basvurularService } from '../services/firestoreService';
 import { LEGAL_TEXTS, LegalDoc } from '../data/legalTexts';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -56,7 +54,7 @@ import {
 } from '../utils/securityCore';
 
 interface LoginViewProps {
-  onLoginSuccess: (userRole?: string) => void;
+  onLoginSuccess: (userData: { email: string; name: string; photoURL?: string; uid?: string; role?: string }) => void;
 }
 
 type LegalDocKey = 'kullanim-kosullari' | 'kvkk' | 'gizlilik' | 'acik-riza' | 'iletisim' | 'veli-onay';
@@ -589,15 +587,18 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      const googleEmail = (user.email || '').trim().toLowerCase();
-      const displayName = user.displayName || 'Google Kullanıcısı';
-
-      await syncGoogleProfileData(googleEmail, displayName, user.photoURL || undefined, user.uid, user);
+      
+      onLoginSuccess({
+          email: (user.email || '').trim().toLowerCase(),
+          name: user.displayName || 'Google Kullanıcısı',
+          photoURL: user.photoURL || undefined,
+          uid: user.uid
+      });
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string };
       console.warn('Google popup oturum açma hatası:', err);
       setIsLoading(false);
-      setLoginError(err?.code === 'auth/popup-blocked' ? 'Popup engellendi.' : 'Giriş hatası.');
+      setLoginError(err?.code === 'auth/popup-blocked' ? 'Popup engelledi.' : 'Giriş hatası.');
     }
   };
 
@@ -704,7 +705,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     setLoadingText(`${roleName} portalına bağlanıyor...`);
     setTimeout(() => {
       setIsLoading(false);
-      onLoginSuccess(roleName);
+      onLoginSuccess({ role: roleName, email: '', name: roleName });
     }, 600);
   };
 
