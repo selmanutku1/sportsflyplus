@@ -17,6 +17,9 @@ import {
   isGoogleUserPageUnlocked,
 } from './data/packagePermissions';
 import { getStoredUserProfile, saveStoredUserProfile, UserProfileData, ADMIN_GOOGLE_EMAIL } from './data/userProfile';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { fetchAndMergeGoogleUsersFromFirestore } from './data/googleUsersAccess';
 
 // Lazy-loaded view modules for instant initial load & code splitting
 const DashboardView = lazy(() =>
@@ -185,6 +188,7 @@ export default function App() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    signOut(auth).catch(() => {});
     try {
       sessionStorage.setItem('sportsfly_auth_active', 'false');
       sessionStorage.removeItem('sportsfly_active_page');
@@ -220,14 +224,11 @@ export default function App() {
   const [currentPlan, setCurrentPlan] = useState<PackagePlanType>(() => getActiveSessionPlan());
   const [userProfile, setUserProfile] = useState<UserProfileData>(() => {
     const prof = getStoredUserProfile();
-    if (prof.email === 'kullanici@gmail.com' || prof.email?.toLowerCase() === ADMIN_GOOGLE_EMAIL) {
+    if (prof.email?.trim().toLowerCase() === ADMIN_GOOGLE_EMAIL) {
       const upgraded: UserProfileData = {
         ...prof,
-        name: prof.name === 'Google Kullanıcısı' ? 'Selman Utku' : prof.name,
         email: ADMIN_GOOGLE_EMAIL,
         role: 'Süper Admin',
-        title: 'SportsFly Kulüp Yöneticisi',
-        club: 'SportsFly Kadıköy Merkez Şube',
         hasActivePackage: true,
       };
       saveStoredUserProfile(upgraded);
@@ -296,7 +297,24 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('keydown', handleKeyDown);
 
+    // Firebase Auth session listener & Firestore sync
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        const storedAuthActive = sessionStorage.getItem('sportsfly_auth_active');
+        if (storedAuthActive !== 'false') {
+          setIsAuthenticated(true);
+        }
+        fetchAndMergeGoogleUsersFromFirestore().catch(() => {});
+      } else {
+        const storedAuthActive = sessionStorage.getItem('sportsfly_auth_active');
+        if (storedAuthActive === 'false') {
+          setIsAuthenticated(false);
+        }
+      }
+    });
+
     return () => {
+      unsubscribeAuth();
       if (authChannel) authChannel.close();
       window.removeEventListener('storage', handlePlanUpdate);
       window.removeEventListener('sportsfly_plan_changed', handlePlanUpdate);
@@ -576,14 +594,26 @@ export default function App() {
       case 'kulup-evraklari':
         return (
           <KulupEvraklariView
-            sporcular={INITIAL_SPORCULAR}
+            sporcular={(() => {
+              try {
+                const saved = localStorage.getItem('sportsfly_sporcular');
+                if (saved) return JSON.parse(saved);
+              } catch (e) {}
+              return INITIAL_SPORCULAR;
+            })()}
             onNavigate={handlePageSelect}
           />
         );
       case 'kulup-galerisi':
         return (
           <KulupGalerisiView
-            sporcular={INITIAL_SPORCULAR}
+            sporcular={(() => {
+              try {
+                const saved = localStorage.getItem('sportsfly_sporcular');
+                if (saved) return JSON.parse(saved);
+              } catch (e) {}
+              return INITIAL_SPORCULAR;
+            })()}
             onNavigate={handlePageSelect}
           />
         );

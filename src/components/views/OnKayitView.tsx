@@ -47,10 +47,39 @@ export const OnKayitView: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_ON_KAYITLAR;
   });
 
-  // Save records to localStorage whenever they change
+  // Save records to localStorage whenever they change and notify other views
   useEffect(() => {
     localStorage.setItem('sportsfly_on_kayitlar', JSON.stringify(records));
+    try {
+      window.dispatchEvent(new Event('sportsfly_on_kayitlar_updated'));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('sportsfly_on_kayitlar_channel');
+        bc.postMessage({ type: 'updated', count: records.length });
+        bc.close();
+      }
+    } catch (e) {}
   }, [records]);
+
+  // Synchronize on cross-view / cross-tab changes
+  useEffect(() => {
+    const handleSync = () => {
+      const saved = localStorage.getItem('sportsfly_on_kayitlar');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setRecords(parsed);
+          }
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('sportsfly_on_kayitlar_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('sportsfly_on_kayitlar_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const [statusFilter, setStatusFilter] = useState<string>('Tümü');
   const [searchQuery, setSearchQuery] = useState('');

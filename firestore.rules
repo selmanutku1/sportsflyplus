@@ -25,11 +25,11 @@ service cloud.firestore {
     }
 
     function isVerifiedUser() {
-      return isSignedIn() && request.auth.token.email_verified == true;
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'anonymous');
     }
 
     function isAdmin() {
-      return isVerifiedUser() && (
+      return isSignedIn() && (
         request.auth.token.email == 'selmanutkumarmara@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
