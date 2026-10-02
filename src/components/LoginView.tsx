@@ -35,7 +35,7 @@ import {
   Sparkles,
   Clock,
 } from 'lucide-react';
-import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, User, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
 import { basvurularService } from '../services/firestoreService';
 import { LEGAL_TEXTS, LegalDoc } from '../data/legalTexts';
@@ -435,6 +435,23 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [activeLegalModal, setActiveLegalModal] = useState<LegalDocKey | null>(null);
   const [legalSearchQuery, setLegalSearchQuery] = useState('');
   const [copiedLegalText, setCopiedLegalText] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordStatus, setForgotPasswordStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      setForgotPasswordStatus('error');
+      return;
+    }
+    setForgotPasswordStatus('loading');
+    try {
+      await sendPasswordResetEmail(auth, forgotPasswordEmail);
+      setForgotPasswordStatus('success');
+    } catch (e) {
+      setForgotPasswordStatus('error');
+    }
+  };
 
   const [roleModalInfo, setRoleModalInfo] = useState<{
     title: string;
@@ -1029,7 +1046,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               <label className="text-[11px] font-bold text-slate-700">Şifre</label>
               <button
                 type="button"
-                onClick={() => setLoginError('Şifre sıfırlama bağlantısı telefonunuza / e-postanıza gönderildi.')}
+                onClick={() => setShowForgotPasswordModal(true)}
                 className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
               >
                 Şifremi unuttum
@@ -1730,6 +1747,29 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           handleRoleQuickSelect('sporcu');
         }}
       />
+
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
+            <h3 className="text-lg font-black text-center">Şifre Sıfırlama</h3>
+            <p className="text-xs text-slate-600">E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.</p>
+            <input
+              type="email"
+              value={forgotPasswordEmail}
+              onChange={(e) => setForgotPasswordEmail(e.target.value)}
+              placeholder="ornek@sporokulu.com"
+              className="w-full bg-slate-50 border border-slate-300 px-3 py-2.5 rounded-xl text-xs"
+            />
+            {forgotPasswordStatus === 'success' && <p className="text-xs text-emerald-600 text-center">Sıfırlama bağlantısı gönderildi!</p>}
+            {forgotPasswordStatus === 'error' && <p className="text-xs text-rose-600 text-center">Bir hata oluştu, lütfen tekrar deneyin.</p>}
+            <div className="flex gap-2">
+              <button onClick={() => setShowForgotPasswordModal(false)} className="flex-1 py-2 text-xs font-semibold cursor-pointer">İptal</button>
+              <button onClick={handleForgotPassword} disabled={forgotPasswordStatus === 'loading'} className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer">Gönder</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Google Account Picker Modal */}
       {showGoogleAccountPicker && (
