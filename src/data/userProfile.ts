@@ -131,3 +131,12 @@ export function saveStoredUserProfile(profile: UserProfileData): void {
     console.error('Failed to save user profile:', err);
   }
 }
+
+export function syncGoogleProfileData(displayName?: string | null, photoURL?: string | null): void {
+  const currentProf = getStoredUserProfile();
+  saveStoredUserProfile({
+    ...currentProf,
+    name: displayName || currentProf.name,
+    avatarUrl: photoURL || currentProf.avatarUrl,
+  });
+}

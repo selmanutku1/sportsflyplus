@@ -103,6 +103,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     totpSecretKey: string;
   } | null>(null);
   const [showSmsToastBanner, setShowSmsToastBanner] = useState<boolean>(false);
+  const [showGoogleAccountPicker, setShowGoogleAccountPicker] = useState<boolean>(false);
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   // Countdown timer for SMS 2FA & live TOTP refresh
@@ -445,7 +446,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   } | null>(null);
 
   // Unified Google sign in processor (genuine Firebase Auth & Firestore sync)
-  const performGoogleLoginSuccess = async (
+  const syncGoogleProfileData = async (
     googleEmail: string,
     displayName: string,
     photoURL?: string,
@@ -573,37 +574,30 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   };
 
   // Handle Google / Social Login — Directly prompts Google Account Chooser screen (accounts.google.com select_account)
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
+    setShowGoogleAccountPicker(true);
+  };
+
+  const handleNativeGooglePopupLogin = async () => {
     setLoginError(null);
-    setShowRegisterModal(false);
+    setShowGoogleAccountPicker(false);
     setIsLoading(true);
-    setLoadingText('Google hesap seçim ekranı açılıyor...');
+    setLoadingText('Google penceresi açılıyor...');
 
     try {
       const provider = new GoogleAuthProvider();
-      // Forces Google to prompt account selection (select_account)
       provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       const googleEmail = (user.email || '').trim().toLowerCase();
       const displayName = user.displayName || 'Google Kullanıcısı';
 
-      await performGoogleLoginSuccess(googleEmail, displayName, user.photoURL || undefined, user.uid, user);
+      await syncGoogleProfileData(googleEmail, displayName, user.photoURL || undefined, user.uid, user);
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string };
-      console.warn('Google popup oturum açma hatası veya kısıtlama:', err);
+      console.warn('Google popup oturum açma hatası:', err);
       setIsLoading(false);
-
-      if (err?.code === 'auth/popup-closed-by-user') {
-        setLoginError('Google hesap seçim penceresi kapatıldı.');
-        return;
-      }
-
-      if (err?.code === 'auth/popup-blocked') {
-        setLoginError('Tarayıcınız Google açılır penceresini (popup) engelledi. Lütfen adres çubuğundaki açılır pencere iznini verip tekrar deneyiniz.');
-        return;
-      }
-      setLoginError(err?.message || 'Google ile giriş yapılırken bir hata oluştu. Lütfen tekrar deneyiniz.');
+      setLoginError(err?.code === 'auth/popup-blocked' ? 'Popup engellendi.' : 'Giriş hatası.');
     }
   };
 
@@ -1735,6 +1729,28 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           handleRoleQuickSelect('sporcu');
         }}
       />
+
+      {/* Google Account Picker Modal */}
+      {showGoogleAccountPicker && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
+            <h3 className="text-lg font-black">Google Hesabınızı Seçin</h3>
+            <p className="text-xs text-slate-600">Devam etmek için bir Google hesabı seçin.</p>
+            <button
+              onClick={handleNativeGooglePopupLogin}
+              className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold text-sm shadow-md hover:bg-blue-700 cursor-pointer"
+            >
+              Google İle Giriş Yap
+            </button>
+            <button
+              onClick={() => setShowGoogleAccountPicker(false)}
+              className="w-full py-2 text-xs text-slate-500 font-semibold cursor-pointer"
+            >
+              İptal
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
